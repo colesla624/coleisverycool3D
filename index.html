@@ -7,47 +7,21 @@
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; touch-action:none; font-family:system-ui, sans-serif; }
     canvas { display:block; }
-
-    #overlay {
-      position:absolute; top:10px; left:10px; z-index:5; color:#fff; font-weight:700;
-      text-shadow:0 1px 2px #000; user-select:none;
-    }
+    #overlay { position:absolute; top:10px; left:10px; z-index:5; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; }
     #overlay .small { font-size:12px; opacity:0.8; font-weight:500; }
-
-    #controls {
-      position:absolute; bottom:16px; left:16px; right:16px; z-index:5;
-      display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none;
-    }
-    .stick {
-      width:140px; height:140px; border-radius:50%;
-      background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2);
-      position:relative; pointer-events:auto; touch-action:none;
-    }
-    .knob {
-      position:absolute; width:64px; height:64px; border-radius:50%;
-      background:rgba(255,255,255,0.25); left:calc(50% - 32px); top:calc(50% - 32px);
-    }
+    #controls { position:absolute; bottom:16px; left:16px; right:16px; z-index:5; display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; }
+    .stick { width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); position:relative; pointer-events:auto; touch-action:none; }
+    .knob { position:absolute; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.25); left:calc(50% - 32px); top:calc(50% - 32px); }
     #rightPanel { display:flex; flex-direction:column; align-items:center; gap:12px; pointer-events:auto; }
-    .button {
-      pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px;
-      background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2);
-      color:#fff; display:grid; place-items:center; font-weight:800;
-    }
-
-    #message {
-      position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
-      color:#fff; z-index:6; text-align:center; font-weight:800; font-size:24px; display:none;
-    }
-    #message button {
-      margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800;
-      padding:10px 16px; border-radius:10px; cursor:pointer;
-    }
+    .button { pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); color:#fff; display:grid; place-items:center; font-weight:800; }
+    #message { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:6; text-align:center; font-weight:800; font-size:24px; display:none; }
+    #message button { margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer; }
   </style>
 </head>
 <body>
   <div id="overlay">
     <div>Survive: <span id="timer">0.0</span>s &nbsp; | &nbsp; Health: <span id="hp">100</span></div>
-    <div class="small">Desktop: WASD/arrows + Space to jump. Drag to look. Mobile: Left stick = move (flipped), Right stick = look, Jump button.</div>
+    <div class="small">Desktop: WASD/arrows + Space to jump, drag to look. Mobile: Left stick = move (flipped), Right stick = look, Jump.</div>
   </div>
 
   <div id="controls">
@@ -267,15 +241,15 @@
       yaw   += look.x * lookSensitivity * dt;
       pitch = THREE.MathUtils.clamp(pitch + look.y * lookSensitivity * dt, -1.2, 1.2);
 
-      // Input: keyboard + movement stick (flipped as requested)
+      // Keyboard + movement stick (FLIPPED): back -> forward, forward -> back; left -> right, right -> left
       const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
       const kBack    = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
       const kLeft    = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
       const kRight   = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
 
       const mv = moveStick.get();
-      let inputX = (kRight - kLeft) - mv.x;   // flipped horizontal
-      let inputY = (kForward - kBack) + mv.y; // flipped vertical
+      let inputX = (kRight - kLeft) - mv.x;   // flip left/right
+      let inputY = (kForward - kBack) + mv.y; // flip forward/back
 
       const mag = Math.hypot(inputX, inputY);
       if (mag > 1) { inputX /= mag; inputY /= mag; }
