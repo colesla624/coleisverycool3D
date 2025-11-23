@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Platformer — Dual Joysticks</title>
+  <title>3D Platformer — Dual Joysticks Full Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin:0; height:100%; background:#0b0f19; overflow:hidden; }
@@ -11,27 +11,31 @@
       color:#fff; font-family:sans-serif; background:rgba(0,0,0,0.35);
       padding:6px 10px; border-radius:8px; z-index:10;
     }
+    #skipBtn {
+      position:fixed; top:60px; right:20px; padding:8px 12px;
+      border-radius:6px; border:none; font-weight:600; cursor:pointer; z-index:10;
+      background:#fff; color:#111;
+    }
     #stick, #lookStick {
-      position:fixed; width:120px; height:120px; z-index:20;
-      border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
-      touch-action:none;
+      position:fixed; width:120px; height:120px; border-radius:50%;
+      background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
+      touch-action:none; z-index:20;
     }
     #stick { bottom:16px; left:16px; }
     #lookStick { bottom:16px; right:120px; }
     #stickKnob, #lookKnob {
-      position:absolute; left:50%; top:50%; width:40px; height:40px; z-index:21;
+      position:absolute; left:50%; top:50%; width:40px; height:40px;
       border-radius:50%; background:#0af; transform:translate(-50%,-50%);
     }
     #jumpBtn {
-      position:fixed; bottom:16px; right:16px; width:90px; height:90px; z-index:20;
-      border-radius:50%; background:#fff; color:#111; font-weight:700; border:none;
-      display:flex; align-items:center; justify-content:center;
-      touch-action:none; user-select:none;
+      position:fixed; bottom:16px; right:16px; width:90px; height:90px;
+      border-radius:50%; background:#fff; font-weight:bold; z-index:20;
     }
   </style>
 </head>
 <body>
-  <div id="hud">Coins: 0</div>
+  <div id="hud">Level 1 | Coins: 0</div>
+  <button id="skipBtn">Skip level (10 coins)</button>
   <div id="stick"><div id="stickKnob"></div></div>
   <div id="lookStick"><div id="lookKnob"></div></div>
   <button id="jumpBtn">Jump</button>
@@ -42,15 +46,15 @@
   let scene=new THREE.Scene();
   scene.background=new THREE.Color(0x0b0f19);
   let camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,1000);
-  camera.position.set(0,6,-10);
+  camera.position.set(0,6,-12);
   let renderer=new THREE.WebGLRenderer({antialias:true});
   renderer.setSize(window.innerWidth,window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
   const hemi=new THREE.HemisphereLight(0xffffff,0x444444,0.8);scene.add(hemi);
-  const dir=new THREE.DirectionalLight(0xffffff,0.8);dir.position.set(10,20,10);scene.add(dir);
+  const dir=new THREE.DirectionalLight(0xffffff,0.9);dir.position.set(10,20,10);scene.add(dir);
 
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(50,50),new THREE.MeshStandardMaterial({color:0x223349}));
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(50,50), new THREE.MeshStandardMaterial({color:0x223349}));
   ground.rotation.x=-Math.PI/2;scene.add(ground);
 
   // === Player ===
@@ -82,16 +86,33 @@
   // Jump button
   document.getElementById('jumpBtn').addEventListener('touchstart',()=>{if(player.jumps<2){player.vy=16;player.jumps++;}});
 
-  // === Game objects ===
-  let coins=[], hazards=[];
-  const cGeo=new THREE.TorusGeometry(0.35,0.12,16,24);
-  const cMat=new THREE.MeshStandardMaterial({color:0xffd700});
-  const coin=new THREE.Mesh(cGeo,cMat);coin.position.set(3,1,0);scene.add(coin);coins.push(coin);
-  const hGeo=new THREE.BoxGeometry(2,0.5,2);
-  const hMat=new THREE.MeshStandardMaterial({color:0xd84315});
-  const hazard=new THREE.Mesh(hGeo,hMat);hazard.position.set(-3,0.25,0);scene.add(hazard);hazards.push(hazard);
+  // === Game state ===
+  let coins=[], hazards=[], coinTotal=0, levelIndex=1;
+  const hud=document.getElementById('hud');
+  const skipBtn=document.getElementById('skipBtn');
+  skipBtn.addEventListener('click',()=>{if(coinTotal>=10){coinTotal-=10;loadLevel(levelIndex+1);}updateHUD();});
+  function updateHUD(){hud.textContent=`Level ${levelIndex} | Coins: ${coinTotal}`;}
 
-  let coinTotal=0;
+  // === Example level generator ===
+  function loadLevel(idx){
+    levelIndex=idx;
+    // clear old
+    for(let i=scene.children.length-1;i>=0;i--){
+      const o=scene.children[i];
+      if(o!==player && o!==ground && o.type!=="HemisphereLight" && o.type!=="DirectionalLight") scene.remove(o);
+    }
+    coins=[]; hazards=[];
+    // add coin
+    const cGeo=new THREE.TorusGeometry(0.35,0.12,16,24);
+    const cMat=new THREE.MeshStandardMaterial({color:0xffd700});
+    const coin=new THREE.Mesh(cGeo,cMat);coin.position.set(3,1,0);scene.add(coin);coins.push(coin);
+    // add hazard
+    const hGeo=new THREE.BoxGeometry(2,0.5,2);
+    const hMat=new THREE.MeshStandardMaterial({color:0xd84315});
+    const hazard=new THREE.Mesh(hGeo,hMat);hazard.position.set(-3,0.25,0);scene.add(hazard);hazards.push(hazard);
+    updateHUD();
+  }
+  loadLevel(1);
 
   // === Update loop ===
   function update(dt){
@@ -110,7 +131,7 @@
       c.rotation.y+=2*dt;
       if(player.position.distanceTo(c.position)<1){
         scene.remove(c);coins.splice(coins.indexOf(c),1);
-        coinTotal++;hud.textContent=`Coins: ${coinTotal}`;
+        coinTotal++;updateHUD();
       }
     }
     // Hazards
@@ -122,27 +143,9 @@
 
     // Camera chase + look joystick
     const target=new THREE.Vector3(player.position.x,player.position.y+1.5,player.position.z);
-    // base offset behind player
     let offset=new THREE.Vector3(0,3,-8);
-    // apply look joystick to rotate offset around player
-    const yaw=lookVec.x*0.5; // left/right
-    const pitch=lookVec.y*0.3; // up/down
+    const yaw=lookVec.x*0.5, pitch=lookVec.y*0.3;
     const rotY=new THREE.Matrix4().makeRotationY(yaw);
     const rotX=new THREE.Matrix4().makeRotationX(pitch);
     offset.applyMatrix4(rotY).applyMatrix4(rotX);
-    const desired=target.clone().add(offset);
-    camera.position.lerp(desired,0.1);
-    camera.lookAt(target);
-  }
-
-  let last=performance.now();
-  function animate(now){
-    requestAnimationFrame(animate);
-    const dt=Math.min(0.033,(now-last)/1000);last=now;
-    update(dt);
-    renderer.render(scene,camera);
-  }
-  animate();
-  </script>
-</body>
-</html>
+    const desired=
