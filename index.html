@@ -2,27 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Platformer — Third-Person Mobile</title>
+  <title>3D Platformer — Third Person Mobile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin:0; height:100%; background:#0b0f19; overflow:hidden; }
     #hud {
       position:fixed; top:10px; left:50%; transform:translateX(-50%);
-      color:#fff; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.25);
-      z-index:10;
+      color:#fff; font-family:sans-serif; background:rgba(0,0,0,0.35);
+      padding:6px 10px; border-radius:8px; z-index:10;
     }
-    #skipBtn {
-      position:fixed; top:60px; right:20px; padding:8px 12px;
-      border-radius:6px; border:none; font-weight:600; cursor:pointer; z-index:10;
-      background:#fff; color:#111; box-shadow:0 3px 10px rgba(0,0,0,0.25);
-    }
-    #legend {
-      position:fixed; bottom:10px; left:10px; color:#9ec5ff; font-size:12px; line-height:1.4;
-      font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; opacity:0.9;
-      background:rgba(20,30,50,0.45); padding:8px 10px; border-radius:8px; z-index:10;
-    }
-    /* Mobile controls */
     #stick {
       position:fixed; bottom:16px; left:16px; width:120px; height:120px; z-index:20;
       border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
@@ -35,636 +23,117 @@
     #jumpBtn {
       position:fixed; bottom:16px; right:16px; width:90px; height:90px; z-index:20;
       border-radius:50%; background:#fff; color:#111; font-weight:700; border:none;
-      box-shadow:0 3px 10px rgba(0,0,0,0.25);
       display:flex; align-items:center; justify-content:center;
       touch-action:none; user-select:none;
     }
   </style>
 </head>
 <body>
-  <div id="hud">Level 1 | Coins: 0</div>
-  <button id="skipBtn">Skip level (10 coins)</button>
-  <div id="legend">
-    Stick: Move • Jump button: Jump • 10 coins to skip level • Each level adds 1 obstacle
-  </div>
+  <div id="hud">Coins: 0</div>
   <div id="stick"><div id="stickKnob"></div></div>
   <button id="jumpBtn">Jump</button>
 
-  <!-- Three.js -->
   <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
-
   <script>
-  // ====== Core state ======
-  let scene, renderer, camera;
-  let worldY = 0; // ground plane y
-  const GRAVITY = 38;
-  const hud = document.getElementById('hud');
-  const skipBtn = document.getElementById('skipBtn');
-
-  const player = {
-    obj: null,
-    w: 1, h: 1.8, d: 1,
-    vx: 0, vy: 0, vz: 0,
-    speed: 12,
-    dash: 22,
-    jumps: 0,
-    invulnerable: false,
-    invulnTimer: 0,
-    facing: 0 // radians (XZ)
-  };
-
-  let coinTotal = 0;
-  let levelIndex = 1;
-  let level = null;
-  const bullets = [];
-
-  // Desktop keys (still useful)
-  const keys = {};
-  window.addEventListener('keydown', e => keys[e.code] = true);
-  window.addEventListener('keyup',   e => keys[e.code] = false);
+  let scene, camera, renderer;
+  let player, coins=[], hazards=[];
+  let coinTotal=0;
+  const hud=document.getElementById('hud');
 
   // Mobile stick
-  const stick = document.getElementById('stick');
-  const knob  = document.getElementById('stickKnob');
-  let stickActive = false, stickCenter = { x:0, y:0 }, stickVec = { x:0, y:0 };
-  function setStickCenter(){
-    const rect = stick.getBoundingClientRect();
-    stickCenter.x = rect.left + rect.width/2;
-    stickCenter.y = rect.top  + rect.height/2;
-  }
-  setStickCenter();
-  window.addEventListener('resize', setStickCenter);
+  const stick=document.getElementById('stick'), knob=document.getElementById('stickKnob');
+  let stickCenter={x:0,y:0}, stickVec={x:0,y:0}, stickActive=false;
+  function setStickCenter(){const r=stick.getBoundingClientRect();stickCenter.x=r.left+r.width/2;stickCenter.y=r.top+r.height/2;}
+  setStickCenter(); window.addEventListener('resize',setStickCenter);
+  function stickDown(x,y){stickActive=true;updateStick(x,y);}
+  function stickUp(){stickActive=false;stickVec.x=0;stickVec.y=0;knob.style.left='50%';knob.style.top='50%';}
+  function updateStick(x,y){const dx=x-stickCenter.x,dy=y-stickCenter.y;const radius=50;const len=Math.hypot(dx,dy);const cl=Math.min(len,radius);
+    const nx=(dx/(len||1))*cl,ny=(dy/(len||1))*cl;knob.style.left=`calc(50% + ${nx}px)`;knob.style.top=`calc(50% + ${ny}px)`;stickVec.x=nx/radius;stickVec.y=ny/radius;}
+  stick.addEventListener('touchstart',e=>{const t=e.touches[0];stickDown(t.clientX,t.clientY);});
+  stick.addEventListener('touchmove',e=>{const t=e.touches[0];if(stickActive)updateStick(t.clientX,t.clientY);});
+  stick.addEventListener('touchend',stickUp);
 
-  function stickDown(x,y){
-    stickActive = true;
-    updateStick(x,y);
-  }
-  function stickUp(){
-    stickActive = false; stickVec.x = 0; stickVec.y = 0; knob.style.left = '50%'; knob.style.top = '50%';
-  }
-  function updateStick(x,y){
-    const dx = x - stickCenter.x, dy = y - stickCenter.y;
-    const radius = 50;
-    const len = Math.hypot(dx,dy);
-    const cl = Math.min(len, radius);
-    const nx = (dx / (len||1)) * cl;
-    const ny = (dy / (len||1)) * cl;
-    knob.style.left = `calc(50% + ${nx}px)`;
-    knob.style.top  = `calc(50% + ${ny}px)`;
-    stickVec.x = nx / radius; // -1..1
-    stickVec.y = ny / radius; // -1..1
-  }
-  stick.addEventListener('touchstart', e => { const t = e.touches[0]; stickDown(t.clientX,t.clientY); });
-  stick.addEventListener('touchmove',  e => { const t = e.touches[0]; if(stickActive) updateStick(t.clientX,t.clientY); });
-  stick.addEventListener('touchend',   stickUp);
-  stick.addEventListener('mousedown',  e => stickDown(e.clientX,e.clientY));
-  window.addEventListener('mousemove', e => { if(stickActive) updateStick(e.clientX,e.clientY); });
-  window.addEventListener('mouseup',   stickUp);
+  // Jump button
+  document.getElementById('jumpBtn').addEventListener('touchstart',()=>{if(player.jumps<2){player.vy=16;player.jumps++;}});
 
-  // Mobile jump
-  document.getElementById('jumpBtn').addEventListener('touchstart', tryJump, { passive:true });
-  document.getElementById('jumpBtn').addEventListener('mousedown',  tryJump);
-
-  // HUD + skip
-  skipBtn.addEventListener('click', () => {
-    if (coinTotal >= 10) {
-      coinTotal -= 10;
-      loadLevel(levelIndex + 1);
-    }
-    updateHUD(); updateSkipButton();
-  });
-  function updateHUD(){ hud.textContent = `${level.name} | Coins: ${coinTotal}`; }
-  function updateSkipButton(){
-    skipBtn.textContent = coinTotal >= 10 ? 'Skip level (10 coins)' : 'Skip level (need 10 coins)';
-    skipBtn.style.opacity = coinTotal >= 10 ? '1' : '0.65';
-  }
-
-  // Difficulty + obstacle progression
-  function difficultyFactor(i){ const base = 1 + (i/100); const curve = 1 + Math.max(0, i-50)/200; return base*curve; }
-  function obstacleCount(i){ return Math.min(2 + (i-1), 24); }
-
-  // Helpers
-  function makePRNG(seed){ let s = seed>>>0; return function(){ s=(s*1664525+1013904223)>>>0; return (s&0xffffffff)/4294967296; }; }
-  function randRange(rnd, min, max){ return min + rnd()*(max-min); }
-  function aabbIntersects(a, b) {
-    return Math.abs(a.position.x - b.position.x) <= (a.userData.w/2 + b.userData.w/2) &&
-           Math.abs(a.position.y - b.position.y) <= (a.userData.h/2 + b.userData.h/2) &&
-           Math.abs(a.position.z - b.position.z) <= (a.userData.d/2 + b.userData.d/2);
-  }
-  function aabbPointInside(obj, px, py, pz) {
-    return Math.abs(obj.position.x - px) <= (obj.userData.w/2) &&
-           Math.abs(obj.position.y - py) <= (obj.userData.h/2) &&
-           Math.abs(obj.position.z - pz) <= (obj.userData.d/2);
-  }
-  function safePlace(obj, startX=0, startY=worldY+player.h/2, startZ=-18){
-    const dx = Math.abs(obj.position.x - startX);
-    const dy = Math.abs(obj.position.y - startY);
-    const dz = Math.abs(obj.position.z - startZ);
-    const cube = Math.max(player.w, player.h, player.d);
-    return (dx > cube) || (dy > cube) || (dz > cube);
-  }
-
-  // Scene setup — fix black screen by ensuring lights, camera, renderer
   function init(){
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0b0f19);
+    scene=new THREE.Scene();
+    scene.background=new THREE.Color(0x0b0f19);
 
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 6.5, -4); // behind player
-    camera.lookAt(0, 3, 0);
+    camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,1000);
+    camera.position.set(0,6,-10);
 
-    renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer=new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(window.innerWidth,window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const hemi = new THREE.HemisphereLight(0x9ec5ff, 0x33425a, 0.7);
-    scene.add(hemi);
+    const hemi=new THREE.HemisphereLight(0xffffff,0x444444,0.8);scene.add(hemi);
+    const dir=new THREE.DirectionalLight(0xffffff,0.8);dir.position.set(10,20,10);scene.add(dir);
 
-    const dir = new THREE.DirectionalLight(0xffffff, 0.9);
-    dir.position.set(12, 18, 8);
-    dir.castShadow = true;
-    dir.shadow.mapSize.set(1024,1024);
-    dir.shadow.camera.left = -30;
-    dir.shadow.camera.right = 30;
-    dir.shadow.camera.top = 30;
-    dir.shadow.camera.bottom = -30;
-    scene.add(dir);
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(50,50),new THREE.MeshStandardMaterial({color:0x223349}));
+    ground.rotation.x=-Math.PI/2;scene.add(ground);
 
-    // Ground
-    const groundGeo = new THREE.PlaneGeometry(140, 140);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x223349, roughness:0.9, metalness:0.0 });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI/2;
-    ground.receiveShadow = true;
-    ground.position.y = worldY;
-    ground.userData = { type:'ground', w:140, h:0.2, d:140 };
-    scene.add(ground);
+    const pGeo=new THREE.BoxGeometry(1,1.8,1);
+    const pMat=new THREE.MeshStandardMaterial({color:0xffd166});
+    player=new THREE.Mesh(pGeo,pMat);player.position.set(0,0.9,0);scene.add(player);
+    player.vx=0;player.vy=0;player.vz=0;player.jumps=0;
 
-    // Player
-    const pGeo = new THREE.BoxGeometry(player.w, player.h, player.d);
-    const pMat = new THREE.MeshStandardMaterial({ color: 0xffd166, roughness:0.6, metalness:0.1 });
-    player.obj = new THREE.Mesh(pGeo, pMat);
-    player.obj.castShadow = true;
-    player.obj.position.set(0, worldY + player.h/2, -18);
-    player.obj.userData = { type:'player', w:player.w, h:player.h, d:player.d };
-    scene.add(player.obj);
+    // Add a coin
+    const cGeo=new THREE.TorusGeometry(0.35,0.12,16,24);
+    const cMat=new THREE.MeshStandardMaterial({color:0xffd700});
+    const coin=new THREE.Mesh(cGeo,cMat);coin.position.set(3,1,0);scene.add(coin);coins.push(coin);
 
-    loadLevel(1);
+    // Add a hazard
+    const hGeo=new THREE.BoxGeometry(2,0.5,2);
+    const hMat=new THREE.MeshStandardMaterial({color:0xd84315});
+    const hazard=new THREE.Mesh(hGeo,hMat);hazard.position.set(-3,0.25,0);scene.add(hazard);hazards.push(hazard);
 
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
     animate();
   }
-  function onResize(){
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    setStickCenter();
+
+  function animate(){
+    requestAnimationFrame(animate);
+    update(0.016);
+    renderer.render(scene,camera);
   }
 
-  // Level data containers
-  function makeLevelBase(name){
-    return {
-      name,
-      f: difficultyFactor(levelIndex),
-      objects: [],
-      hazards: [],
-      pendulums: [],
-      saws: [],
-      platforms: [],
-      coins: [],
-      enemies: [],
-      bullets: bullets,
-      teleportPads: [],
-      windZones: [],
-      timedDoors: [],
-      boss: false,
-      bossObj: null,
-      goal: null
-    };
-  }
-  function addBox(w,h,d,color,x,y,z,type,castShadow=true,receiveShadow=true){
-    const geo = new THREE.BoxGeometry(w,h,d);
-    const mat = new THREE.MeshStandardMaterial({ color, roughness:0.7, metalness:0.1 });
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(x,y,z);
-    m.castShadow = castShadow;
-    m.receiveShadow = receiveShadow;
-    m.userData = { type, w, h, d };
-    scene.add(m);
-    return m;
-  }
-  function addCoin(x,y,z){
-    const geo = new THREE.TorusGeometry(0.35,0.12,16,24);
-    const mat = new THREE.MeshStandardMaterial({ color:0xffd700, emissive:0x221100, roughness:0.4, metalness:0.6 });
-    const m = new THREE.Mesh(geo, mat);
-    m.rotation.x = Math.PI/2;
-    m.castShadow = true;
-    m.position.set(x,y,z);
-    m.userData = { type:'coin', w:0.7, h:0.7, d:0.7, collected:false };
-    scene.add(m);
-    level.coins.push(m);
-  }
-  function addHazard(x,y,z,w=3,h=1,d=3){
-    const m = addBox(w,h,d,0xd84315,x,y,z,'hazard');
-    if (safePlace(m)) level.hazards.push(m); else scene.remove(m);
-  }
-  function addPlatform(x,y,z,w=6,h=0.6,d=3,vx=0,vy=0,vz=0,bounds=null){
-    const m = addBox(w,h,d,0x90a4ae,x,y,z,'platform',false,true);
-    m.userData.vx=vx; m.userData.vy=vy; m.userData.vz=vz; m.userData.bounds=bounds;
-    level.platforms.push(m);
-  }
-  function addPendulum(x,y,z,r=0.6,ropeLen=4,speed=1.8){
-    const pivot = addBox(0.4,0.4,0.4,0xaaaaaa,x,y,z,'pivot',true,false);
-    const bobGeo = new THREE.SphereGeometry(r, 16, 16);
-    const bobMat = new THREE.MeshStandardMaterial({ color:0xf06292, roughness:0.6, metalness:0.1 });
-    const bob = new THREE.Mesh(bobGeo, bobMat);
-    bob.castShadow = true;
-    bob.position.set(x, y - ropeLen, z);
-    bob.userData = { type:'pendulumBob', w:r*2, h:r*2, d:r*2 };
-    scene.add(bob);
-    level.pendulums.push({ pivot, bob, r, rope:ropeLen, speed, angle:0 });
-  }
-  function addSaw(x,y,z,r=0.6,minX,maxX,speed=2,dir=1){
-    const geo = new THREE.CylinderGeometry(r,r,0.2,18);
-    const mat = new THREE.MeshStandardMaterial({ color:0xb0bec5, roughness:0.5, metalness:0.3 });
-    const saw = new THREE.Mesh(geo, mat);
-    saw.rotation.z = Math.PI/2;
-    saw.castShadow = true;
-    saw.position.set(x,y,z);
-    saw.userData = { type:'saw', w:r*2, h:r*2, d:r*2, minX, maxX, speed, dir };
-    scene.add(saw);
-    level.saws.push(saw);
-  }
-  function addGoal(x,y,z){
-    const m = addBox(2,2,0.5,0x1e88e5,x,y,z,'goal',true,false);
-    level.goal = m;
-  }
-  function addEnemy(type,x,y,z,opts={}){
-    const color = type==='boss' ? 0xe53935 : (type==='chase'?0xf44336 : (type==='turret'?0xb0bec5:0xff4444));
-    const m = addBox(opts.w||1.2, opts.h||1.2, opts.d||1.2, color, x,y,z, type);
-    m.userData = { ...m.userData, ...opts, type };
-    if (type==='boss') level.boss = true, level.bossObj = m;
-    level.enemies.push(m);
-  }
-  function addTeleport(x,y,z,toX,toY,toZ){
-    const m = addBox(1.2,0.4,1.2,0x9ccc65,x,y,z,'teleport',false,true);
-    m.userData.toX=toX; m.userData.toY=toY; m.userData.toZ=toZ;
-    level.teleportPads.push(m);
-  }
-  function addWindZone(x,y,z,w=6,h=2,d=3,strength=10){
-    const m = addBox(w,h,d,0x649fff,x,y,z,'wind',false,false);
-    m.material.transparent = true; m.material.opacity = 0.15;
-    m.userData.strength = strength;
-    level.windZones.push(m);
-  }
+  function update(dt){
+    // Movement from stick
+    const speed=8;
+    player.vx=stickVec.x*speed;
+    player.vz=stickVec.y*speed;
+    player.vy-=38*dt; // gravity
 
-  // Themes (short but complete, each level adds obstacles)
-  function genGrasslands(i,rnd){
-    const L = makeLevelBase(`Level ${i} — Grasslands`); const f = difficultyFactor(i);
-    for(let s=0;s<3;s++){ addPlatform(-8 + s*7, worldY+2+s*0.4, -10 + s*3, 6,0.6,3); addCoin(-8 + s*7, worldY+2.8+s*0.4, -10 + s*3); }
-    const count = obstacleCount(i);
-    for(let k=0;k<count;k++){
-      const type=k%4;
-      if(type===0) addHazard(randRange(rnd,-12,12), worldY+0.5, randRange(rnd,-8,2), randRange(rnd,2.6,4.0),0.8,randRange(rnd,2.0,3.2));
-      else if(type===1) addPendulum(randRange(rnd,-10,10), worldY+6, randRange(rnd,-8,0), 0.6, randRange(rnd,3.5,5.5), 1.6*f);
-      else if(type===2) addSaw(randRange(rnd,-12,12), worldY+1.4, randRange(rnd,-8,2), 0.7, -12, 12, 3.2*f, rnd()<0.5?-1:1);
-      else addPlatform(randRange(rnd,-12,12), worldY+randRange(rnd,2.5,5.0), randRange(rnd,-8,2), 4.5,0.6,2.8, rnd()<0.5?6*f:-6*f,0,0,{minX:-14,maxX:14});
+    player.position.x+=player.vx*dt;
+    player.position.z+=player.vz*dt;
+    player.position.y+=player.vy*dt;
+
+    if(player.position.y<0.9){player.position.y=0.9;player.vy=0;player.jumps=0;}
+
+    // Coin collection
+    for(const c of coins){
+      c.rotation.y+=2*dt;
+      if(player.position.distanceTo(c.position)<1){
+        scene.remove(c);coins.splice(coins.indexOf(c),1);
+        coinTotal++;hud.textContent=`Coins: ${coinTotal}`;
+      }
     }
-    addGoal(14, worldY+2, 3);
-    return L;
-  }
-  function genBoss(i,rnd){
-    const world = Math.floor((i-1)/10)+1, f = difficultyFactor(i);
-    const L = makeLevelBase(`Level ${i} — Boss`); L.boss = true;
-    addPlatform(-6, worldY+2, -8, 6,0.6,3); addPlatform(6, worldY+2, -8, 6,0.6,3); addPlatform(0, worldY+4, 0, 8,0.6,3);
-    const hp = Math.floor(6*(1+world*0.15)*f); const rate = Math.max(0.5,(1.2-0.05*world)/(0.7+f*0.4));
-    addEnemy('boss', 0, worldY+3.0, -2, { w:2.4,h:2.4,d:2.4,hp,rate });
-    const count = Math.min(3+world, obstacleCount(i));
-    for(let k=0;k<count;k++){
-      const type=(world+k)%4;
-      if(type===0) addHazard(randRange(rnd,-8,8), worldY+0.5, randRange(rnd,-6,4), randRange(rnd,3.0,4.2),0.8,randRange(rnd,2.2,3.6));
-      else if(type===1) addPendulum(randRange(rnd,-8,8), worldY+7, randRange(rnd,-6,2), 0.6, randRange(rnd,3.6,5.4), 2.0*f);
-      else if(type===2) addSaw(randRange(rnd,-10,10), worldY+1.6, randRange(rnd,-6,4), 0.8, -12,12,4.0*f, rnd()<0.5?-1:1);
-      else { const d=addBox(2.0,5.0,0.8,0x6d4c41,randRange(rnd,-10,10),worldY+3.0,randRange(rnd,-6,4),'door',true,true);
-             d.userData.period=Math.max(1.2,2.0/(0.7+f*0.4)); d.userData.t=rnd()*d.userData.period; level.timedDoors.push(d); }
+
+    // Hazard collision
+    for(const h of hazards){
+      if(player.position.distanceTo(h.position)<1.5){
+        player.position.set(0,0.9,0);player.vx=player.vy=player.vz=0;player.jumps=0;
+      }
     }
-    return L;
-  }
-  function generateLevel(i){
-    const rnd = makePRNG(i*98765+12345);
-    if(i===1) return genGrasslands(i,rnd);
-    if(i%10===0) return genBoss(i,rnd);
-    return genGrasslands(i,rnd); // keep concise for demo; still ramps obstacles
-  }
 
-  // Load/reset
-  function clearSceneObjects(){
-    const keep = new Set(['player','ground','HemisphereLight','DirectionalLight','pivot']);
-    for(let i=scene.children.length-1;i>=0;i--){
-      const o = scene.children[i];
-      if(o===player.obj) continue;
-      if(o.type==='HemisphereLight' || o.type==='DirectionalLight') continue;
-      if(o.userData && keep.has(o.userData.type)) continue;
-      scene.remove(o);
-    }
-    bullets.length = 0;
-  }
-  function loadLevel(idx){
-    levelIndex = ((idx-1)%100)+1;
-    clearSceneObjects();
-    level = generateLevel(levelIndex);
-    player.obj.position.set(0, worldY + player.h/2, -18);
-    player.vx = player.vy = player.vz = 0;
-    player.jumps = 0;
-    player.invulnerable = false;
-    player.invulnTimer = 0;
-    updateHUD(); updateSkipButton();
-  }
-  function killPlayer(){
-    loadLevel(levelIndex);
-    player.invulnerable = true;
-    player.invulnTimer = 1.0;
-  }
-
-  // Controls
-  function tryJump(){
-    if (player.jumps < 2) { player.vy = 16; player.jumps++; }
-  }
-
-  // Third-person follow camera (chase cam)
-  function updateCamera(dt){
-    const target = new THREE.Vector3(
-      player.obj.position.x,
-      player.obj.position.y + 2.0,
-      player.obj.position.z
-    );
-    // camera offset behind player based on facing
-    const back = new THREE.Vector3(Math.sin(player.facing), 0, Math.cos(player.facing)).multiplyScalar(-4.5);
-    const desired = target.clone().add(back).add(new THREE.Vector3(0, 3.5, 0));
-
-    camera.position.lerp(desired, 0.12); // smooth
+    // Camera chase
+    const target=new THREE.Vector3(player.position.x,player.position.y+1.5,player.position.z);
+    const desired=target.clone().add(new THREE.Vector3(0,3,-8));
+    camera.position.lerp(desired,0.1);
     camera.lookAt(target);
   }
 
-  // Update loop
-  function update(dt){
-    // Input vector: mobile stick takes priority, fallback to keys
-    let mvx = stickVec.x, mvy = stickVec.y; // stick y is forward/back
-    if (Math.abs(mvx) < 0.01 && Math.abs(mvy) < 0.01) {
-      const left  = keys['ArrowLeft'] || keys['KeyA'];
-      const right = keys['ArrowRight']|| keys['KeyD'];
-      const up    = keys['ArrowUp']   || keys['KeyW'];
-      const down  = keys['ArrowDown'] || keys['KeyS'];
-      mvx = (right?1:0) + (left?-1:0);
-      mvy = (down?1:0) + (up?-1:0);
-    }
-
-    const dashKey = keys['ShiftLeft'] || keys['ShiftRight'];
-    const moveMag = dashKey ? player.dash : player.speed;
-
-    // Move relative to camera yaw
-    const camDir = new THREE.Vector3();
-    camera.getWorldDirection(camDir);
-    camDir.y = 0; camDir.normalize();
-    const camRight = new THREE.Vector3().crossVectors(camDir, new THREE.Vector3(0,1,0)).normalize();
-
-    const move = new THREE.Vector3(0,0,0);
-    move.add(camRight.clone().multiplyScalar(mvx));
-    move.add(camDir.clone().multiplyScalar(mvy));
-    if (move.lengthSq() > 0) move.normalize().multiplyScalar(moveMag);
-
-    player.vx = move.x;
-    player.vz = move.z;
-
-    // Facing direction for camera
-    if (move.lengthSq() > 0){
-      player.facing = Math.atan2(move.x, move.z);
-    }
-
-    // Gravity
-    player.vy -= GRAVITY * dt;
-
-    // Wind zones
-    for(const wz of (level.windZones||[])){
-      if(aabbPointInside(wz, player.obj.position.x, player.obj.position.y, player.obj.position.z)){
-        player.vx += Math.sign(wz.userData.strength) * Math.abs(wz.userData.strength) * dt;
-      }
-    }
-
-    // Integrate
-    player.obj.position.x += player.vx * dt;
-    player.obj.position.y += player.vy * dt;
-    player.obj.position.z += player.vz * dt;
-
-    // Ground clamp
-    const minY = worldY + player.h/2;
-    if (player.obj.position.y < minY){
-      player.obj.position.y = minY;
-      player.vy = 0;
-      player.jumps = 0;
-    }
-
-    // Moving platforms
-    for(const p of (level.platforms||[])){
-      const b = p.userData.bounds || {};
-      if (p.userData.vx){
-        p.position.x += p.userData.vx * dt;
-        if (b.minX!==undefined && p.position.x < b.minX) p.userData.vx *= -1;
-        if (b.maxX!==undefined && p.position.x > b.maxX) p.userData.vx *= -1;
-      }
-      if (p.userData.vy){
-        p.position.y += p.userData.vy * dt;
-        if (b.minY!==undefined && p.position.y < b.minY) p.userData.vy *= -1;
-        if (b.maxY!==undefined && p.position.y > b.maxY) p.userData.vy *= -1;
-      }
-      if (p.userData.vz){
-        p.position.z += p.userData.vz * dt;
-        if (b.minZ!==undefined && p.position.z < b.minZ) p.userData.vz *= -1;
-        if (b.maxZ!==undefined && p.position.z > b.maxZ) p.userData.vz *= -1;
-      }
-      // Land
-      if (aabbIntersects(player.obj, p)){
-        const pyTop = p.position.y + p.userData.h/2;
-        const plBottom = player.obj.position.y - player.h/2;
-        if (plBottom <= pyTop + 0.1 && player.vy <= 0){
-          player.obj.position.y = pyTop + player.h/2;
-          player.vy = 0; player.jumps = 0;
-        }
-      }
-    }
-
-    // Pendulums
-    for(const pend of (level.pendulums||[])){
-      pend.angle += pend.speed * dt;
-      const offX = Math.sin(pend.angle) * pend.rope;
-      const offY = Math.cos(pend.angle) * pend.rope;
-      pend.bob.position.x = pend.pivot.position.x + offX;
-      pend.bob.position.y = pend.pivot.position.y - offY;
-      if (!player.invulnerable){
-        const dx = player.obj.position.x - pend.bob.position.x;
-        const dy = player.obj.position.y - pend.bob.position.y;
-        const dz = player.obj.position.z - pend.bob.position.z;
-        if (dx*dx + dy*dy + dz*dz < pend.r*pend.r){ killPlayer(); return; }
-      }
-    }
-
-    // Saws
-    for(const s of (level.saws||[])){
-      s.rotation.y += 6*dt;
-      s.position.x += s.userData.dir * s.userData.speed * dt;
-      if (s.position.x < s.userData.minX){ s.position.x = s.userData.minX; s.userData.dir = 1; }
-      if (s.position.x > s.userData.maxX){ s.position.x = s.userData.maxX; s.userData.dir = -1; }
-      if (!player.invulnerable){
-        const dx = player.obj.position.x - s.position.x;
-        const dy = player.obj.position.y - s.position.y;
-        const dz = player.obj.position.z - s.position.z;
-        const r = s.geometry.parameters.radiusTop || 0.7;
-        if (dx*dx + dy*dy + dz*dz < r*r){ killPlayer(); return; }
-      }
-    }
-
-    // Timed doors
-    for(const d of (level.timedDoors||[])){
-      d.userData.t += dt;
-      const period = d.userData.period;
-      const open = (d.userData.t % period) < (period/2);
-      d.material.color.set(open ? 0x2e7d32 : 0x6d4c41);
-      d.userData.open = open;
-      if (!open && aabbIntersects(player.obj, d)){
-        if (player.obj.position.x < d.position.x)
-          player.obj.position.x = d.position.x - d.userData.w/2 - player.w/2 - 0.05;
-        else
-          player.obj.position.x = d.position.x + d.userData.w/2 + player.w/2 + 0.05;
-        player.vx = 0;
-      }
-    }
-
-    // Bounce pads
-    for(const o of (level.objects||[])){
-      if (o.userData.type === 'bounce' && aabbIntersects(player.obj, o)){
-        player.vy = o.userData.power || 20;
-        player.jumps = 1;
-      }
-    }
-
-    // Hazards
-    if (!player.invulnerable){
-      for(const h of (level.hazards||[])){
-        if (aabbIntersects(player.obj, h)){ killPlayer(); return; }
-      }
-    }
-
-    // Coins
-    for(const c of (level.coins||[])){
-      c.rotation.y += 2.0*dt;
-      if (!c.userData.collected && aabbPointInside(c, player.obj.position.x, player.obj.position.y, player.obj.position.z)){
-        c.userData.collected = true; coinTotal++; scene.remove(c); updateHUD(); updateSkipButton();
-      }
-    }
-
-    // Teleports
-    for(const tp of (level.teleportPads||[])){
-      if (aabbIntersects(player.obj, tp)){
-        player.obj.position.set(tp.userData.toX, tp.userData.toY, tp.userData.toZ);
-      }
-    }
-
-    // Enemies and bullets
-    for(const e of (level.enemies||[])){
-      if (e.userData.type === 'turret'){
-        e.userData.fire = (e.userData.fire||0) + dt;
-        if (e.userData.fire >= (e.userData.rate||1.0)){
-          e.userData.fire = 0;
-          shootBullet(e.position.x, e.position.y, e.position.z, player.obj.position.x, player.obj.position.y, player.obj.position.z, 18);
-        }
-      } else if (e.userData.type === 'chase'){
-        const dx = player.obj.position.x - e.position.x;
-        const dz = player.obj.position.z - e.position.z;
-        const dist = Math.hypot(dx,dz);
-        if (dist < 10){
-          e.position.x += (dx/dist) * (e.userData.speed||8) * dt;
-          e.position.z += (dz/dist) * (e.userData.speed||8) * dt;
-        }
-      } else if (e.userData.type === 'boss'){
-        e.userData.fire = (e.userData.fire||0) + dt;
-        if (e.userData.fire >= (e.userData.rate||0.9)){
-          e.userData.fire = 0;
-          const N = 12;
-          for(let k=0;k<N;k++){
-            const ang = (k/N)*Math.PI*2;
-            shootBullet(e.position.x, e.position.y, e.position.z, e.position.x+Math.cos(ang), e.position.y, e.position.z+Math.sin(ang), 16);
-          }
-        }
-      }
-
-      if (!player.invulnerable){
-        if (e.userData.type === 'boss'){
-          const stomping = (player.vy < 0) && aabbIntersects(player.obj, e);
-          if (stomping){
-            player.vy = 16;
-            e.userData.hp--;
-            if (e.userData.hp <= 0){
-              coinTotal += 100; updateHUD(); updateSkipButton(); loadLevel(levelIndex+1); return;
-            }
-          } else if (aabbIntersects(player.obj, e)){ killPlayer(); return; }
-        } else {
-          if (aabbIntersects(player.obj, e)){ killPlayer(); return; }
-        }
-      }
-    }
-
-    for(let i=bullets.length-1;i>=0;i--){
-      const b = bullets[i];
-      b.obj.position.x += b.vx*dt; b.obj.position.y += b.vy*dt; b.obj.position.z += b.vz*dt;
-      b.ttl -= dt;
-      if (!player.invulnerable && aabbIntersects(player.obj, b.obj)){ killPlayer(); return; }
-      if (b.ttl <= 0){ scene.remove(b.obj); bullets.splice(i,1); }
-    }
-
-    // Goal
-    if (!level.boss && level.goal && aabbIntersects(player.obj, level.goal)){
-      loadLevel(levelIndex+1);
-    }
-
-    // Invulnerability
-    if (player.invulnerable){
-      player.invulnTimer -= dt;
-      player.obj.material.emissive = new THREE.Color(0x333333);
-      if (player.invulnTimer <= 0){
-        player.invulnerable = false;
-        player.obj.material.emissive = new THREE.Color(0x000000);
-      }
-    }
-
-    updateCamera(dt);
-  }
-
-  function shootBullet(sx,sy,sz,tx,ty,tz,speed){
-    const geo = new THREE.SphereGeometry(0.25, 12, 12);
-    const mat = new THREE.MeshStandardMaterial({ color:0xff6666, emissive:0x220000, roughness:0.5, metalness:0.2 });
-    const m = new THREE.Mesh(geo, mat);
-    m.castShadow = true;
-    m.position.set(sx,sy,sz);
-    m.userData = { type:'bullet', w:0.5, h:0.5, d:0.5 };
-    scene.add(m);
-    const dir = new THREE.Vector3(tx - sx, ty - sy, tz - sz).normalize();
-    bullets.push({ obj:m, vx:dir.x*speed, vy:dir.y*speed, vz:dir.z*speed, ttl:4.5 });
-  }
-
-  // Loop
-  let last = performance.now();
-  function animate(now){
-    requestAnimationFrame(animate);
-    const dt = Math.min(0.033, (now - last)/1000);
-    last = now;
-    update(dt);
-    renderer.render(scene, camera);
-  }
-
-  // Start
   init();
   </script>
 </body>
