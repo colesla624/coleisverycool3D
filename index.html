@@ -2,41 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Lava Monkey Runner</title>
+  <title>Lava Monkey FPS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; touch-action:none; font-family:system-ui, sans-serif; }
     canvas { display:block; }
-
-    #overlay {
-      position:absolute; top:10px; left:10px; z-index:5; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none;
-    }
+    #overlay { position:absolute; top:10px; left:10px; z-index:5; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none; }
     #overlay .small { font-size:12px; opacity:0.8; font-weight:500; }
-
-    #controls {
-      position:absolute; bottom:16px; left:16px; right:16px; z-index:5;
-      display:flex; justify-content:space-between; align-items:center; pointer-events:none;
-    }
-    .stick {
-      width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08);
-      border:2px solid rgba(255,255,255,0.2); position:relative; pointer-events:auto; touch-action:none;
-    }
-    .knob {
-      position:absolute; width:64px; height:64px; border-radius:50%;
-      background:rgba(255,255,255,0.25); left:calc(50% - 32px); top:calc(50% - 32px);
-    }
-    .button {
-      pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px;
-      background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2);
-      color:#fff; display:grid; place-items:center; font-weight:800;
-    }
-    #message {
-      position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
-      color:#fff; z-index:6; text-align:center; font-weight:800; font-size:24px; display:none;
-    }
-    #message button {
-      margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer;
-    }
+    #controls { position:absolute; bottom:16px; left:16px; right:16px; z-index:5; display:flex; justify-content:space-between; align-items:center; pointer-events:none; }
+    .stick { width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); position:relative; pointer-events:auto; touch-action:none; }
+    .knob { position:absolute; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.25); left:calc(50% - 32px); top:calc(50% - 32px); }
+    .button { pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); color:#fff; display:grid; place-items:center; font-weight:800; }
+    #message { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:6; text-align:center; font-weight:800; font-size:24px; display:none; }
+    #message button { margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -65,12 +43,12 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.appendChild(renderer.domElement);
 
-    // Scene and camera
+    // Scene and camera (first-person)
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x171b26);
 
-    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 600);
-    camera.position.set(0, 2, 6);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+    camera.position.set(0, 1.6, 0);
 
     // Lights
     scene.add(new THREE.HemisphereLight(0xffffff, 0x332211, 1.0));
@@ -80,45 +58,45 @@
 
     // Ground
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(100, 100),
+      new THREE.PlaneGeometry(120, 120),
       new THREE.MeshStandardMaterial({ color: 0x204020, roughness: 0.9 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Player
+    // Player body (invisible, used for collisions/position)
     const playerRadius = 0.5;
     const player = new THREE.Mesh(
       new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16),
-      new THREE.MeshStandardMaterial({ color: 0x66aaff })
+      new THREE.MeshStandardMaterial({ color: 0x66aaff, visible: false })
     );
     player.position.set(0, playerRadius + 0.3, 0);
-    player.castShadow = true;
     scene.add(player);
 
     // Enemies
     const enemies = [];
     const enemyMat = new THREE.MeshStandardMaterial({ color: 0xff3322, emissive: 0x771108, emissiveIntensity: 0.7 });
     const enemyGeo = new THREE.SphereGeometry(0.45, 16, 16);
-    function spawnEnemies(count = 6) {
-      for (let i = 0; i < count; i++) {
-        const e = new THREE.Mesh(enemyGeo, enemyMat);
-        const angle = Math.random() * Math.PI * 2;
-        const dist = 14 + Math.random() * 12;
-        e.position.set(Math.cos(angle) * dist, 0.45, Math.sin(angle) * dist);
-        e.userData.speed = 2.4 + Math.random() * 0.9;
-        e.castShadow = true;
-        enemies.push(e);
-        scene.add(e);
-      }
+
+    function spawnEnemy() {
+      const e = new THREE.Mesh(enemyGeo, enemyMat);
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 16 + Math.random() * 14;
+      e.position.set(Math.cos(angle) * dist, 0.45, Math.sin(angle) * dist);
+      e.userData.speed = 2.4 + Math.random() * 0.9;
+      e.castShadow = true;
+      enemies.push(e);
+      scene.add(e);
     }
-    spawnEnemies(6);
+
+    // Spawn one enemy per second
+    let spawnTimer = setInterval(() => { if (running) spawnEnemy(); }, 1000);
 
     // Lava
     const lava = new THREE.Mesh(
-      new THREE.CylinderGeometry(60, 60, 0.3, 40, 1, true),
-      new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.9, roughness: 0.6 })
+      new THREE.CylinderGeometry(80, 80, 0.3, 48, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.95, roughness: 0.6 })
     );
     lava.position.y = -2.5;
     scene.add(lava);
@@ -131,17 +109,17 @@
     // Movement physics
     const keys = {};
     const velocity = new THREE.Vector3();
-    const accelGround = 15;
+    const accelGround = 16;
     const accelAir = 6;
     const friction = 12;
-    const maxSpeed = 7.0;
+    const maxSpeed = 7.2;
     const gravity = 18;
     const jumpStrength = 7.8;
     let onGround = true;
 
-    // Camera follow
-    let yaw = 0;
-    let pitch = 0.22;
+    // Camera yaw/pitch (first-person, smooth, no glitch)
+    let yaw = 0;     // left/right
+    let pitch = 0;   // up/down, clamped
 
     // UI
     const timerEl = document.getElementById('timer');
@@ -153,13 +131,11 @@
     // Input: keyboard
     window.addEventListener('keydown', e => { keys[e.code] = true; });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
-
-    // Desktop jump
     window.addEventListener('keydown', e => {
       if (e.code === 'Space' && onGround && running) velocity.y = jumpStrength;
     });
 
-    // Mouse/touch drag to look (flipped as requested)
+    // Mouse/touch drag to look (first-person, clamped)
     let draggingLook = false;
     let lastPointer = null;
     renderer.domElement.addEventListener('pointerdown', e => {
@@ -175,12 +151,11 @@
       const dx = e.clientX - lastPointer.x;
       const dy = e.clientY - lastPointer.y;
       lastPointer = { x: e.clientX, y: e.clientY };
-      // flipped
       yaw += dx * 0.0025;
-      pitch = Math.max(0.05, Math.min(1.2, pitch + dy * 0.0024));
+      pitch = THREE.MathUtils.clamp(pitch + dy * 0.0024, -1.2, 1.2);
     });
 
-    // Mobile joystick (with fixed knob positioning)
+    // Mobile joystick
     const leftStick = document.getElementById('leftStick');
     const leftKnob = document.getElementById('leftKnob');
     const jumpBtn = document.getElementById('jumpBtn');
@@ -238,11 +213,13 @@
       startTime = performance.now();
       velocity.set(0, 0, 0);
       player.position.set(0, playerRadius + 0.3, 0);
-      yaw = 0; pitch = 0.22;
       lava.position.y = -2.5;
+      yaw = 0; pitch = 0;
       enemies.forEach(e => scene.remove(e));
       enemies.length = 0;
-      spawnEnemies(6);
+      // Reset spawn timer
+      clearInterval(spawnTimer);
+      spawnTimer = setInterval(() => { if (running) spawnEnemy(); }, 1000);
       msg.style.display = 'none';
     });
 
@@ -258,19 +235,20 @@
     requestAnimationFrame(loop);
 
     function update(dt, now) {
-      // Input: keyboard + joystick (flipped as requested)
+      // Input: keyboard + joystick (forward/back, strafe)
       const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
       const kBack    = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
       const kLeft    = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
       const kRight   = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
 
-      let inputX = (kRight - kLeft) - stickVec.x;   // flipped horizontal
-      let inputY = (kForward - kBack) + stickVec.y; // flipped vertical
+      // Combine keyboard and stick (stick up = forward)
+      let inputX = (kRight - kLeft) + stickVec.x;
+      let inputY = (kForward - kBack) - stickVec.y;
 
       const mag = Math.hypot(inputX, inputY);
       if (mag > 1) { inputX /= mag; inputY /= mag; }
 
-      // World-space direction from yaw
+      // Camera orientation → move direction
       const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
       const forward = new THREE.Vector3(sinY, 0, -cosY);
       const right   = new THREE.Vector3(cosY, 0,  sinY);
@@ -314,27 +292,16 @@
         onGround = false;
       }
 
-      // Player orientation
-      const targetYaw = Math.atan2(velocity.x, -velocity.z);
-      if (speed > 0.2) {
-        player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, targetYaw, 0.18);
-      }
-
-      // Camera follow behind player
-      const camDist = 6.2;
-      const camHeight = 2.0;
-      const offset = new THREE.Vector3(
-        Math.sin(yaw) * camDist,
-        camHeight + Math.sin(pitch) * 0.12,
-        -Math.cos(yaw) * camDist
-      );
-      camera.position.copy(player.position).add(offset);
-      camera.lookAt(player.position.x, player.position.y + 1.0, player.position.z);
+      // First-person camera: match player position and orientation
+      camera.position.set(player.position.x, player.position.y + 1.1, player.position.z);
+      camera.rotation.set(0, 0, 0);
+      camera.rotateX(pitch);
+      camera.rotateY(yaw);
 
       // Raise lava
       lava.position.y += 0.018 * dt;
 
-      // Enemy AI, separation, damage
+      // Enemy AI: chase player, separation, damage
       const bob = Math.sin(now * 0.004) * 0.02;
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
@@ -355,7 +322,7 @@
           }
         }
 
-        if (d < 0.9) {
+        if (d < 0.85) {
           health -= 18 * dt;
           if (health < 0) health = 0;
         }
@@ -373,10 +340,6 @@
       // HUD
       timerEl.textContent = ((performance.now() - startTime) / 1000).toFixed(1);
       hpEl.textContent = Math.round(health);
-
-      // Damage cue
-      player.material.emissive = new THREE.Color(health < 60 ? 0x112244 : 0x000000);
-      player.material.emissiveIntensity = health < 60 ? 0.45 : 0.0;
     }
 
     // Prevent accidental pinch-zoom gestures
