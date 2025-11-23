@@ -7,25 +7,55 @@
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; touch-action:none; font-family:system-ui, sans-serif; }
     canvas { display:block; }
-    #overlay { position:absolute; top:10px; left:10px; z-index:5; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none; }
+
+    #overlay {
+      position:absolute; top:10px; left:10px; z-index:5; color:#fff; font-weight:700;
+      text-shadow:0 1px 2px #000; user-select:none;
+    }
     #overlay .small { font-size:12px; opacity:0.8; font-weight:500; }
-    #controls { position:absolute; bottom:16px; left:16px; right:16px; z-index:5; display:flex; justify-content:space-between; align-items:center; pointer-events:none; }
-    .stick { width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); position:relative; pointer-events:auto; touch-action:none; }
-    .knob { position:absolute; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.25); left:calc(50% - 32px); top:calc(50% - 32px); }
-    .button { pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); color:#fff; display:grid; place-items:center; font-weight:800; }
-    #message { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:6; text-align:center; font-weight:800; font-size:24px; display:none; }
-    #message button { margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer; }
+
+    #controls {
+      position:absolute; bottom:16px; left:16px; right:16px; z-index:5;
+      display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none;
+    }
+    .stick {
+      width:140px; height:140px; border-radius:50%;
+      background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2);
+      position:relative; pointer-events:auto; touch-action:none;
+    }
+    .knob {
+      position:absolute; width:64px; height:64px; border-radius:50%;
+      background:rgba(255,255,255,0.25); left:calc(50% - 32px); top:calc(50% - 32px);
+    }
+    #rightPanel { display:flex; flex-direction:column; align-items:center; gap:12px; pointer-events:auto; }
+    .button {
+      pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px;
+      background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2);
+      color:#fff; display:grid; place-items:center; font-weight:800;
+    }
+
+    #message {
+      position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+      color:#fff; z-index:6; text-align:center; font-weight:800; font-size:24px; display:none;
+    }
+    #message button {
+      margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800;
+      padding:10px 16px; border-radius:10px; cursor:pointer;
+    }
   </style>
 </head>
 <body>
   <div id="overlay">
     <div>Survive: <span id="timer">0.0</span>s &nbsp; | &nbsp; Health: <span id="hp">100</span></div>
-    <div class="small">Desktop: WASD/arrows to move, Space to jump, drag to look. Mobile: left stick + Jump.</div>
+    <div class="small">Desktop: WASD/arrows + Space to jump. Drag to look. Mobile: Left stick = move (flipped), Right stick = look, Jump button.</div>
   </div>
 
   <div id="controls">
     <div id="leftStick" class="stick"><div class="knob" id="leftKnob"></div></div>
-    <div id="jumpBtn" class="button">JUMP</div>
+    <div id="rightPanel">
+      <div id="rightStick" class="stick"><div class="knob" id="rightKnob"></div></div>
+      <div id="jumpBtn" class="button">JUMP</div>
+    </div>
   </div>
 
   <div id="message">
@@ -65,11 +95,11 @@
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Player body (invisible, used for collisions/position)
+    // Player body (invisible; used for collisions/position)
     const playerRadius = 0.5;
     const player = new THREE.Mesh(
       new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16),
-      new THREE.MeshStandardMaterial({ color: 0x66aaff, visible: false })
+      new THREE.MeshStandardMaterial({ visible: false })
     );
     player.position.set(0, playerRadius + 0.3, 0);
     scene.add(player);
@@ -117,9 +147,9 @@
     const jumpStrength = 7.8;
     let onGround = true;
 
-    // Camera yaw/pitch (first-person, smooth, no glitch)
+    // Camera yaw/pitch (first-person, smooth, clamped)
     let yaw = 0;     // left/right
-    let pitch = 0;   // up/down, clamped
+    let pitch = 0;   // up/down
 
     // UI
     const timerEl = document.getElementById('timer');
@@ -155,47 +185,44 @@
       pitch = THREE.MathUtils.clamp(pitch + dy * 0.0024, -1.2, 1.2);
     });
 
-    // Mobile joystick
-    const leftStick = document.getElementById('leftStick');
-    const leftKnob = document.getElementById('leftKnob');
-    const jumpBtn = document.getElementById('jumpBtn');
+    // Joysticks
+    function setupStick(stickId, knobId) {
+      const stick = document.getElementById(stickId);
+      const knob = document.getElementById(knobId);
+      let vec = { x: 0, y: 0 }, active = false;
 
-    let stickVec = { x: 0, y: 0 };
-    let stickActive = false;
-
-    function setKnob(x, y) {
-      const rect = leftStick.getBoundingClientRect();
-      leftKnob.style.left = `${x - rect.left - 32}px`;
-      leftKnob.style.top  = `${y - rect.top  - 32}px`;
-    }
-    function handleStick(e, active) {
-      const rect = leftStick.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height  / 2;
-      let clientX = e.clientX, clientY = e.clientY;
-      if (e.touches && e.touches[0]) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
-      const dx = clientX - cx, dy = clientY - cy;
-      const r = rect.width * 0.45;
-      const len = Math.min(Math.hypot(dx, dy), r);
-      const nx = len ? dx / len : 0;
-      const ny = len ? dy / len : 0;
-      stickActive = active;
-      if (active) {
-        setKnob(cx + nx * len, cy + ny * len);
-        stickVec = { x: nx * (len / r), y: ny * (len / r) };
-      } else {
-        setKnob(cx, cy);
-        stickVec = { x: 0, y: 0 };
+      function setKnob(x, y) {
+        const r = stick.getBoundingClientRect();
+        knob.style.left = `${x - r.left - 32}px`;
+        knob.style.top  = `${y - r.top  - 32}px`;
       }
+      function handle(e, a) {
+        const r = stick.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        let x = e.clientX, y = e.clientY;
+        if (e.touches && e.touches[0]) { x = e.touches[0].clientX; y = e.touches[0].clientY; }
+        const dx = x - cx, dy = y - cy, len = Math.min(Math.hypot(dx, dy), r.width * 0.45);
+        const nx = len ? dx / len : 0, ny = len ? dy / len : 0;
+        active = a;
+        if (a) { setKnob(cx + nx * len, cy + ny * len); vec = { x: nx * (len / (r.width * 0.45)), y: ny * (len / (r.width * 0.45)) }; }
+        else { setKnob(cx, cy); vec = { x: 0, y: 0 }; }
+      }
+
+      stick.addEventListener('pointerdown', e => { stick.setPointerCapture(e.pointerId); handle(e, true); });
+      stick.addEventListener('pointermove', e => { if (active) handle(e, true); });
+      stick.addEventListener('pointerup',   e => { stick.releasePointerCapture(e.pointerId); handle(e, false); });
+      stick.addEventListener('touchstart',  e => handle(e, true), { passive: false });
+      stick.addEventListener('touchmove',   e => handle(e, true), { passive: false });
+      stick.addEventListener('touchend',    e => handle(e, false), { passive: false });
+
+      return { get: () => vec };
     }
 
-    leftStick.addEventListener('pointerdown', e => { stickActive = true; leftStick.setPointerCapture(e.pointerId); handleStick(e, true); });
-    leftStick.addEventListener('pointermove', e => { if (stickActive) handleStick(e, true); });
-    leftStick.addEventListener('pointerup',   e => { stickActive = false; leftStick.releasePointerCapture(e.pointerId); handleStick(e, false); });
-    leftStick.addEventListener('touchstart',  e => handleStick(e, true), { passive: false });
-    leftStick.addEventListener('touchmove',   e => handleStick(e, true), { passive: false });
-    leftStick.addEventListener('touchend',    e => handleStick(e, false), { passive: false });
+    const moveStick = setupStick('leftStick', 'leftKnob');   // movement (flipped)
+    const lookStick = setupStick('rightStick', 'rightKnob'); // camera look
 
+    // Jump button
+    const jumpBtn = document.getElementById('jumpBtn');
     jumpBtn.addEventListener('pointerdown', () => { if (onGround && running) velocity.y = jumpStrength; });
     jumpBtn.addEventListener('touchstart',  () => { if (onGround && running) velocity.y = jumpStrength; }, { passive: true });
 
@@ -213,11 +240,10 @@
       startTime = performance.now();
       velocity.set(0, 0, 0);
       player.position.set(0, playerRadius + 0.3, 0);
-      lava.position.y = -2.5;
       yaw = 0; pitch = 0;
+      lava.position.y = -2.5;
       enemies.forEach(e => scene.remove(e));
       enemies.length = 0;
-      // Reset spawn timer
       clearInterval(spawnTimer);
       spawnTimer = setInterval(() => { if (running) spawnEnemy(); }, 1000);
       msg.style.display = 'none';
@@ -235,20 +261,26 @@
     requestAnimationFrame(loop);
 
     function update(dt, now) {
-      // Input: keyboard + joystick (forward/back, strafe)
+      // Apply right-stick look to yaw/pitch
+      const look = lookStick.get();
+      const lookSensitivity = 1.8; // mobile look speed
+      yaw   += look.x * lookSensitivity * dt;
+      pitch = THREE.MathUtils.clamp(pitch + look.y * lookSensitivity * dt, -1.2, 1.2);
+
+      // Input: keyboard + movement stick (flipped as requested)
       const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
       const kBack    = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
       const kLeft    = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
       const kRight   = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
 
-      // Combine keyboard and stick (stick up = forward)
-      let inputX = (kRight - kLeft) + stickVec.x;
-      let inputY = (kForward - kBack) - stickVec.y;
+      const mv = moveStick.get();
+      let inputX = (kRight - kLeft) - mv.x;   // flipped horizontal
+      let inputY = (kForward - kBack) + mv.y; // flipped vertical
 
       const mag = Math.hypot(inputX, inputY);
       if (mag > 1) { inputX /= mag; inputY /= mag; }
 
-      // Camera orientation → move direction
+      // Move direction from camera yaw
       const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
       const forward = new THREE.Vector3(sinY, 0, -cosY);
       const right   = new THREE.Vector3(cosY, 0,  sinY);
@@ -292,13 +324,13 @@
         onGround = false;
       }
 
-      // First-person camera: match player position and orientation
+      // First-person camera position and orientation (no player rotation)
       camera.position.set(player.position.x, player.position.y + 1.1, player.position.z);
       camera.rotation.set(0, 0, 0);
       camera.rotateX(pitch);
       camera.rotateY(yaw);
 
-      // Raise lava
+      // Raise lava slowly
       lava.position.y += 0.018 * dt;
 
       // Enemy AI: chase player, separation, damage
