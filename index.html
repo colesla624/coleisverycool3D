@@ -7,7 +7,7 @@
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; touch-action:none; font-family:system-ui, sans-serif; }
     canvas { display:block; }
-    #overlay { position:absolute; top:10px; left:10px; z-index:5; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; }
+    #overlay { position:absolute; top:10px; left:10px; z-index:5; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none; }
     #overlay .small { font-size:12px; opacity:0.85; font-weight:500; }
     #controls { position:absolute; bottom:16px; left:16px; right:16px; z-index:5; display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; }
     .stick { width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); position:relative; pointer-events:auto; touch-action:none; }
@@ -21,8 +21,8 @@
 </head>
 <body>
   <div id="overlay">
-    <div>Survive: <span id="timer">0.0</span>s &nbsp; | &nbsp; Health: <span id="hp">100</span></div>
-    <div class="small">Desktop: WASD/arrows + Space, drag to look, F to attack. Mobile: Left stick = move (forward/back flipped), Right stick = look, Jump.</div>
+    <div>Survive: <span id="timer">0.0</span>s | Health: <span id="hp">100</span></div>
+    <div class="small">Desktop: WASD/arrows + Space, drag to look, F to attack. Mobile: Left stick = move (flipped in 3rd person), Right stick = look, Jump.</div>
   </div>
 
   <div id="controls">
@@ -50,23 +50,24 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.appendChild(renderer.domElement);
 
-    // Scene and camera
+    // Scene & camera
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb); // daytime sky blue
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
 
-    // Daytime lights
+    // Lights: bright sun + hemisphere ambient
     scene.add(new THREE.HemisphereLight(0xffffff, 0x228822, 1.0));
     const sun = new THREE.DirectionalLight(0xffffff, 1.5);
     sun.position.set(20, 40, 10);
     scene.add(sun);
 
-    // Jungle ground
+    // Ground: jungle grass
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(140, 140),
       new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 })
     );
     ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
     scene.add(ground);
 
     // Jungle trees
@@ -88,7 +89,7 @@
       addTree(Math.cos(a) * d, Math.sin(a) * d);
     }
 
-    // Player (visible capsule) and weapon
+    // Player (visible capsule) + weapon
     const playerRadius = 0.5;
     const player = new THREE.Mesh(
       new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16),
@@ -108,10 +109,10 @@
     let attacking = false;
     let attackStart = 0;
     const attackDuration = 200; // ms
-    const attackRange = 1.4;
-    const attackArcCos = Math.cos(Math.PI / 3); // 60° front arc
+    const attackRange = 1.4;    // meters
+    const attackArcCos = Math.cos(Math.PI / 3); // 60° arc
 
-    // Monkeys
+    // Monkeys (body + head + ears)
     const enemies = [];
     function createMonkey() {
       const group = new THREE.Group();
@@ -149,15 +150,12 @@
     const velocity = new THREE.Vector3();
     const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.2, gravity = 18, jumpStrength = 7.8;
     let onGround = true, yaw = 0, pitch = 0;
-    let cameraMode = 'first';
+    let cameraMode = 'first'; // 'first' or 'third'
 
-    // UI
-    const timerEl = document.getElementById('timer');
-    const hpEl = document.getElementById('hp');
-    const msg = document.getElementById('message');
-    const msgText = document.getElementById('msgText');
-    const restartBtn = document.getElementById('restart');
-    const viewBtn = document.getElementById('viewBtn');
+    // UI refs
+    const timerEl = document.getElementById('timer'), hpEl = document.getElementById('hp');
+    const msg = document.getElementById('message'), msgText = document.getElementById('msgText');
+    const restartBtn = document.getElementById('restart'); const viewBtn = document.getElementById('viewBtn');
     const jumpBtn = document.getElementById('jumpBtn');
 
     // Keyboard
@@ -173,13 +171,11 @@
       renderer.domElement.setPointerCapture(e.pointerId);
     });
     renderer.domElement.addEventListener('pointerup', e => {
-      draggingLook = false; lastPointer = null;
-      renderer.domElement.releasePointerCapture(e.pointerId);
+      draggingLook = false; lastPointer = null; renderer.domElement.releasePointerCapture(e.pointerId);
     });
     renderer.domElement.addEventListener('pointermove', e => {
       if (!draggingLook || !running) return;
-      const dx = e.clientX - lastPointer.x, dy = e.clientY - lastPointer.y;
-      lastPointer = { x: e.clientX, y: e.clientY };
+      const dx = e.clientX - lastPointer.x, dy = e.clientY - lastPointer.y; lastPointer = { x: e.clientX, y: e.clientY };
       yaw += dx * 0.0025;
       pitch = THREE.MathUtils.clamp(pitch + dy * 0.0024, -1.2, 1.2);
     });
@@ -210,7 +206,7 @@
       stick.addEventListener('touchend', e => handle(e, false), { passive: false });
       return { get: () => vec };
     }
-    const moveStick = setupStick('leftStick', 'leftKnob');   // movement — flip forward/back only
+    const moveStick = setupStick('leftStick', 'leftKnob');   // movement
     const lookStick = setupStick('rightStick', 'rightKnob'); // camera look
 
     // Jump button
@@ -237,11 +233,11 @@
     function startAttack() {
       if (attacking) return;
       attacking = true; attackStart = performance.now();
-      weapon.rotation.z = -Math.PI * 0.35; // wind-up
+      weapon.rotation.z = -Math.PI * 0.35; // wind-up pose
       performAttackHit();
       setTimeout(() => { attacking = false; weapon.rotation.z = 0; }, attackDuration);
     }
-    // Simple mobile attack (tap anywhere triggers — adjust if you want a specific area)
+    // Mobile: tap anywhere to attack (adjust if you want a specific area)
     renderer.domElement.addEventListener('touchstart', () => { if (running) startAttack(); }, { passive: true });
 
     function performAttackHit() {
@@ -270,22 +266,31 @@
 
     function update(dt, now) {
       // Look via right stick (yaw/pitch; no roll)
-      const ls = lookStick.get(), lookSensitivity = 1.8;
+      const ls = lookStick.get(); const lookSensitivity = 1.8;
       yaw += ls.x * lookSensitivity * dt;
       pitch = THREE.MathUtils.clamp(pitch + ls.y * lookSensitivity * dt, -1.2, 1.2);
 
-      // Keyboard + movement stick
+      // Keyboard inputs
       const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
       const kBack    = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
       const kLeft    = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
       const kRight   = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
 
+      // Joystick movement
       const mv = moveStick.get();
-      // Flip forward/back only: up (ny<0) becomes backward; down (ny>0) becomes forward
-      let inputX = (kRight - kLeft) + mv.x;   // horizontal normal
-      let inputY = (kForward - kBack) - mv.y; // vertical flipped
+      let stickX = mv.x;
+      let stickY = mv.y;
 
-      // Normalize combined input
+      // In third person: flip both axes; in first person: normal
+      if (cameraMode === 'third') {
+        stickX = -stickX;
+        stickY = -stickY;
+      }
+
+      let inputX = (kRight - kLeft) + stickX;
+      let inputY = (kForward - kBack) - stickY; // subtract because stick up is negative y
+
+      // Normalize
       const mag = Math.hypot(inputX, inputY);
       if (mag > 1) { inputX /= mag; inputY /= mag; }
 
@@ -296,10 +301,11 @@
       const wishdir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
       if (wishdir.lengthSq() > 0) wishdir.normalize();
 
-      // Acceleration and friction
+      // Accelerate
       const accel = onGround ? accelGround : accelAir;
       velocity.addScaledVector(wishdir, accel * dt);
 
+      // Friction when idle
       if (onGround && mag < 0.05) {
         const horiz = new THREE.Vector2(velocity.x, velocity.z);
         const speed = horiz.length();
@@ -356,7 +362,7 @@
       // Lava rise
       lava.position.y += 0.018 * dt;
 
-      // Enemy AI, separation, damage
+      // Enemies AI, separation, damage
       const bob = Math.sin(now * 0.004) * 0.02;
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
@@ -396,7 +402,7 @@
       hpEl.textContent = Math.round(health);
     }
 
-    // Resize and gestures
+    // Resize and gesture prevention
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
