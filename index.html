@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Platformer — Dual Joysticks Full Game</title>
+  <title>3D Platformer — Dual Joysticks</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin:0; height:100%; background:#0b0f19; overflow:hidden; }
@@ -43,11 +43,11 @@
   <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
   <script>
   // === Scene setup ===
-  let scene=new THREE.Scene();
+  const scene=new THREE.Scene();
   scene.background=new THREE.Color(0x0b0f19);
-  let camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,1000);
+  const camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,1000);
   camera.position.set(0,6,-12);
-  let renderer=new THREE.WebGLRenderer({antialias:true});
+  const renderer=new THREE.WebGLRenderer({antialias:true});
   renderer.setSize(window.innerWidth,window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
@@ -58,9 +58,7 @@
   ground.rotation.x=-Math.PI/2;scene.add(ground);
 
   // === Player ===
-  const pGeo=new THREE.BoxGeometry(1,1.8,1);
-  const pMat=new THREE.MeshStandardMaterial({color:0xffd166});
-  const player=new THREE.Mesh(pGeo,pMat);
+  const player=new THREE.Mesh(new THREE.BoxGeometry(1,1.8,1), new THREE.MeshStandardMaterial({color:0xffd166}));
   player.position.set(0,0.9,0);
   scene.add(player);
   player.vx=0;player.vy=0;player.vz=0;player.jumps=0;
@@ -93,7 +91,7 @@
   skipBtn.addEventListener('click',()=>{if(coinTotal>=10){coinTotal-=10;loadLevel(levelIndex+1);}updateHUD();});
   function updateHUD(){hud.textContent=`Level ${levelIndex} | Coins: ${coinTotal}`;}
 
-  // === Example level generator ===
+  // === Level generator (simple demo like 2D version) ===
   function loadLevel(idx){
     levelIndex=idx;
     // clear old
@@ -145,7 +143,4 @@
     const target=new THREE.Vector3(player.position.x,player.position.y+1.5,player.position.z);
     let offset=new THREE.Vector3(0,3,-8);
     const yaw=lookVec.x*0.5, pitch=lookVec.y*0.3;
-    const rotY=new THREE.Matrix4().makeRotationY(yaw);
-    const rotX=new THREE.Matrix4().makeRotationX(pitch);
-    offset.applyMatrix4(rotY).applyMatrix4(rotX);
-    const desired=
+    const rot
