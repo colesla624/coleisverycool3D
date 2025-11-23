@@ -30,7 +30,6 @@
       background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2);
       color:#fff; display:grid; place-items:center; font-weight:800;
     }
-    #rightButtons { display:flex; gap:12px; }
     #message {
       position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
       color:#fff; z-index:6; text-align:center; font-weight:800; font-size:24px; display:none;
@@ -43,14 +42,12 @@
 <body>
   <div id="overlay">
     <div>Survive: <span id="timer">0.0</span>s &nbsp; | &nbsp; Health: <span id="hp">100</span></div>
-    <div class="small">Desktop: WASD/arrows to move, Space to jump, drag to look. Mobile: left stick + Jump.</div>
+    <div class="small">Desktop: WASD/arrows + Space. Mobile: stick + Jump.</div>
   </div>
 
   <div id="controls">
     <div id="leftStick" class="stick"><div class="knob" id="leftKnob"></div></div>
-    <div id="rightButtons">
-      <div id="jumpBtn" class="button">JUMP</div>
-    </div>
+    <div id="jumpBtn" class="button">JUMP</div>
   </div>
 
   <div id="message">
@@ -61,333 +58,77 @@
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const renderer = new THREE.WebGLRenderer({antialias:true});
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.appendChild(renderer.domElement);
 
-    // Scene and camera
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x171b26);
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 600);
 
-    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 600);
-    camera.position.set(0, 2, 6);
+    scene.add(new THREE.HemisphereLight(0xffffff,0x332211,1.0));
+    const sun = new THREE.DirectionalLight(0xfff2d0,1.2); sun.position.set(8,12,6); scene.add(sun);
 
-    // Lights
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x332211, 1.0));
-    const sun = new THREE.DirectionalLight(0xfff2d0, 1.2);
-    sun.position.set(8, 12, 6);
-    scene.add(sun);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(100,100),
+      new THREE.MeshStandardMaterial({color:0x204020, roughness:0.9}));
+    ground.rotation.x = -Math.PI/2; scene.add(ground);
 
-    // Ground platform
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(100, 100),
-      new THREE.MeshStandardMaterial({ color: 0x204020, roughness: 0.9 })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    const playerRadius=0.5;
+    const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius,0.6,8,16),
+      new THREE.MeshStandardMaterial({color:0x66aaff}));
+    player.position.set(0,playerRadius+0.3,0); scene.add(player);
 
-    // Player
-    const playerRadius = 0.5;
-    const player = new THREE.Mesh(
-      new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16),
-      new THREE.MeshStandardMaterial({ color: 0x66aaff })
-    );
-    player.position.set(0, playerRadius + 0.3, 0);
-    player.castShadow = true;
-    scene.add(player);
-
-    // Enemies (lava monkeys)
-    const enemies = [];
-    const enemyMat = new THREE.MeshStandardMaterial({ color: 0xff3322, emissive: 0x771108, emissiveIntensity: 0.7 });
-    const enemyGeo = new THREE.SphereGeometry(0.45, 16, 16);
-
-    function spawnEnemies(count = 6) {
-      for (let i = 0; i < count; i++) {
-        const e = new THREE.Mesh(enemyGeo, enemyMat);
-        const angle = Math.random() * Math.PI * 2;
-        const dist = 14 + Math.random() * 12;
-        e.position.set(Math.cos(angle) * dist, 0.45, Math.sin(angle) * dist);
-        e.userData.speed = 2.4 + Math.random() * 0.9;
-        e.castShadow = true;
-        enemies.push(e);
-        scene.add(e);
-      }
+    const enemies=[]; const enemyMat=new THREE.MeshStandardMaterial({color:0xff3322,emissive:0x771108,emissiveIntensity:0.7});
+    const enemyGeo=new THREE.SphereGeometry(0.45,16,16);
+    function spawnEnemies(count=6){
+      for(let i=0;i<count;i++){const e=new THREE.Mesh(enemyGeo,enemyMat);
+        const a=Math.random()*Math.PI*2,d=14+Math.random()*12;
+        e.position.set(Math.cos(a)*d,0.45,Math.sin(a)*d); e.userData.speed=2.4+Math.random()*0.9;
+        enemies.push(e); scene.add(e);}
     }
     spawnEnemies(6);
 
-    // Lava that rises
-    const lava = new THREE.Mesh(
-      new THREE.CylinderGeometry(60, 60, 0.3, 40, 1, true),
-      new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.9, roughness: 0.6 })
-    );
-    lava.position.y = -2.5;
-    scene.add(lava);
+    const lava=new THREE.Mesh(new THREE.CylinderGeometry(60,60,0.3,40,1,true),
+      new THREE.MeshStandardMaterial({color:0xff3c00,emissive:0xff2200,emissiveIntensity:0.9}));
+    lava.position.y=-2.5; scene.add(lava);
 
-    // Game state
-    let running = true;
-    let health = 100;
-    let startTime = performance.now();
+    let running=true,health=100,startTime=performance.now();
+    const keys={}; const velocity=new THREE.Vector3();
+    const accelGround=15,accelAir=6,friction=12,maxSpeed=7,gravity=18,jumpStrength=7.8;
+    let onGround=true,yaw=0,pitch=0.22;
 
-    // Movement physics
-    const keys = {};
-    const velocity = new THREE.Vector3();
-    const accelGround = 15;
-    const accelAir = 6;
-    const friction = 12;
-    const maxSpeed = 7.0;
-    const gravity = 18;
-    const jumpStrength = 7.8;
-    let onGround = true;
+    const timerEl=document.getElementById('timer'),hpEl=document.getElementById('hp');
+    const msg=document.getElementById('message'),msgText=document.getElementById('msgText');
+    const restartBtn=document.getElementById('restart');
 
-    // Camera follow
-    let yaw = 0;
-    let pitch = 0.22;
+    window.addEventListener('keydown',e=>keys[e.code]=true);
+    window.addEventListener('keyup',e=>keys[e.code]=false);
+    window.addEventListener('keydown',e=>{if(e.code==='Space'&&onGround&&running)velocity.y=jumpStrength;});
 
-    // UI
-    const timerEl = document.getElementById('timer');
-    const hpEl = document.getElementById('hp');
-    const msg = document.getElementById('message');
-    const msgText = document.getElementById('msgText');
-    const restartBtn = document.getElementById('restart');
-
-    // Input: keyboard
-    window.addEventListener('keydown', e => { keys[e.code] = true; });
-    window.addEventListener('keyup', e => { keys[e.code] = false; });
-
-    // Desktop jump
-    window.addEventListener('keydown', e => {
-      if (e.code === 'Space' && onGround && running) velocity.y = jumpStrength;
+    // Mouse look (flipped)
+    let drag=false,last=null;
+    renderer.domElement.addEventListener('pointerdown',e=>{drag=true;last={x:e.clientX,y:e.clientY};});
+    renderer.domElement.addEventListener('pointerup',()=>{drag=false;last=null;});
+    renderer.domElement.addEventListener('pointermove',e=>{
+      if(!drag||!running)return; const dx=e.clientX-last.x,dy=e.clientY-last.y; last={x:e.clientX,y:e.clientY};
+      yaw+=dx*0.0025; pitch=Math.max(0.05,Math.min(1.2,pitch+dy*0.0024)); // flipped
     });
 
-    // Mouse/touch drag to look
-    let draggingLook = false;
-    let lastPointer = null;
-    renderer.domElement.addEventListener('pointerdown', e => {
-      draggingLook = true; lastPointer = { x: e.clientX, y: e.clientY };
-      renderer.domElement.setPointerCapture(e.pointerId);
-    });
-    renderer.domElement.addEventListener('pointerup', e => {
-      draggingLook = false; lastPointer = null; renderer.domElement.releasePointerCapture(e.pointerId);
-    });
-    renderer.domElement.addEventListener('pointermove', e => {
-      if (!draggingLook || !running) return;
-      if (!lastPointer) { lastPointer = { x: e.clientX, y: e.clientY }; return; }
-      const dx = e.clientX - lastPointer.x;
-      const dy = e.clientY - lastPointer.y;
-      lastPointer = { x: e.clientX, y: e.clientY };
-      yaw -= dx * 0.0025;
-      pitch = Math.max(0.05, Math.min(1.2, pitch - dy * 0.0024));
-    });
-
-    // Mobile joystick
-    const leftStick = document.getElementById('leftStick');
-    const leftKnob = document.getElementById('leftKnob');
-    const jumpBtn = document.getElementById('jumpBtn');
-
-    let stickVec = { x: 0, y: 0 };
-    let stickActive = false;
-
-    function setKnob(x, y) {
-      const rect = leftStick.getBoundingClientRect();
-      leftKnob.style.left = `${x - rect.left - 32}px`;
-      leftKnob.style.top  = `${y - rect.top - 32}px`;
-    }
-    function handleStick(e, active) {
-      const rect = leftStick.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      let clientX = e.clientX, clientY = e.clientY;
-      if (e.touches && e.touches[0]) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
-      const dx = clientX - cx, dy = clientY - cy;
-      const r = rect.width * 0.45;
-      const len = Math.min(Math.hypot(dx, dy), r);
-      const nx = len ? dx / len : 0;
-      const ny = len ? dy / len : 0;
-      stickActive = active;
-      if (active) {
-        setKnob(cx + nx * len, cy + ny * len);
-        stickVec = { x: nx * (len / r), y: ny * (len / r) };
-      } else {
-        setKnob(cx, cy);
-        stickVec = { x: 0, y: 0 };
-      }
-    }
-
-    leftStick.addEventListener('pointerdown', e => { leftStick.setPointerCapture(e.pointerId); handleStick(e, true); });
-    leftStick.addEventListener('pointermove', e => { if (stickActive) handleStick(e, true); });
-    leftStick.addEventListener('pointerup',   e => { leftStick.releasePointerCapture(e.pointerId); handleStick(e, false); });
-    leftStick.addEventListener('touchstart',  e => handleStick(e, true), { passive: false });
-    leftStick.addEventListener('touchmove',   e => handleStick(e, true), { passive: false });
-    leftStick.addEventListener('touchend',    e => handleStick(e, false), { passive: false });
-
-    jumpBtn.addEventListener('pointerdown', () => { if (onGround && running) velocity.y = jumpStrength; });
-    jumpBtn.addEventListener('touchstart',  () => { if (onGround && running) velocity.y = jumpStrength; }, { passive: true });
-
-    // Resize
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // Restart
-    restartBtn.addEventListener('click', () => {
-      // Reset state
-      health = 100;
-      running = true;
-      startTime = performance.now();
-      velocity.set(0, 0, 0);
-      player.position.set(0, playerRadius + 0.3, 0);
-      lava.position.y = -2.5;
-      enemies.forEach(e => scene.remove(e));
-      enemies.length = 0;
-      spawnEnemies(6);
-      msg.style.display = 'none';
-    });
-
-    // Update loop
-    let last = performance.now();
-    function loop(now) {
-      const dt = Math.min((now - last) / 1000, 1 / 30);
-      last = now;
-      if (running) update(dt, now);
-      renderer.render(scene, camera);
-      requestAnimationFrame(loop);
-    }
-    requestAnimationFrame(loop);
-
-    function update(dt, now) {
-      // Input: keyboard + stick
-      const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
-      const kBack    = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
-      const kLeft    = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
-      const kRight   = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
-
-      let inputX = (kRight - kLeft) + stickVec.x;
-      let inputY = (kForward - kBack) - stickVec.y; // stick up = forward
-
-      const mag = Math.hypot(inputX, inputY);
-      if (mag > 1) { inputX /= mag; inputY /= mag; }
-
-      // World-space wish direction from yaw
-      const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
-      const forward = new THREE.Vector3(sinY, 0, -cosY);
-      const right   = new THREE.Vector3(cosY, 0,  sinY);
-      const wishdir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-      if (wishdir.lengthSq() > 0) wishdir.normalize();
-
-      // Accelerate and friction
-      const accel = onGround ? accelGround : accelAir;
-      velocity.addScaledVector(wishdir, accel * dt);
-
-      if (onGround && mag < 0.05) {
-        const horiz = new THREE.Vector2(velocity.x, velocity.z);
-        const speed = horiz.length();
-        const drop = friction * dt;
-        const newSpeed = Math.max(speed - drop, 0);
-        if (speed > 0) {
-          horiz.multiplyScalar(newSpeed / speed);
-          velocity.x = horiz.x; velocity.z = horiz.y;
-        }
-      }
-
-      // Speed cap
-      const horiz = new THREE.Vector2(velocity.x, velocity.z);
-      const speed = horiz.length();
-      if (speed > maxSpeed) {
-        horiz.multiplyScalar(maxSpeed / speed);
-        velocity.x = horiz.x; velocity.z = horiz.y;
-      }
-
-      // Gravity and integrate
-      velocity.y -= gravity * dt;
-      player.position.addScaledVector(velocity, dt);
-
-      // Ground collision
-      const groundY = playerRadius + 0.3;
-      if (player.position.y < groundY) {
-        player.position.y = groundY;
-        velocity.y = 0;
-        onGround = true;
-      } else {
-        onGround = false;
-      }
-
-      // Player orientation
-      const targetYaw = Math.atan2(velocity.x, -velocity.z);
-      if (speed > 0.2) {
-        player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, targetYaw, 0.18);
-      }
-
-      // Camera follow behind player
-      const camDist = 6.2;
-      const camHeight = 2.0;
-      const offset = new THREE.Vector3(
-        Math.sin(yaw) * camDist,
-        camHeight + Math.sin(pitch) * 0.12,
-        -Math.cos(yaw) * camDist
-      );
-      camera.position.copy(player.position).add(offset);
-      camera.lookAt(player.position.x, player.position.y + 1.0, player.position.z);
-
-      // Raise lava
-      lava.position.y += 0.018 * dt;
-
-      // Enemy AI and collisions
-      const bob = Math.sin(now * 0.004) * 0.02;
-      for (let i = 0; i < enemies.length; i++) {
-        const e = enemies[i];
-        e.position.y = 0.45 + bob;
-        const toP = new THREE.Vector3().subVectors(player.position, e.position);
-        const d = toP.length();
-        if (d > 0.0001) toP.normalize();
-        e.position.addScaledVector(toP, e.userData.speed * dt);
-
-        // Enemy separation
-        for (let j = i + 1; j < enemies.length; j++) {
-          const f = enemies[j];
-          const sep = new THREE.Vector3().subVectors(e.position, f.position);
-          const sl = sep.length();
-          if (sl > 0 && sl < 0.9) {
-            sep.normalize();
-            e.position.addScaledVector(sep, (0.9 - sl) * 0.15);
-            f.position.addScaledVector(sep.multiplyScalar(-1), (0.9 - sl) * 0.15);
-          }
-        }
-
-        // Damage player
-        if (d < 0.9) {
-          health -= 18 * dt;
-          if (health < 0) health = 0;
-        }
-      }
-
-      // Lose conditions
-      const feet = player.position.y - groundY;
-      const lavaTop = lava.position.y + 0.15;
-      if (feet <= lavaTop || health <= 0) {
-        running = false;
-        msgText.textContent = 'Game Over — the lava monkeys got you!';
-        msg.style.display = 'block';
-      }
-
-      // HUD
-      timerEl.textContent = ((performance.now() - startTime) / 1000).toFixed(1);
-      hpEl.textContent = Math.round(health);
-
-      // Damage cue
-      player.material.emissive = new THREE.Color(health < 60 ? 0x112244 : 0x000000);
-      player.material.emissiveIntensity = health < 60 ? 0.45 : 0.0;
-    }
-
-    // Prevent accidental pinch-zoom gestures
-    document.addEventListener('gesturestart', e => e.preventDefault());
-    document.addEventListener('gesturechange', e => e.preventDefault());
-    document.addEventListener('gestureend', e => e.preventDefault());
-  </script>
-</body>
-</html>
+    // Joystick
+    const leftStick=document.getElementById('leftStick'),leftKnob=document.getElementById('leftKnob');
+    let stickVec={x:0,y:0},stickActive=false;
+    function setKnob(x,y){const r=leftStick.getBoundingClientRect();
+      leftKnob.style.left=`${x-r.left-32}px`; leftKnob.style.top=`${y-r.top-32}px`; }
+    function handleStick(e,active){const r=leftStick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+      let x=e.clientX,y=e.clientY; if(e.touches){x=e.touches[0].clientX;y=e.touches[0].clientY;}
+      const dx=x-cx,dy=y-cy,len=Math.min(Math.hypot(dx,dy),r.width*0.45);
+      const nx=len?dx/len:0,ny=len?dy/len:0;
+      stickActive=active;
+      if(active){setKnob(cx+nx*len,cy+ny*len); stickVec={x:nx*(len/(r.width*0.45)),y:ny*(len/(r.width*0.45))};}
+      else{setKnob(cx,cy); stickVec={x:0,y:0};}}
+    leftStick.addEventListener('pointerdown',e=>{handleStick(e,true);});
+    leftStick.addEventListener('pointermove',e=>{if(stickActive)handleStick(e,true);});
+    leftStick.addEventListener('pointerup',e=>{handleStick(e,false);});
+    leftStick.addEventListener('touchstart',e=>handleStick(e,true));
+    leftStick.addEventListener('touchmove',e=>handleStick(e,true));
+    leftStick.addEventListener('touchend',
