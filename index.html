@@ -92,7 +92,7 @@
   skipBtn.addEventListener('click',()=>{if(coinTotal>=10){coinTotal-=10;loadLevel(levelIndex+1);}updateHUD();});
   function updateHUD(){hud.textContent=`Level ${levelIndex} | Coins: ${coinTotal}`;}
 
-  // === Level generator (simple demo) ===
+  // === Level generator (demo; extend with full features) ===
   function loadLevel(idx){
     levelIndex=idx;
     // clear old
@@ -133,19 +133,3 @@
         coinTotal++;updateHUD();
       }
     }
-    // Hazards
-    for(const h of hazards){
-      if(player.position.distanceTo(h.position)<1.5){
-        player.position.set(0,0.9,0);player.vx=player.vy=player.vz=0;player.jumps=0;
-      }
-    }
-
-    // Camera chase + look joystick
-    const target=new THREE.Vector3(player.position.x,player.position.y+1.5,player.position.z);
-    let offset=new THREE.Vector3(0,3,-8);
-    const yaw=lookVec.x*0.5, pitch=lookVec.y*0.3;
-    const rotY=new THREE.Matrix4().makeRotationY(yaw);
-    const rotX=new THREE.Matrix4().makeRotationX(pitch);
-    offset.applyMatrix4(rotY).applyMatrix4(rotX);
-    const desired=target.clone().add(offset);
-    camera.position.lerp(desired,0
