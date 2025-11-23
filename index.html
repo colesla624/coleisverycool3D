@@ -89,9 +89,9 @@
       const nx=len?dx/len:0,ny=len?dy/len:0;
       if(active){setKnob(cx+nx*len,cy+ny*len); stickVec={x:nx*(len/(r.width*0.45)),y:ny*(len/(r.width*0.45))};}
       else{setKnob(cx,cy); stickVec={x:0,y:0};}}
-    leftStick.addEventListener('pointerdown',e=>{handleStick(e,true);});
-    leftStick.addEventListener('pointermove',e=>{handleStick(e,true);});
-    leftStick.addEventListener('pointerup',e=>{handleStick(e,false);});
+    leftStick.addEventListener('pointerdown',e=>handleStick(e,true));
+    leftStick.addEventListener('pointermove',e=>handleStick(e,true));
+    leftStick.addEventListener('pointerup',e=>handleStick(e,false));
     leftStick.addEventListener('touchstart',e=>handleStick(e,true));
     leftStick.addEventListener('touchmove',e=>handleStick(e,true));
     leftStick.addEventListener('touchend',e=>handleStick(e,false));
@@ -115,4 +115,7 @@
       const forward=new THREE.Vector3(sinY,0,-cosY),right=new THREE.Vector3(cosY,0,sinY);
       const wish=new THREE.Vector3().addScaledVector(right,s).addScaledVector(forward,f);
       if(wish.lengthSq()>0)wish.normalize();
-      velocity.addScaled
+      velocity.addScaledVector(wish,onGround?16*dt:6*dt);
+      velocity.y-=18*dt;
+      player.position.addScaledVector(velocity,dt);
+      if(player.position.y<1){player.position.y=1;velocity.y=0;onGround=true;}else{on
