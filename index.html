@@ -2,145 +2,1013 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Platformer — Dual Joysticks</title>
+  <title>3D Platformer — Dual Joysticks Full Game (2D features in 3D)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin:0; height:100%; background:#0b0f19; overflow:hidden; }
+
+    /* HUD */
     #hud {
       position:fixed; top:10px; left:50%; transform:translateX(-50%);
-      color:#fff; font-family:sans-serif; background:rgba(0,0,0,0.35);
-      padding:6px 10px; border-radius:8px; z-index:10;
+      color:#fff; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:8px; z-index:10;
     }
     #skipBtn {
-      position:fixed; top:60px; right:20px; padding:8px 12px;
-      border-radius:6px; border:none; font-weight:600; cursor:pointer; z-index:10;
-      background:#fff; color:#111;
+      position:fixed; top:60px; right:20px; padding:8px 12px; z-index:10;
+      border-radius:6px; border:none; font-weight:600; cursor:pointer;
+      background:#fff; color:#111; box-shadow:0 3px 10px rgba(0,0,0,0.25);
     }
+    #legend {
+      position:fixed; bottom:10px; left:10px; color:#9ec5ff; font-size:12px; line-height:1.4; z-index:10;
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; opacity:0.9;
+      background:rgba(20,30,50,0.45); padding:8px 10px; border-radius:8px;
+    }
+
+    /* Dual joysticks + jump */
     #stick, #lookStick {
-      position:fixed; width:120px; height:120px; border-radius:50%;
+      position:fixed; width:120px; height:120px; border-radius:50%; z-index:20;
       background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
-      touch-action:none; z-index:20;
+      touch-action:none;
     }
     #stick { bottom:16px; left:16px; }
     #lookStick { bottom:16px; right:120px; }
     #stickKnob, #lookKnob {
-      position:absolute; left:50%; top:50%; width:40px; height:40px;
+      position:absolute; left:50%; top:50%; width:40px; height:40px; z-index:21;
       border-radius:50%; background:#0af; transform:translate(-50%,-50%);
     }
     #jumpBtn {
-      position:fixed; bottom:16px; right:16px; width:90px; height:90px;
-      border-radius:50%; background:#fff; font-weight:bold; z-index:20;
+      position:fixed; bottom:16px; right:16px; width:90px; height:90px; z-index:20;
+      border-radius:50%; background:#fff; color:#111; font-weight:700; border:none;
+      display:flex; align-items:center; justify-content:center; user-select:none; touch-action:none;
+      box-shadow:0 3px 10px rgba(0,0,0,0.25);
     }
   </style>
 </head>
 <body>
-  <div id="hud">Level 1 | Coins: 0</div>
+  <div id="hud">Level 1 — Grasslands | Coins: 0</div>
   <button id="skipBtn">Skip level (10 coins)</button>
+  <div id="legend">
+    Left stick: Move • Right stick: Look • Jump: Button • 10 coins to skip a level • Difficulty scales • +1 obstacle/level
+  </div>
   <div id="stick"><div id="stickKnob"></div></div>
   <div id="lookStick"><div id="lookKnob"></div></div>
   <button id="jumpBtn">Jump</button>
 
   <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
   <script>
-  // === Scene setup ===
-  const scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x0b0f19);
-  const camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,1000);
-  camera.position.set(0,6,-12);
-  const renderer=new THREE.WebGLRenderer({antialias:true});
-  renderer.setSize(window.innerWidth,window.innerHeight);
+  // ===== Core scene setup — fixes black screen by ensuring lights, camera, ground =====
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b0f19);
+
+  const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 6, -12);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
-  const hemi=new THREE.HemisphereLight(0xffffff,0x444444,0.8);scene.add(hemi);
-  const dir=new THREE.DirectionalLight(0xffffff,0.9);dir.position.set(10,20,10);scene.add(dir);
+  const hemi = new THREE.HemisphereLight(0x9ec5ff, 0x33425a, 0.8);
+  scene.add(hemi);
 
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(50,50), new THREE.MeshStandardMaterial({color:0x223349}));
-  ground.rotation.x=-Math.PI/2;scene.add(ground);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+  dir.position.set(12, 18, 10);
+  dir.castShadow = true;
+  dir.shadow.mapSize.set(1024, 1024);
+  dir.shadow.camera.left = -40;
+  dir.shadow.camera.right = 40;
+  dir.shadow.camera.top = 40;
+  dir.shadow.camera.bottom = -40;
+  scene.add(dir);
 
-  // === Player ===
-  const player=new THREE.Mesh(new THREE.BoxGeometry(1,1.8,1), new THREE.MeshStandardMaterial({color:0xffd166}));
-  player.position.set(0,0.9,0);
+  const worldY = 0;
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(160, 160),
+    new THREE.MeshStandardMaterial({ color: 0x223349, roughness:0.9, metalness:0.0 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  ground.position.y = worldY;
+  ground.userData = { type: 'ground', w:160, h:0.2, d:160 };
+  scene.add(ground);
+
+  // ===== Player (2D-like controls but in 3D) =====
+  const player = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1.8, 1),
+    new THREE.MeshStandardMaterial({ color: 0xffd166, roughness:0.6, metalness:0.1 })
+  );
+  player.castShadow = true;
+  player.position.set(0, worldY + 0.9, -18);
+  player.userData = { type: 'player', w:1, h:1.8, d:1 };
   scene.add(player);
-  player.vx=0;player.vy=0;player.vz=0;player.jumps=0;
 
-  // === Joysticks ===
+  // Movement state
+  let coinTotal = 0;
+  let levelIndex = 1;
+  let level = null;
+  let hasKey = false;
+
+  const GRAVITY = 38; // tuned for this scale
+  const BASE_SPEED = 9.5;
+  const DASH_SPEED = 18;
+  player.vx = 0; player.vy = 0; player.vz = 0; player.jumps = 0; player.face = 0;
+
+  // Invulnerability after death (1 second)
+  let invulnerable = false;
+  let invulnTimer = 0;
+
+  // Collections
+  const bullets = [];
+
+  // ===== Input — Dual joysticks + keys =====
+  const keys = {};
+  window.addEventListener('keydown', e => keys[e.code] = true);
+  window.addEventListener('keyup',   e => keys[e.code] = false);
+
   function setupStick(stickId, knobId){
-    const stick=document.getElementById(stickId), knob=document.getElementById(knobId);
-    let center={x:0,y:0}, vec={x:0,y:0}, active=false;
-    function setCenter(){const r=stick.getBoundingClientRect();center.x=r.left+r.width/2;center.y=r.top+r.height/2;}
-    setCenter(); window.addEventListener('resize',setCenter);
-    function down(x,y){active=true;update(x,y);}
-    function up(){active=false;vec.x=0;vec.y=0;knob.style.left='50%';knob.style.top='50%';}
-    function update(x,y){const dx=x-center.x,dy=y-center.y;const radius=50;const len=Math.hypot(dx,dy);const cl=Math.min(len,radius);
-      const nx=(dx/(len||1))*cl,ny=(dy/(len||1))*cl;knob.style.left=`calc(50% + ${nx}px)`;knob.style.top=`calc(50% + ${ny}px)`;vec.x=nx/radius;vec.y=ny/radius;}
-    stick.addEventListener('touchstart',e=>{const t=e.touches[0];down(t.clientX,t.clientY);});
-    stick.addEventListener('touchmove',e=>{const t=e.touches[0];if(active)update(t.clientX,t.clientY);});
-    stick.addEventListener('touchend',up);
+    const stick = document.getElementById(stickId), knob = document.getElementById(knobId);
+    let center = {x:0, y:0}, vec = {x:0, y:0}, active = false;
+    function setCenter(){ const r = stick.getBoundingClientRect(); center.x = r.left + r.width/2; center.y = r.top + r.height/2; }
+    setCenter(); window.addEventListener('resize', setCenter);
+    function down(x,y){ active = true; update(x,y); }
+    function up(){ active = false; vec.x = 0; vec.y = 0; knob.style.left='50%'; knob.style.top='50%'; }
+    function update(x,y){
+      const dx = x - center.x, dy = y - center.y;
+      const radius = 50; const len = Math.hypot(dx,dy); const cl = Math.min(len, radius);
+      const nx = (dx / (len||1)) * cl; const ny = (dy / (len||1)) * cl;
+      knob.style.left = `calc(50% + ${nx}px)`; knob.style.top = `calc(50% + ${ny}px)`;
+      vec.x = nx / radius; vec.y = ny / radius;
+    }
+    stick.addEventListener('touchstart', e => { const t = e.touches[0]; down(t.clientX, t.clientY); }, { passive:true });
+    stick.addEventListener('touchmove', e => { const t = e.touches[0]; if(active) update(t.clientX, t.clientY); }, { passive:true });
+    stick.addEventListener('touchend', up);
     return vec;
   }
-  const moveVec=setupStick('stick','stickKnob');
-  const lookVec=setupStick('lookStick','lookKnob');
+  const moveVec = setupStick('stick', 'stickKnob');   // left joystick (move)
+  const lookVec = setupStick('lookStick', 'lookKnob'); // right joystick (look)
 
-  // Jump button
-  document.getElementById('jumpBtn').addEventListener('touchstart',()=>{if(player.jumps<2){player.vy=16;player.jumps++;}});
-
-  // === Game state ===
-  let coins=[], hazards=[], coinTotal=0, levelIndex=1;
-  const hud=document.getElementById('hud');
-  const skipBtn=document.getElementById('skipBtn');
-  skipBtn.addEventListener('click',()=>{if(coinTotal>=10){coinTotal-=10;loadLevel(levelIndex+1);}updateHUD();});
-  function updateHUD(){hud.textContent=`Level ${levelIndex} | Coins: ${coinTotal}`;}
-
-  // === Level generator (simple demo like 2D version) ===
-  function loadLevel(idx){
-    levelIndex=idx;
-    // clear old
-    for(let i=scene.children.length-1;i>=0;i--){
-      const o=scene.children[i];
-      if(o!==player && o!==ground && o.type!=="HemisphereLight" && o.type!=="DirectionalLight") scene.remove(o);
+  document.getElementById('jumpBtn').addEventListener('touchstart', tryJump, { passive:true });
+  function tryJump(){
+    if (player.jumps < 2) {
+      player.vy = 16;
+      player.jumps++;
     }
-    coins=[]; hazards=[];
-    // add coin
-    const cGeo=new THREE.TorusGeometry(0.35,0.12,16,24);
-    const cMat=new THREE.MeshStandardMaterial({color:0xffd700});
-    const coin=new THREE.Mesh(cGeo,cMat);coin.position.set(3,1,0);scene.add(coin);coins.push(coin);
-    // add hazard
-    const hGeo=new THREE.BoxGeometry(2,0.5,2);
-    const hMat=new THREE.MeshStandardMaterial({color:0xd84315});
-    const hazard=new THREE.Mesh(hGeo,hMat);hazard.position.set(-3,0.25,0);scene.add(hazard);hazards.push(hazard);
-    updateHUD();
   }
+
+  // ===== HUD + Skip =====
+  const hud = document.getElementById('hud');
+  const skipBtn = document.getElementById('skipBtn');
+  skipBtn.addEventListener('click', () => {
+    if (coinTotal >= 10) {
+      coinTotal -= 10;
+      loadLevel(levelIndex + 1);
+    }
+    setHUD(level.name);
+    updateSkipButton();
+  });
+  function setHUD(name){ hud.textContent = `${name} | Coins: ${coinTotal}`; }
+  function updateSkipButton(){
+    skipBtn.textContent = coinTotal >= 10 ? 'Skip level (10 coins)' : 'Skip level (need 10 coins)';
+    skipBtn.style.opacity = coinTotal >= 10 ? '1' : '0.65';
+  }
+
+  // ===== Utility =====
+  function makePRNG(seed){ let s = seed>>>0; return function(){ s=(s*1664525+1013904223)>>>0; return (s & 0xffffffff)/4294967296; }; }
+  function randRange(rnd, min, max){ return min + rnd()*(max-min); }
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+  function aabbIntersects(a, b) {
+    return Math.abs(a.position.x - b.position.x) <= (a.userData.w/2 + b.userData.w/2) &&
+           Math.abs(a.position.y - b.position.y) <= (a.userData.h/2 + b.userData.h/2) &&
+           Math.abs(a.position.z - b.position.z) <= (a.userData.d/2 + b.userData.d/2);
+  }
+  function aabbPointInside(obj, px, py, pz) {
+    return Math.abs(obj.position.x - px) <= (obj.userData.w/2) &&
+           Math.abs(obj.position.y - py) <= (obj.userData.h/2) &&
+           Math.abs(obj.position.z - pz) <= (obj.userData.d/2);
+  }
+
+  // Safety buffer — keep hazards from spawning on top of player spawn
+  function safePlace(obj, startX=0, startY=worldY+0.9, startZ=-18){
+    const dx = Math.abs(obj.position.x - startX);
+    const dy = Math.abs(obj.position.y - startY);
+    const dz = Math.abs(obj.position.z - startZ);
+    const cube = 1.8; // ~player size buffer
+    return (dx > cube) || (dy > cube) || (dz > cube);
+  }
+
+  // Difficulty + +1 obstacle per level
+  function difficultyFactor(i){ const base = 1 + (i/100); const curve = 1 + Math.max(0, i-50)/200; return base*curve; }
+  function obstacleCount(i){ return Math.min(2 + (i - 1), 24); }
+
+  // ===== Level containers =====
+  function makeLevelBase(name){
+    return {
+      name,
+      f: difficultyFactor(levelIndex),
+      dark: false,
+      flashlight: false,
+      lowGravity: false,
+      friction: 1.0,
+      conveyorZones: [], // x-momentum on contact
+      platforms: [],     // moving/static platforms
+      fallPlatforms: [],
+      hazards: [],
+      saws: [],
+      pendulums: [],
+      windZones: [],
+      teleportPads: [],
+      timedDoors: [],
+      bouncePads: [],
+      breakables: [],
+      enemies: [],
+      coins: [],
+      door: null,
+      key: null,
+      boss: false,
+      bossReward: 100,
+      goal: null
+    };
+  }
+
+  // ===== Builders =====
+  function addBox(w,h,d,color,x,y,z,type,castShadow=true,receiveShadow=true, transparent=false, opacity=1){
+    const geo = new THREE.BoxGeometry(w,h,d);
+    const mat = new THREE.MeshStandardMaterial({ color, roughness:0.7, metalness:0.1, transparent, opacity });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x,y,z);
+    m.castShadow = castShadow;
+    m.receiveShadow = receiveShadow;
+    m.userData = { type, w, h, d };
+    scene.add(m);
+    return m;
+  }
+  function addCoin(L,x,y,z){
+    const geo = new THREE.TorusGeometry(0.35,0.12,16,24);
+    const mat = new THREE.MeshStandardMaterial({ color:0xffd700, emissive:0x221100, roughness:0.4, metalness:0.6 });
+    const m = new THREE.Mesh(geo, mat);
+    m.rotation.x = Math.PI/2;
+    m.castShadow = true;
+    m.position.set(x,y,z);
+    m.userData = { type:'coin', w:0.7, h:0.7, d:0.7, collected:false };
+    scene.add(m);
+    L.coins.push(m);
+  }
+  function addHazard(L,x,y,z,w=3,h=1,d=3){
+    const m = addBox(w,h,d,0xd84315,x,y,z,'hazard');
+    if (safePlace(m)) L.hazards.push(m); else scene.remove(m);
+  }
+  function addPlatform(L,x,y,z,w=6,h=0.6,d=3,vx=0,vy=0,vz=0,bounds=null){
+    const m = addBox(w,h,d,0x90a4ae,x,y,z,'platform',false,true);
+    m.userData.vx=vx; m.userData.vy=vy; m.userData.vz=vz; m.userData.bounds=bounds;
+    L.platforms.push(m);
+  }
+  function addFallPlatform(L,x,y,z,w=6,h=0.6,d=3,threshold=1.6){
+    const m = addBox(w,h,d,0x7da453,x,y,z,'fallPlatform',false,true);
+    m.userData.timer = 0; m.userData.fall = false; m.userData.threshold = threshold;
+    L.fallPlatforms.push(m);
+  }
+  function addPendulum(L,x,y,z,r=0.6,ropeLen=4,speed=1.8){
+    const pivot = addBox(0.4,0.4,0.4,0xaaaaaa,x,y,z,'pivot',true,false);
+    const bobGeo = new THREE.SphereGeometry(r, 16, 16);
+    const bobMat = new THREE.MeshStandardMaterial({ color:0xf06292, roughness:0.6, metalness:0.1 });
+    const bob = new THREE.Mesh(bobGeo, bobMat);
+    bob.castShadow = true;
+    bob.position.set(x, y - ropeLen, z);
+    bob.userData = { type:'pendulumBob', w:r*2, h:r*2, d:r*2 };
+    scene.add(bob);
+    L.pendulums.push({ pivot, bob, r, rope:ropeLen, speed, angle:0 });
+  }
+  function addSaw(L,x,y,z,r=0.6,minX,maxX,speed=2,dir=1){
+    const geo = new THREE.CylinderGeometry(r, r, 0.2, 18);
+    const mat = new THREE.MeshStandardMaterial({ color:0xb0bec5, roughness:0.5, metalness:0.3 });
+    const saw = new THREE.Mesh(geo, mat);
+    saw.rotation.z = Math.PI/2;
+    saw.castShadow = true;
+    saw.position.set(x,y,z);
+    saw.userData = { type:'saw', w:r*2, h:r*2, d:r*2, minX, maxX, speed, dir };
+    scene.add(saw);
+    L.saws.push(saw);
+  }
+  function addGoal(L,x,y,z){
+    const m = addBox(2, 2, 0.5, 0x1e88e5, x, y, z, 'goal', true, false);
+    L.goal = m;
+  }
+  function addEnemy(L,type,x,y,z,opts={}){
+    const color = type==='boss' ? 0xe53935 : (type==='chase'?0xf44336 : (type==='turret'?0xb0bec5: (type==='ghost' ? 0x9c27b0 : 0xff4444)));
+    const m = addBox(opts.w||1.2, opts.h||1.2, opts.d||1.2, color, x,y,z, type);
+    m.userData = { ...m.userData, ...opts, type };
+    if (type==='boss') L.boss = true, L.bossObj = m;
+    L.enemies.push(m);
+  }
+  function addTeleport(L,x,y,z,toX,toY,toZ){
+    const m = addBox(1.2,0.4,1.2,0x9ccc65,x,y,z,'teleport',false,true);
+    m.userData.toX=toX; m.userData.toY=toY; m.userData.toZ=toZ;
+    L.teleportPads.push(m);
+  }
+  function addWindZone(L,x,y,z,w=6,h=2,d=3,strength=10){
+    const m = addBox(w,h,d,0x649fff,x,y,z,'wind',false,false,true,0.18);
+    m.userData.strength = strength;
+    L.windZones.push(m);
+  }
+  function addTimedDoor(L,x,y,z,w=2.2,h=5.0,d=0.8,period=2.0){
+    const door = addBox(w,h,d,0x6d4c41,x,y,z,'door',true,true);
+    door.userData.period = period;
+    door.userData.t = Math.random() * period;
+    door.userData.open = true;
+    L.timedDoors.push(door);
+  }
+  function addBouncePad(L,x,y,z,w=3.5,h=0.6,d=3.5,power=22){
+    const pad = addBox(w,h,d,0x7cb342,x,y,z,'bounce',false,true);
+    pad.userData.power = power;
+    L.bouncePads.push(pad);
+  }
+  function addBreakable(L,x,y,z,w=1.2,h=0.4,d=1.2){
+    const br = addBox(w,h,d,0x8d6e63,x,y,z,'breakable',true,true);
+    br.userData.broken = false;
+    L.breakables.push(br);
+  }
+  function addConveyor(L,x,y,z,w=6,h=0.4,d=3,speed=6){
+    const cv = addBox(w,h,d,0x88aaff,x,y,z,'conveyor',false,true,true,0.22);
+    cv.userData.speed = speed;
+    L.conveyorZones.push(cv);
+  }
+
+  // ===== Themes mirroring 2D logic =====
+  function genTutorial(i){
+    const L = makeLevelBase(`Level ${i} — Tutorial`);
+    L.dark = false; L.flashlight = false;
+
+    addPlatform(L, 220/20-8, worldY+2.5, -8, 6, 0.6, 3);
+    addCoin(L, 220/20-8 + 2, worldY+3.1, -8);
+    addPendulum(L, 0, worldY+6, -10, 0.6, 4.5, 1.6);
+    addFallPlatform(L, 6, worldY+4.5, -12, 5.5, 0.6, 3, 1.8);
+    addHazard(L, 3, worldY+0.5, -6, 4, 0.8, 3);
+
+    addGoal(L, 14, worldY+2, 3);
+    return L;
+  }
+
+  function genGrasslands(i, rnd){
+    const L = makeLevelBase(`Level ${i} — Grasslands`);
+    const f = difficultyFactor(i);
+
+    for (let s=0; s<2 + Math.floor(rnd()*2); s++){
+      const px = randRange(rnd, -10, 4), py = worldY + randRange(rnd, 2.2, 4.5), pz = randRange(rnd, -12, 2);
+      addPlatform(L, px, py, pz, randRange(rnd,5,7), 0.6, 3);
+      if (rnd() < 0.7) addCoin(L, px + randRange(rnd,-1,1), py + 0.6, pz + randRange(rnd,-1,1));
+    }
+
+    const count = obstacleCount(i);
+    for (let k=0; k<count; k++){
+      const type = k % 4;
+      if (type===0) addHazard(L, randRange(rnd,-12,12), worldY+0.5, randRange(rnd,-10,4), randRange(rnd,2.6,4.0), 0.8, randRange(rnd,2.0,3.2));
+      else if (type===1) addPendulum(L, randRange(rnd,-10,10), worldY+6, randRange(rnd,-8,0), 0.6, randRange(rnd,3.5,5.5), 1.6*f);
+      else if (type===2) addSaw(L, randRange(rnd,-12,12), worldY+1.4, randRange(rnd,-8,2), 0.7, -12, 12, 3.2*f, rnd()<0.5?-1:1);
+      else addFallPlatform(L, randRange(rnd,-12,12), worldY+randRange(rnd,2.8,5.0), randRange(rnd,-10,2), 4.5, 0.6, 3, Math.max(0.8, 1.8/f));
+    }
+
+    addEnemy(L,'patrol', randRange(rnd,-8,8), worldY+1.0, randRange(rnd,-8,2), { speed: 7.5*f, w:1.2,h:1.2,d:1.2, minX:-12, maxX:12, dir: rnd()<0.5?-1:1 });
+    addGoal(L, 14, worldY+2, 3);
+    return L;
+  }
+
+  function genCaves(i, rnd){
+    const L = makeLevelBase(`Level ${i} — Caves`);
+    const f = difficultyFactor(i);
+    L.dark = true; L.flashlight = true;
+
+    for (let k=0; k<3; k++){
+      const px = randRange(rnd,-10,6), py = worldY + randRange(rnd,2.4,5.0), pz = randRange(rnd,-12,4);
+      addPlatform(L, px, py, pz, randRange(rnd,4.8,6.5), 0.6, 3);
+      if (rnd() < 0.6) addBreakable(L, px + randRange(rnd,-1.5,1.5), py + 0.4, pz + randRange(rnd,-1.2,1.2));
+      if (rnd() < 0.6) addCoin(L, px + randRange(rnd,-1,1), py + 0.6, pz + randRange(rnd,-1,1));
+    }
+
+    const count = obstacleCount(i);
+    for (let k=0; k<count; k++){
+      const type = k % 4;
+      if (type===0) addHazard(L, randRange(rnd,-12,12), worldY+0.5, randRange(rnd,-10,4), randRange(rnd,2.5,3.8), 0.8, randRange(rnd,2.0,3.4));
+      else if (type===1) addHazard(L, randRange(rnd,-10,10), worldY+6.4, randRange(rnd,-10,0), 4.0, 0.5, 1.0); // ceiling bar
+      else if (type===2) addTimedDoor(L, randRange(rnd,-10,10), worldY+3.0, randRange(rnd,-10,4), 2.2, 5.0, 0.8, Math.max(1.4, 2.4 / (0.8 + f*0.4)));
+      else addPendulum(L, randRange(rnd,-8,8), worldY+6.8, randRange(rnd,-10,0), 0.6, randRange(rnd,3.8,5.8), 1.8*f);
+    }
+
+    const bats = 1 + Math.floor(rnd()*(1+f));
+    for (let b=0; b<bats; b++){
+      addEnemy(L,'fly', randRange(rnd,-8,8), worldY+randRange(rnd,4.0,7.5), randRange(rnd,-10,2), { ampX: 3.0+1.2*f, ampY: 2.0+1.0*f, speed: 1.5*f, t: rnd()*6 });
+    }
+    addGoal(L, 14, worldY+2, 5);
+    return L;
+  }
+
+  function genSky(i, rnd){
+    const L = makeLevelBase(`Level ${i} — Sky`);
+    const f = difficultyFactor(i);
+
+    for (let s=0; s<4; s++){
+      addPlatform(L, -10 + s*7, worldY+3+s*1.1, -10 + s*2, 5.5, 0.6, 3);
+      addCoin(L, -10 + s*7 + 0.5, worldY+4+s*1.1, -10 + s*2);
+    }
+
+    const count = obstacleCount(i);
+    for (let k=0; k<count; k++){
+      const type = k % 4;
+      if (type===0) addWindZone(L, randRange(rnd,-10,10), worldY+randRange(rnd,2,5), randRange(rnd,-10,2), randRange(rnd,4,8), 2, randRange(rnd,2,4), (rnd()<0.5?-1:1) * (8*f));
+      else if (type===1) addTeleport(L, randRange(rnd,-8,8), worldY+randRange(rnd,2.5,5.5), randRange(rnd,-10,2), randRange(rnd,-8,12), worldY+randRange(rnd,3,6), randRange(rnd,-10,4));
+      else if (type===2) addSaw(L, randRange(rnd,-12,12), worldY+2.2, randRange(rnd,-10,2), 0.7, -12, 12, 3.4*f, rnd()<0.5?-1:1);
+      else addPendulum(L, randRange(rnd,-8,8), worldY+7, randRange(rnd,-10,0), 0.6, randRange(rnd,4.0,5.8), 2.0*f);
+    }
+
+    addGoal(L, 14, worldY+3, 4);
+    return L;
+  }
+
+  function genLava(i, rnd){
+    const L = makeLevelBase(`Level ${i} — Lava Fortress`);
+    const f = difficultyFactor(i);
+
+    const count = obstacleCount(i);
+    for (let k=0; k<count; k++){
+      const type = k % 4;
+      if (type===0) addHazard(L, randRange(rnd,-12,12), worldY+0.5, randRange(rnd,-10,4), randRange(rnd,3.0,4.2), 0.8, randRange(rnd,2.2,3.6));
+      else if (type===1) addFallPlatform(L, randRange(rnd,-10,10), worldY+randRange(rnd,2.5,5.0), randRange(rnd,-10,2), 4.5, 0.6, 3, Math.max(0.6, 1.6/f));
+      else if (type===2) addSaw(L, randRange(rnd,-12,12), worldY+1.4, randRange(rnd,-10,4), 0.7, -12, 12, 3.6*f, rnd()<0.5?-1:1);
+      else addPendulum(L, randRange(rnd,-8,8), worldY+7, randRange(rnd,-10,0), 0.6, randRange(rnd,3.5,5.5), 1.9*f);
+    }
+
+    const chasers = 1 + Math.floor(rnd()*(1+f));
+    for (let c=0; c<chasers; c++){
+      addEnemy(L,'chase', randRange(rnd,-8,8), worldY+1.0, randRange(rnd,-8,2), { speed: 8.5*f, w:1.2,h:1.2,d:1.2 });
+    }
+
+    addGoal(L, 14, worldY+2, 4);
+    return L;
+  }
+
+  function genIce(i, rnd){
+    const L = makeLevelBase(`Level ${i} — Ice Peaks`);
+    const f = difficultyFactor(i);
+    L.friction = 0.65;
+
+    const shelves = 2 + Math.floor(rnd()*3);
+    for (let k=0; k<shelves; k++){
+      addPlatform(L, randRange(rnd,-10,6), worldY+randRange(rnd,2.4,4.5), randRange(rnd,-12,4), randRange(rnd,5.5,7.0), 0.6, 3);
+      if (rnd()<0.6) addCoin(L, randRange(rnd,-10,6), worldY+randRange(rnd,3.0,5.0), randRange(rnd,-12,4));
+    }
+
+    const count = obstacleCount(i);
+    for (let k=0; k<count; k++){
+      const type = k % 3;
+      if (type===0) addHazard(L, randRange(rnd,-12,12), worldY+0.5, randRange(rnd,-10,4), randRange(rnd,2.6,3.8), 0.8, randRange(rnd,2.0,3.4));
+      else if (type===1) addPendulum(L, randRange(rnd,-8,8), worldY+7, randRange(rnd,-10,0), 0.6, randRange(rnd,3.6,5.6), 2.1*f);
+      else addPlatform(L, randRange(rnd,-10,10), worldY+randRange(rnd,2.5,4.8), randRange(rnd,-10,2), 4.5, 0.6, 3, rnd()<0.5? 6*f : -6*f, 0, 0, {minX:-12, maxX:12});
+    }
+
+    addEnemy(L,'patrol', randRange(rnd,-6,6), worldY+1.0, randRange(rnd,-8,2), { speed: 7.0*f, w:1.2,h:1.2,d:1.2, minX:-12, maxX:12, dir: rnd()<0.5?-1:1 });
+    addGoal(L, 14, worldY+2, 3);
+    return L;
+  }
+
+  function genFactory(i, rnd){
+    const L = makeLevelBase(`Level ${i} — Factory`);
+    const f = difficultyFactor(i);
+
+    addConveyor(L, 200/20-8, worldY+0.2, -8, 6, 0.4, 3, 7.5*f);
+    addConveyor(L, 220/20+6, worldY+0.2, -8, 6, 0.4, 3, -7.5*f);
+    addPlatform(L, randRange(rnd,-8,8), worldY+randRange(rnd,3.0,5.0), randRange(rnd,-10,2), 6,0.6,3);
+
+    const count = obstacleCount(i);
+    for (let k=0; k<count; k++){
+      const type = k % 3;
+      if (type===0) addTimedDoor(L, randRange(rnd,-10,10), worldY+3.0, randRange(rnd,-12,4), 2.2, 5.2, 0.8, Math.max(1.2, 2.2/(0.7+f*0.4)));
+      else if (type===1) addSaw(L, randRange(rnd,-12,12), worldY+1.4, randRange(rnd,-12,4), 0.8, -12, 12, 3.8*f, rnd()<0.5?-1:1);
+      else addBouncePad(L, randRange(rnd,-10,10), worldY+0.3, randRange(rnd,-10,4), 3.5, 0.6, 3.5, 22 + 4*f);
+    }
+
+    const turrets = 1 + Math.floor(rnd()*(1+f));
+    for (let t=0;t<turrets;t++){
+      addEnemy(L,'turret', randRange(rnd,-10,10), worldY+2.2, randRange(rnd,-10,4), { rate: Math.max(0.5, 0.9/(0.7+f*0.4)), w:1.1, h:1.1, d:1.1 });
+    }
+
+    addGoal(L, 14, worldY+2, 4);
+    return L;
+  }
+
+  function genHaunted(i, rnd){
+    const L = makeLevelBase(`Level ${i} — Haunted Ruins`);
+    const f = difficultyFactor(i);
+    L.dark = true; L.flashlight = true;
+
+    addPlatform(L, randRange(rnd,-6,6), worldY+randRange(rnd,3.0,4.5), randRange(rnd,-8,2), randRange(rnd,5.5,7.0), 0.6, 3);
+    L.door = addBox(2.0, 5.0, 0.8, 0x6d4c41, randRange(rnd,4,8), worldY+3.0, randRange(rnd,-6,2), 'mainDoor', true, true);
+    L.key = addBox(0.8, 0.8, 0.8, 0xcddc39, randRange(rnd,-8,0), worldY+4.4, randRange(rnd,-8,2), 'key', true, true);
+
+    const count = obstacleCount(i);
+    for (let k=0;k<count;k++){
+      const type = k % 3;
+      if (type===0) addPendulum(L, randRange(rnd,-8,8), worldY+7, randRange(rnd,-10,0), 0.6, randRange(rnd,3.6,5.4), 1.9*f);
+      else if (type===1) addTimedDoor(L, randRange(rnd,-10,10), worldY+3.0, randRange(rnd,-8,4), 2.0, 5.0, 0.8, Math.max(1.4, 3.0/(0.7+f*0.4)));
+      else addHazard(L, randRange(rnd,-12,12), worldY+0.5, randRange(rnd,-12,4), randRange(rnd,2.6,3.6), 0.8, randRange(rnd,2.0,3.4));
+    }
+
+    const ghosts = 1 + Math.floor(rnd()*(1+f));
+    for (let g=0; g<ghosts; g++){
+      addEnemy(L,'ghost', randRange(rnd,-10,10), worldY+1.2, randRange(rnd,-10,4), { visible:true, w:1.2, h:1.2, d:1.2 });
+    }
+
+    addGoal(L, 14, worldY+2, 3);
+    return L;
+  }
+
+  function genJungle(i, rnd){
+    const L = makeLevelBase(`Level ${i} — Jungle`);
+    const f = difficultyFactor(i);
+
+    addPlatform(L, -8, worldY+3, -12, 6,0.6,3, 7*f,0,0, {minX:-12, maxX:12});
+    addPlatform(L, 0, worldY+5, -6, 6,0.6,3, 0,7*f,0, {minY:worldY+3.5, maxY:worldY+7.5});
+    addCoin(L, -8, worldY+4, -12);
+    addCoin(L, 0, worldY+6, -6);
+
+    const count = obstacleCount(i);
+    for (let k=0;k<count;k++){
+      const type = k % 3;
+      if (type===0) addPendulum(L, randRange(rnd,-8,8), worldY+7, randRange(rnd,-10,0), 0.6, randRange(rnd,3.6,5.4), 1.9*f);
+      else if (type===1) addFallPlatform(L, randRange(rnd,-10,10), worldY+randRange(rnd,3,6), randRange(rnd,-10,2), 4.5, 0.6, 3, Math.max(0.7, 1.6/f));
+      else addHazard(L, randRange(rnd,-12,12), worldY+0.5, randRange(rnd,-12,4), randRange(rnd,2.6,3.6), 0.8, randRange(rnd,2.0,3.4));
+    }
+
+    addEnemy(L,'patrol', randRange(rnd,-10,10), worldY+1.0, randRange(rnd,-10,4), { speed: 7.5*f, w:1.2,h:1.2,d:1.2, minX:-12, maxX:12, dir: rnd()<0.5?-1:1 });
+    addGoal(L, 14, worldY+2, 3);
+    return L;
+  }
+
+  function genSpace(i, rnd){
+    const L = makeLevelBase(`Level ${i} — Space`);
+    const f = difficultyFactor(i);
+    L.lowGravity = true;
+
+    addPlatform(L, -10, worldY+4, -12, 6,0.6,3);
+    addPlatform(L, -2,  worldY+6,  -8, 6,0.6,3);
+    addPlatform(L, 6,   worldY+8,  -4, 6,0.6,3);
+    addCoin(L, -10, worldY+5, -12);
+    addCoin(L, -2,  worldY+7,  -8);
+
+    const count = obstacleCount(i);
+    for (let k=0; k<count; k++){
+      const type = k % 4;
+      if (type===0) addHazard(L, randRange(rnd,-12,12), worldY+0.5, randRange(rnd,-12,4), randRange(rnd,3.0,4.2), 0.8, randRange(rnd,2.2,3.6));
+      else if (type===1) addTeleport(L, randRange(rnd,-8,8), worldY+randRange(rnd,3,7), randRange(rnd,-12,2), randRange(rnd,-8,12), worldY+randRange(rnd,4,8), randRange(rnd,-12,4));
+      else if (type===2) addSaw(L, randRange(rnd,-12,12), worldY+2.2, randRange(rnd,-12,2), 0.7, -12, 12, 3.8*f, rnd()<0.5?-1:1);
+      else addPendulum(L, randRange(rnd,-8,8), worldY+8, randRange(rnd,-12,0), 0.6, randRange(rnd,4.0,6.0), 2.1*f);
+    }
+
+    addEnemy(L,'fly', randRange(rnd,-10,10), worldY+6, randRange(rnd,-10,2), { ampX: 3.6*f, ampY: 2.4*f, speed: 1.6*f, t: 0 });
+    addGoal(L, 14, worldY+3, 3);
+    return L;
+  }
+
+  function genBoss(i, rnd){
+    const world = Math.floor((i - 1)/10) + 1;
+    const f = difficultyFactor(i);
+    const L = makeLevelBase(`Level ${i} — Boss`);
+    L.boss = true;
+
+    addPlatform(L, -6, worldY+2, -8, 6,0.6,3);
+    addPlatform(L, 6,  worldY+2, -8, 6,0.6,3);
+    addPlatform(L, 0,  worldY+4,  0,  8,0.6,3);
+
+    const hp = Math.floor(6 * (1 + world*0.15) * f);
+    const rate = Math.max(0.5, (1.2 - 0.05*world) / (0.7 + f*0.4));
+    addEnemy(L,'boss', 0, worldY+3.0, -2, { w:2.4,h:2.4,d:2.4, hp, rate });
+
+    const count = Math.min(3 + world, obstacleCount(i));
+    for (let k=0;k<count;k++){
+      const type = (world + k) % 4;
+      if (type===0) addHazard(L, randRange(rnd,-8,8), worldY+0.5, randRange(rnd,-6,4), randRange(rnd,3.0,4.2), 0.8, randRange(rnd,2.2,3.6));
+      else if (type===1) addPendulum(L, randRange(rnd,-8,8), worldY+7, randRange(rnd,-6,2), 0.6, randRange(rnd,3.6,5.4), 2.0*f);
+      else if (type===2) addSaw(L, randRange(rnd,-10,10), worldY+1.6, randRange(rnd,-6,4), 0.8, -12, 12, 4.0*f, rnd()<0.5?-1:1);
+      else addTimedDoor(L, randRange(rnd,-10,10), worldY+3.0, randRange(rnd,-6,4), 2.0, 5.0, 0.8, Math.max(1.2, 2.0/(0.7+f*0.4)));
+    }
+
+    return L;
+  }
+
+  // ===== Dispatcher =====
+  function generateLevel(i){
+    const rnd = makePRNG(i*98765 + 12345);
+    if (i === 1) return genTutorial(i);
+    if (i % 10 === 0) return genBoss(i, rnd);
+    if (i <= 10) return genGrasslands(i, rnd);
+    if (i <= 20) return genCaves(i, rnd);
+    if (i <= 30) return genSky(i, rnd);
+    if (i <= 40) return genLava(i, rnd);
+    if (i <= 50) return genIce(i, rnd);
+    if (i <= 60) return genFactory(i, rnd);
+    if (i <= 70) return genHaunted(i, rnd);
+    if (i <= 80) return genJungle(i, rnd);
+    return genSpace(i, rnd);
+  }
+
+  // ===== Load/reset =====
+  function clearSceneObjects(){
+    const keepTypes = new Set(['player','ground','HemisphereLight','DirectionalLight','pivot']);
+    for (let i=scene.children.length-1; i>=0; i--){
+      const o = scene.children[i];
+      if (o === player || o === ground) continue;
+      if (o.type === 'HemisphereLight' || o.type === 'DirectionalLight') continue;
+      if (o.userData && keepTypes.has(o.userData.type)) continue;
+      scene.remove(o);
+    }
+    bullets.length = 0;
+  }
+
+  function loadLevel(idx){
+    levelIndex = ((idx - 1) % 100) + 1;
+    clearSceneObjects();
+    level = generateLevel(levelIndex);
+    hasKey = false;
+
+    player.position.set(0, worldY + 0.9, -18);
+    player.vx = 0; player.vy = 0; player.vz = 0;
+    player.jumps = 0; invulnerable = false; invulnTimer = 0;
+
+    setHUD(level.name);
+    updateSkipButton();
+  }
+
+  function killPlayer(){
+    loadLevel(levelIndex);
+    invulnerable = true;
+    invulnTimer = 1.0;
+  }
+
   loadLevel(1);
 
-  // === Update loop ===
+  // ===== Shooting (turrets/boss) =====
+  function shootBullet(sx,sy,sz,tx,ty,tz,speed,color=0xff6666){
+    const geo = new THREE.SphereGeometry(0.25, 12, 12);
+    const mat = new THREE.MeshStandardMaterial({ color, emissive:0x220000, roughness:0.5, metalness:0.2 });
+    const m = new THREE.Mesh(geo, mat);
+    m.castShadow = true;
+    m.position.set(sx,sy,sz);
+    m.userData = { type:'bullet', w:0.5, h:0.5, d:0.5 };
+    scene.add(m);
+    const dir = new THREE.Vector3(tx - sx, ty - sy, tz - sz).normalize();
+    bullets.push({ obj:m, vx:dir.x*speed, vy:dir.y*speed, vz:dir.z*speed, ttl:4.5 });
+  }
+
+  // ===== Update & physics — fixes unresponsiveness by directly applying inputs each frame =====
   function update(dt){
-    // Movement
-    const speed=8;
-    player.vx=moveVec.x*speed;
-    player.vz=moveVec.y*speed;
-    player.vy-=38*dt;
-    player.position.x+=player.vx*dt;
-    player.position.z+=player.vz*dt;
-    player.position.y+=player.vy*dt;
-    if(player.position.y<0.9){player.position.y=0.9;player.vy=0;player.jumps=0;}
+    // Input vector: left stick for move, keys fallback
+    let mvx = moveVec.x, mvy = moveVec.y;
+    if (Math.abs(mvx) < 0.01 && Math.abs(mvy) < 0.01) {
+      const left  = keys['ArrowLeft'] || keys['KeyA'];
+      const right = keys['ArrowRight']|| keys['KeyD'];
+      const up    = keys['ArrowUp']   || keys['KeyW'];
+      const down  = keys['ArrowDown'] || keys['KeyS'];
+      mvx = (right?1:0) + (left?-1:0);
+      mvy = (down?1:0) + (up?-1:0);
+    }
+
+    const dashKey = keys['ShiftLeft'] || keys['ShiftRight'];
+    const moveMag = dashKey ? DASH_SPEED : BASE_SPEED;
+    const friction = level.friction || 1.0;
+    const gravity = level.lowGravity ? 24 : GRAVITY;
+
+    // Camera-relative move (XZ plane) like 2D left/right but in 3D
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    camDir.y = 0; camDir.normalize();
+    const camRight = new THREE.Vector3().crossVectors(camDir, new THREE.Vector3(0,1,0)).normalize();
+
+    const move = new THREE.Vector3(0,0,0);
+    move.add(camRight.clone().multiplyScalar(mvx));
+    move.add(camDir.clone().multiplyScalar(mvy));
+    if (move.lengthSq() > 0) move.normalize().multiplyScalar(moveMag * friction);
+
+    player.vx = move.x;
+    player.vz = move.z;
+
+    // Keyboard jump
+    if (keys['Space'] && player.jumps < 2) {
+      player.vy = 16;
+      player.jumps++;
+    }
+
+    // Gravity
+    player.vy -= gravity * dt;
+
+    // Conveyors — 2D-style momentum nudge when on top
+    for (const z of (level.conveyorZones||[])){
+      if (aabbIntersects(player, z)) {
+        player.position.x += z.userData.speed * dt;
+      }
+    }
+
+    // Wind zones — push vx horizontally
+    for (const wz of (level.windZones||[])){
+      if (aabbPointInside(wz, player.position.x, player.position.y, player.position.z)) {
+        player.vx += Math.sign(wz.userData.strength) * Math.abs(wz.userData.strength) * dt;
+      }
+    }
+
+    // Integrate
+    player.position.x += player.vx * dt;
+    player.position.y += player.vy * dt;
+    player.position.z += player.vz * dt;
+
+    // Ground clamp
+    const minY = worldY + 0.9;
+    if (player.position.y < minY){
+      player.position.y = minY;
+      player.vy = 0;
+      player.jumps = 0;
+    }
+
+    // Moving platforms
+    for (const p of (level.platforms||[])){
+      const b = p.userData.bounds || {};
+      if (p.userData.vx){
+        p.position.x += p.userData.vx * dt;
+        if (b.minX!==undefined && p.position.x < b.minX) p.userData.vx *= -1;
+        if (b.maxX!==undefined && p.position.x > b.maxX) p.userData.vx *= -1;
+      }
+      if (p.userData.vy){
+        p.position.y += p.userData.vy * dt;
+        if (b.minY!==undefined && p.position.y < b.minY) p.userData.vy *= -1;
+        if (b.maxY!==undefined && p.position.y > b.maxY) p.userData.vy *= -1;
+      }
+      if (p.userData.vz){
+        p.position.z += p.userData.vz * dt;
+        if (b.minZ!==undefined && p.position.z < b.minZ) p.userData.vz *= -1;
+        if (b.maxZ!==undefined && p.position.z > b.maxZ) p.userData.vz *= -1;
+      }
+      // Land on platform from above
+      if (aabbIntersects(player, p)){
+        const pyTop = p.position.y + p.userData.h/2;
+        const plBottom = player.position.y - player.userData.h/2;
+        if (plBottom <= pyTop + 0.1 && player.vy <= 0){
+          player.position.y = pyTop + player.userData.h/2;
+          player.vy = 0; player.jumps = 0;
+        }
+      }
+    }
+
+    // Falling platforms
+    for (const fp of (level.fallPlatforms||[])){
+      const threshold = fp.userData.threshold ?? 1.8;
+      if (!fp.userData.fall && aabbIntersects(player, fp)){
+        fp.userData.timer += dt;
+        const pyTop = fp.position.y + fp.userData.h/2;
+        const plBottom = player.position.y - player.userData.h/2;
+        if (plBottom <= pyTop + 0.1 && player.vy <= 0){
+          player.position.y = pyTop + player.userData.h/2;
+          player.vy = 0; player.jumps = 0;
+        }
+        if (fp.userData.timer >= threshold) fp.userData.fall = true;
+      }
+      if (fp.userData.fall) fp.position.y -= 6.2 * dt; // gentle drop
+    }
+
+    // Bounce pads
+    for (const bp of (level.bouncePads||[])){
+      if (aabbIntersects(player, bp)){
+        player.vy = bp.userData.power;
+        player.jumps = 1; // allow double jump after bounce
+      }
+    }
+
+    // Breakables
+    for (const br of (level.breakables||[])){
+      if (!br.userData.broken && aabbIntersects(player, br)){
+        br.userData.broken = true;
+        br.material.opacity = 0.25; br.material.transparent = true;
+      }
+    }
+
+    // Timed doors
+    for (const d of (level.timedDoors||[])){
+      d.userData.t += dt;
+      const open = (d.userData.t % d.userData.period) < (d.userData.period/2);
+      d.userData.open = open;
+      d.material.color.set(open ? 0x2e7d32 : 0x6d4c41);
+      if (!open && aabbIntersects(player, d)){
+        if (player.position.x < d.position.x)
+          player.position.x = d.position.x - d.userData.w/2 - player.userData.w/2 - 0.05;
+        else
+          player.position.x = d.position.x + d.userData.w/2 + player.userData.w/2 + 0.05;
+        player.vx = 0;
+      }
+    }
+
+    // Pendulums
+    for (const pend of (level.pendulums||[])){
+      pend.angle += pend.speed * dt;
+      const offX = Math.sin(pend.angle) * pend.rope;
+      const offY = Math.cos(pend.angle) * pend.rope;
+      pend.bob.position.x = pend.pivot.position.x + offX;
+      pend.bob.position.y = pend.pivot.position.y - offY;
+      if (!invulnerable){
+        const dx = player.position.x - pend.bob.position.x;
+        const dy = player.position.y - pend.bob.position.y;
+        const dz = player.position.z - pend.bob.position.z;
+        if (dx*dx + dy*dy + dz*dz < pend.r*pend.r){ killPlayer(); return; }
+      }
+    }
+
+    // Saws
+    for (const s of (level.saws||[])){
+      s.rotation.y += 6*dt;
+      s.position.x += s.userData.dir * s.userData.speed * dt;
+      if (s.position.x < s.userData.minX){ s.position.x = s.userData.minX; s.userData.dir = 1; }
+      if (s.position.x > s.userData.maxX){ s.position.x = s.userData.maxX; s.userData.dir = -1; }
+      if (!invulnerable){
+        const dx = player.position.x - s.position.x;
+        const dy = player.position.y - s.position.y;
+        const dz = player.position.z - s.position.z;
+        const r = s.geometry.parameters.radiusTop || 0.7;
+        if (dx*dx + dy*dy + dz*dz < r*r){ killPlayer(); return; }
+      }
+    }
+
+    // Key/Door gating
+    if (level.key && level.key.userData.type === 'key'){
+      if (!level.key.userData.collected && aabbIntersects(player, level.key)){
+        level.key.userData.collected = true;
+        hasKey = true;
+        scene.remove(level.key);
+      }
+    }
+    if (level.door && level.door.userData.type === 'mainDoor'){
+      if (aabbIntersects(player, level.door) && !hasKey){
+        // block pass-through
+        if (player.position.x < level.door.position.x)
+          player.position.x = level.door.position.x - level.door.userData.w/2 - player.userData.w/2 - 0.05;
+        else
+          player.position.x = level.door.position.x + level.door.userData.w/2 + player.userData.w/2 + 0.05;
+        player.vx = 0;
+      }
+    }
+
+    // Invulnerability countdown
+    if (invulnerable){
+      invulnTimer -= dt;
+      player.material.emissive = new THREE.Color(0x333333);
+      if (invulnTimer <= 0){
+        invulnerable = false;
+        player.material.emissive = new THREE.Color(0x000000);
+      }
+    }
+
+    // Hazards
+    if (!invulnerable){
+      for (const h of (level.hazards||[])){
+        if (aabbIntersects(player, h)){ killPlayer(); return; }
+      }
+    }
 
     // Coins
-    for(const c of coins){
-      c.rotation.y+=2*dt;
-      if(player.position.distanceTo(c.position)<1){
-        scene.remove(c);coins.splice(coins.indexOf(c),1);
-        coinTotal++;updateHUD();
-      }
-    }
-    // Hazards
-    for(const h of hazards){
-      if(player.position.distanceTo(h.position)<1.5){
-        player.position.set(0,0.9,0);player.vx=player.vy=player.vz=0;player.jumps=0;
+    for (const c of (level.coins||[])){
+      c.rotation.y += 2.0*dt;
+      if (!c.userData.collected && aabbPointInside(c, player.position.x, player.position.y, player.position.z)){
+        c.userData.collected = true;
+        coinTotal++;
+        scene.remove(c);
+        setHUD(level.name);
+        updateSkipButton();
       }
     }
 
-    // Camera chase + look joystick
-    const target=new THREE.Vector3(player.position.x,player.position.y+1.5,player.position.z);
-    let offset=new THREE.Vector3(0,3,-8);
-    const yaw=lookVec.x*0.5, pitch=lookVec.y*0.3;
-    const rot
+    // Teleports
+    for (const tp of (level.teleportPads||[])){
+      if (aabbIntersects(player, tp)){
+        player.position.set(tp.userData.toX, tp.userData.toY, tp.userData.toZ);
+      }
+    }
+
+    // Enemies
+    for (const e of (level.enemies||[])){
+      if (e.userData.type === 'patrol'){
+        e.position.x += (e.userData.dir || 1) * e.userData.speed * dt;
+        if (e.position.x < (e.userData.minX || -14)) e.userData.dir = 1;
+        if (e.position.x > (e.userData.maxX || 14))  e.userData.dir = -1;
+      } else if (e.userData.type === 'chase'){
+        const dx = player.position.x - e.position.x;
+        const dz = player.position.z - e.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 10){
+          e.position.x += (dx/dist) * (e.userData.speed || 8) * dt;
+          e.position.z += (dz/dist) * (e.userData.speed || 8) * dt;
+        }
+      } else if (e.userData.type === 'fly'){
+        e.userData.t = (e.userData.t || 0) + (e.userData.speed||1.2)*dt;
+        e.position.x += Math.sin(e.userData.t) * (e.userData.ampX || 3.0) * dt;
+        e.position.y += Math.cos(e.userData.t*0.8) * (e.userData.ampY || 2.0) * dt;
+      } else if (e.userData.type === 'ghost'){
+        e.userData.t = (e.userData.t || 0) + dt;
+        const visible = Math.floor(e.userData.t % 2) === 0;
+        e.material.color.set(visible ? 0x9c27b0 : 0x9c27b0);
+        e.material.opacity = visible ? 1 : 0.25;
+        e.material.transparent = !visible;
+        e.userData.visible = visible;
+      } else if (e.userData.type === 'turret'){
+        e.userData.fire = (e.userData.fire || 0) + dt;
+        if (e.userData.fire >= (e.userData.rate || 1.0)){
+          e.userData.fire = 0;
+          shootBullet(e.position.x, e.position.y, e.position.z,
+                     player.position.x, player.position.y, player.position.z, 18);
+        }
+      } else if (e.userData.type === 'boss'){
+        e.userData.fire = (e.userData.fire || 0) + dt;
+        if (e.userData.fire >= (e.userData.rate || 0.9)){
+          e.userData.fire = 0;
+          const N = 12;
+          for (let k=0;k<N;k++){
+            const ang = (k/N) * Math.PI*2;
+            shootBullet(e.position.x, e.position.y, e.position.z,
+                        e.position.x + Math.cos(ang), e.position.y, e.position.z + Math.sin(ang), 16);
+          }
+        }
+      }
+
+      // Enemy collision
+      if (!invulnerable){
+        if (e.userData.type === 'boss'){
+          const stomping = (player.vy < 0) && aabbIntersects(player, e);
+          if (stomping){
+            player.vy = 16;
+            e.userData.hp--;
+            if (e.userData.hp <= 0){
+              coinTotal += level.bossReward;
+              setHUD(level.name); updateSkipButton();
+              loadLevel(levelIndex + 1); return;
+            }
+          } else if (aabbIntersects(player, e)){ killPlayer(); return; }
+        } else if (e.userData.type === 'ghost'){
+          if (e.userData.visible && aabbIntersects(player, e)){ killPlayer(); return; }
+        } else {
+          if (aabbIntersects(player, e)){ killPlayer(); return; }
+        }
+      }
+    }
+
+    // Bullets
+    for (let i=bullets.length-1; i>=0; i--){
+      const b = bullets[i];
+      b.obj.position.x += b.vx * dt;
+      b.obj.position.y += b.vy * dt;
+      b.obj.position.z += b.vz * dt;
+      b.ttl -= dt;
+      if (!invulnerable && aabbIntersects(player, b.obj)){ killPlayer(); return; }
+      if (b.ttl <= 0){ scene.remove(b.obj); bullets.splice(i,1); }
+    }
+
+    // Goal -> next level
+    if (!level.boss && level.goal && aabbIntersects(player, level.goal)){
+      loadLevel(levelIndex + 1);
+    }
+
+    // ===== Chase camera (fixed responsiveness) + Right stick look =====
+    const target = new THREE.Vector3(player.position.x, player.position.y + 1.8, player.position.z);
+    let offset = new THREE.Vector3(0, 3.5, -8.5); // behind and above
+    const yaw = lookVec.x * 0.6;   // left/right look
+    const pitch = clamp(lookVec.y * 0.4, -0.8, 0.8); // up/down look
+    const rotY = new THREE.Matrix4().makeRotationY(yaw);
+    const rotX = new THREE.Matrix4().makeRotationX(pitch);
+    offset.applyMatrix4(rotY).applyMatrix4(rotX);
+    const desired = target.clone().add(offset);
+    camera.position.lerp(desired, 0.15);
+    camera.lookAt(target);
+
+    // Darkness + flashlight rendering (post-pass style)
+    if (level.dark){
+      // simple vignette-like effect via player emissive cue (we won't add full-screen canvas overlay here)
+      player.material.emissive = new THREE.Color(level.flashlight ? 0x222222 : 0x000000);
+    } else {
+      player.material.emissive = new THREE.Color(0x000000);
+    }
+  }
+
+  // ===== Main loop =====
+  let last = performance.now();
+  function animate(now){
+    requestAnimationFrame(animate);
+    const dt = Math.min(0.033, (now - last)/1000);
+    last = now;
+    update(dt);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // ===== Resizing =====
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+  </script>
+</body>
+</html>
