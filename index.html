@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Platformer — Third Person Mobile</title>
+  <title>3D Platformer — Dual Joysticks</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin:0; height:100%; background:#0b0f19; overflow:hidden; }
@@ -11,12 +11,14 @@
       color:#fff; font-family:sans-serif; background:rgba(0,0,0,0.35);
       padding:6px 10px; border-radius:8px; z-index:10;
     }
-    #stick {
-      position:fixed; bottom:16px; left:16px; width:120px; height:120px; z-index:20;
+    #stick, #lookStick {
+      position:fixed; width:120px; height:120px; z-index:20;
       border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
       touch-action:none;
     }
-    #stickKnob {
+    #stick { bottom:16px; left:16px; }
+    #lookStick { bottom:16px; right:120px; }
+    #stickKnob, #lookKnob {
       position:absolute; left:50%; top:50%; width:40px; height:40px; z-index:21;
       border-radius:50%; background:#0af; transform:translate(-50%,-50%);
     }
@@ -31,87 +33,79 @@
 <body>
   <div id="hud">Coins: 0</div>
   <div id="stick"><div id="stickKnob"></div></div>
+  <div id="lookStick"><div id="lookKnob"></div></div>
   <button id="jumpBtn">Jump</button>
 
   <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
   <script>
-  let scene, camera, renderer;
-  let player, coins=[], hazards=[];
-  let coinTotal=0;
-  const hud=document.getElementById('hud');
+  // === Scene setup ===
+  let scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x0b0f19);
+  let camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,1000);
+  camera.position.set(0,6,-10);
+  let renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  document.body.appendChild(renderer.domElement);
 
-  // Mobile stick
-  const stick=document.getElementById('stick'), knob=document.getElementById('stickKnob');
-  let stickCenter={x:0,y:0}, stickVec={x:0,y:0}, stickActive=false;
-  function setStickCenter(){const r=stick.getBoundingClientRect();stickCenter.x=r.left+r.width/2;stickCenter.y=r.top+r.height/2;}
-  setStickCenter(); window.addEventListener('resize',setStickCenter);
-  function stickDown(x,y){stickActive=true;updateStick(x,y);}
-  function stickUp(){stickActive=false;stickVec.x=0;stickVec.y=0;knob.style.left='50%';knob.style.top='50%';}
-  function updateStick(x,y){const dx=x-stickCenter.x,dy=y-stickCenter.y;const radius=50;const len=Math.hypot(dx,dy);const cl=Math.min(len,radius);
-    const nx=(dx/(len||1))*cl,ny=(dy/(len||1))*cl;knob.style.left=`calc(50% + ${nx}px)`;knob.style.top=`calc(50% + ${ny}px)`;stickVec.x=nx/radius;stickVec.y=ny/radius;}
-  stick.addEventListener('touchstart',e=>{const t=e.touches[0];stickDown(t.clientX,t.clientY);});
-  stick.addEventListener('touchmove',e=>{const t=e.touches[0];if(stickActive)updateStick(t.clientX,t.clientY);});
-  stick.addEventListener('touchend',stickUp);
+  const hemi=new THREE.HemisphereLight(0xffffff,0x444444,0.8);scene.add(hemi);
+  const dir=new THREE.DirectionalLight(0xffffff,0.8);dir.position.set(10,20,10);scene.add(dir);
+
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(50,50),new THREE.MeshStandardMaterial({color:0x223349}));
+  ground.rotation.x=-Math.PI/2;scene.add(ground);
+
+  // === Player ===
+  const pGeo=new THREE.BoxGeometry(1,1.8,1);
+  const pMat=new THREE.MeshStandardMaterial({color:0xffd166});
+  const player=new THREE.Mesh(pGeo,pMat);
+  player.position.set(0,0.9,0);
+  scene.add(player);
+  player.vx=0;player.vy=0;player.vz=0;player.jumps=0;
+
+  // === Joysticks ===
+  function setupStick(stickId, knobId){
+    const stick=document.getElementById(stickId), knob=document.getElementById(knobId);
+    let center={x:0,y:0}, vec={x:0,y:0}, active=false;
+    function setCenter(){const r=stick.getBoundingClientRect();center.x=r.left+r.width/2;center.y=r.top+r.height/2;}
+    setCenter(); window.addEventListener('resize',setCenter);
+    function down(x,y){active=true;update(x,y);}
+    function up(){active=false;vec.x=0;vec.y=0;knob.style.left='50%';knob.style.top='50%';}
+    function update(x,y){const dx=x-center.x,dy=y-center.y;const radius=50;const len=Math.hypot(dx,dy);const cl=Math.min(len,radius);
+      const nx=(dx/(len||1))*cl,ny=(dy/(len||1))*cl;knob.style.left=`calc(50% + ${nx}px)`;knob.style.top=`calc(50% + ${ny}px)`;vec.x=nx/radius;vec.y=ny/radius;}
+    stick.addEventListener('touchstart',e=>{const t=e.touches[0];down(t.clientX,t.clientY);});
+    stick.addEventListener('touchmove',e=>{const t=e.touches[0];if(active)update(t.clientX,t.clientY);});
+    stick.addEventListener('touchend',up);
+    return vec;
+  }
+  const moveVec=setupStick('stick','stickKnob');
+  const lookVec=setupStick('lookStick','lookKnob');
 
   // Jump button
   document.getElementById('jumpBtn').addEventListener('touchstart',()=>{if(player.jumps<2){player.vy=16;player.jumps++;}});
 
-  function init(){
-    scene=new THREE.Scene();
-    scene.background=new THREE.Color(0x0b0f19);
+  // === Game objects ===
+  let coins=[], hazards=[];
+  const cGeo=new THREE.TorusGeometry(0.35,0.12,16,24);
+  const cMat=new THREE.MeshStandardMaterial({color:0xffd700});
+  const coin=new THREE.Mesh(cGeo,cMat);coin.position.set(3,1,0);scene.add(coin);coins.push(coin);
+  const hGeo=new THREE.BoxGeometry(2,0.5,2);
+  const hMat=new THREE.MeshStandardMaterial({color:0xd84315});
+  const hazard=new THREE.Mesh(hGeo,hMat);hazard.position.set(-3,0.25,0);scene.add(hazard);hazards.push(hazard);
 
-    camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,1000);
-    camera.position.set(0,6,-10);
+  let coinTotal=0;
 
-    renderer=new THREE.WebGLRenderer({antialias:true});
-    renderer.setSize(window.innerWidth,window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    const hemi=new THREE.HemisphereLight(0xffffff,0x444444,0.8);scene.add(hemi);
-    const dir=new THREE.DirectionalLight(0xffffff,0.8);dir.position.set(10,20,10);scene.add(dir);
-
-    const ground=new THREE.Mesh(new THREE.PlaneGeometry(50,50),new THREE.MeshStandardMaterial({color:0x223349}));
-    ground.rotation.x=-Math.PI/2;scene.add(ground);
-
-    const pGeo=new THREE.BoxGeometry(1,1.8,1);
-    const pMat=new THREE.MeshStandardMaterial({color:0xffd166});
-    player=new THREE.Mesh(pGeo,pMat);player.position.set(0,0.9,0);scene.add(player);
-    player.vx=0;player.vy=0;player.vz=0;player.jumps=0;
-
-    // Add a coin
-    const cGeo=new THREE.TorusGeometry(0.35,0.12,16,24);
-    const cMat=new THREE.MeshStandardMaterial({color:0xffd700});
-    const coin=new THREE.Mesh(cGeo,cMat);coin.position.set(3,1,0);scene.add(coin);coins.push(coin);
-
-    // Add a hazard
-    const hGeo=new THREE.BoxGeometry(2,0.5,2);
-    const hMat=new THREE.MeshStandardMaterial({color:0xd84315});
-    const hazard=new THREE.Mesh(hGeo,hMat);hazard.position.set(-3,0.25,0);scene.add(hazard);hazards.push(hazard);
-
-    window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
-    animate();
-  }
-
-  function animate(){
-    requestAnimationFrame(animate);
-    update(0.016);
-    renderer.render(scene,camera);
-  }
-
+  // === Update loop ===
   function update(dt){
-    // Movement from stick
+    // Movement
     const speed=8;
-    player.vx=stickVec.x*speed;
-    player.vz=stickVec.y*speed;
-    player.vy-=38*dt; // gravity
-
+    player.vx=moveVec.x*speed;
+    player.vz=moveVec.y*speed;
+    player.vy-=38*dt;
     player.position.x+=player.vx*dt;
     player.position.z+=player.vz*dt;
     player.position.y+=player.vy*dt;
-
     if(player.position.y<0.9){player.position.y=0.9;player.vy=0;player.jumps=0;}
 
-    // Coin collection
+    // Coins
     for(const c of coins){
       c.rotation.y+=2*dt;
       if(player.position.distanceTo(c.position)<1){
@@ -119,22 +113,36 @@
         coinTotal++;hud.textContent=`Coins: ${coinTotal}`;
       }
     }
-
-    // Hazard collision
+    // Hazards
     for(const h of hazards){
       if(player.position.distanceTo(h.position)<1.5){
         player.position.set(0,0.9,0);player.vx=player.vy=player.vz=0;player.jumps=0;
       }
     }
 
-    // Camera chase
+    // Camera chase + look joystick
     const target=new THREE.Vector3(player.position.x,player.position.y+1.5,player.position.z);
-    const desired=target.clone().add(new THREE.Vector3(0,3,-8));
+    // base offset behind player
+    let offset=new THREE.Vector3(0,3,-8);
+    // apply look joystick to rotate offset around player
+    const yaw=lookVec.x*0.5; // left/right
+    const pitch=lookVec.y*0.3; // up/down
+    const rotY=new THREE.Matrix4().makeRotationY(yaw);
+    const rotX=new THREE.Matrix4().makeRotationX(pitch);
+    offset.applyMatrix4(rotY).applyMatrix4(rotX);
+    const desired=target.clone().add(offset);
     camera.position.lerp(desired,0.1);
     camera.lookAt(target);
   }
 
-  init();
+  let last=performance.now();
+  function animate(now){
+    requestAnimationFrame(animate);
+    const dt=Math.min(0.033,(now-last)/1000);last=now;
+    update(dt);
+    renderer.render(scene,camera);
+  }
+  animate();
   </script>
 </body>
 </html>
