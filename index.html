@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Third Person, Levels, Online, Skins, Leaderboard, Voxel Builder</title>
+  <title>3D Game Hub — Third Person, Levels, Local Online, Skins, Leaderboard, Voxel Builder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
@@ -72,13 +72,13 @@
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — Third Person, Levels, Online, Skins, Leaderboard, Voxel Builder</div>
+    <div id="title">3D Game Hub — Third Person, Levels, Local Online, Skins, Leaderboard, Voxel Builder</div>
     <div class="small" id="hint">Left: move. Right: look. Jump/Action. Esc returns to menu.</div>
   </div>
 
   <div id="netbar">
     <label>Player:<input id="playerName" placeholder="Guest" /></label>
-    <label>Server:<input id="serverUrl" class="server" placeholder="ws://localhost:8080" /></label>
+    <label>Server:<input id="serverUrl" class="server" /></label>
     <button id="connectBtn">Connect</button>
     <span id="connStatus" style="margin-left:8px; opacity:0.8"></span>
   </div>
@@ -96,7 +96,7 @@
         <button class="menuBtn" data-game="runner"><div style="font-weight:800">Forest Endless Runner</div><div class="small">Lane dodging. Levels.</div></button>
         <button class="menuBtn" data-game="maze"><div style="font-weight:800">Crystal Maze</div><div class="small">Find exit. Levels.</div></button>
         <button class="menuBtn" data-game="range"><div style="font-weight:800">Target Range</div><div class="small">Aim practice. Levels.</div></button>
-        <button class="menuBtn" data-game="voxel"><div style="font-weight:800">Voxel Builder (Minecraft‑like)</div><div class="small">Place/remove blocks. Small sandbox.</div></button>
+        <button class="menuBtn" data-game="voxel"><div style="font-weight:800">Voxel Builder (Minecraft‑like)</div><div class="small">Place/remove blocks. Sandbox.</div></button>
       </div>
 
       <div class="row">
@@ -109,13 +109,13 @@
 
       <div class="inputRow">
         <label for="codeInput">Code:</label>
-        <input id="codeInput" placeholder="Enter code (e.g., ownercole)" />
+        <input id="codeInput" />
         <button id="applyCodeBtn" class="pill">Apply</button>
         <span id="codeStatus" class="small" style="opacity:0.85"></span>
       </div>
 
       <div id="levelBar" class="row">
-        <span class="small" style="opacity:0.8">Level:</span>
+        <span class="small" style="opacity:0.8">Start level:</span>
         <button class="levelBtn" data-level="0">Level 1</button>
         <button class="levelBtn" data-level="1">Level 2</button>
         <button class="levelBtn" data-level="2">Level 3</button>
@@ -287,15 +287,21 @@
 
     // Hub state
     let scene = null, camera = null, cleanup = null, running = false, selectedLevel = 0;
+
+    // Progression order (after finishing all levels in a game, advance to the next game)
+    const gameOrder = ['jungle', 'platformer', 'racer', 'arena', 'runner', 'maze', 'range', 'voxel'];
+    const maxLevels = 5;
+
     let keys = {};
     window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') showMenu(); });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-    // Shared state
+    // Shared state (local-only networking: default to LAN server on same hostname)
+    const defaultLAN = 'ws://' + window.location.hostname + ':8080';
     const shared = {
       skin: localStorage.getItem('skin') || 'blue',
       name: localStorage.getItem('name') || '',
-      server: localStorage.getItem('server') || 'ws://localhost:8080',
+      server: localStorage.getItem('server') || defaultLAN,
       ws: null,
       id: Math.random().toString(36).slice(2),
       peers: new Map(), // id -> {mesh, label, lastSeen, data}
@@ -321,7 +327,7 @@
       }
     }
 
-    // Owner cosmetic: a small billboard text above player “OWNER”
+    // Owner cosmetic: billboard text “OWNER”
     function makeOwnerLabel() {
       const canvas = document.createElement('canvas');
       canvas.width = 256; canvas.height = 128;
@@ -350,7 +356,7 @@
         shared.skin = e.target.dataset.skin;
         localStorage.setItem('skin', shared.skin);
         if (cleanup && cleanup.applySkin) cleanup.applySkin(shared.skin);
-        broadcastState(); // update peers with new skin
+        broadcastState();
       }
     });
 
@@ -374,7 +380,9 @@
 
     // Levels selection
     document.querySelectorAll('.levelBtn').forEach(b => {
-      b.onclick = () => { selectedLevel = parseInt(b.dataset.level,10) || 0; b.style.background = '#44aa44';
+      b.onclick = () => {
+        selectedLevel = parseInt(b.dataset.level,10) || 0;
+        b.style.background = '#44aa44';
         document.querySelectorAll('.levelBtn').forEach(o => { if (o !== b) o.style.background = '#222a'; });
       };
     });
@@ -408,12 +416,12 @@
       });
     }
 
-    // Networking (simple WS presence/position)
+    // Networking (LAN-only default)
     connectBtn.onclick = () => {
       const name = playerNameInput.value.trim();
       const server = serverUrlInput.value.trim();
       shared.name = name || 'Guest';
-      shared.server = server || 'ws://localhost:8080';
+      shared.server = server || defaultLAN; // default to local hostname
       localStorage.setItem('name', shared.name);
       localStorage.setItem('server', shared.server);
       connectWS();
@@ -547,9 +555,9 @@
       cleanup = null; scene = null; camera = null;
       netbar.style.display = 'block';
     }
-    function startGame(setup, gameKey) {
+    function startGame(setup, gameKey, levelIdx) {
       if (cleanup && cleanup.dispose) cleanup.dispose();
-      cleanup = setup(quality, shared.skin, selectedLevel, shared.owner);
+      cleanup = setup(quality, shared.skin, levelIdx, shared.owner);
       scene = cleanup.scene; camera = cleanup.camera;
       shared.currentGame = gameKey;
       running = true;
@@ -561,22 +569,31 @@
       menu.style.display = 'none';
       if (cleanup.applySkin) cleanup.applySkin(shared.skin);
       if (cleanup.applyOwner) cleanup.applyOwner(shared.owner);
+      // Attach progression hooks
+      cleanup.nextLevel = () => advanceLevel(gameKey, levelIdx + 1);
+      cleanup.nextGame = () => advanceToNextGame(gameKey);
       broadcastState(true);
+    }
+
+    function advanceLevel(gameKey, nextIndex) {
+      if (nextIndex < maxLevels) {
+        startGame(gameSetups[gameKey], gameKey, nextIndex);
+      } else {
+        // Finished all levels in this game: move to next game
+        advanceToNextGame(gameKey);
+      }
+    }
+
+    function advanceToNextGame(current) {
+      const idx = gameOrder.indexOf(current);
+      const nextGame = gameOrder[(idx + 1) % gameOrder.length];
+      startGame(gameSetups[nextGame], nextGame, 0);
     }
 
     document.querySelectorAll('.menuBtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const game = btn.dataset.game;
-        switch (game) {
-          case 'jungle': startGame(setupJungleTP, 'jungle'); break;
-          case 'platformer': startGame(setupPlatformerTP, 'platformer'); break;
-          case 'racer': startGame(setupRacerTP, 'racer'); break;
-          case 'arena': startGame(setupArenaTP, 'arena'); break;
-          case 'runner': startGame(setupRunnerTP, 'runner'); break;
-          case 'maze': startGame(setupMazeTP, 'maze'); break;
-          case 'range': startGame(setupRangeTP, 'range'); break;
-          case 'voxel': startGame(setupVoxelTP, 'voxel'); break;
-        }
+        startGame(gameSetups[game], game, selectedLevel);
       });
     });
 
@@ -642,7 +659,7 @@
       return group;
     }
 
-    // Level data (examples: 5 levels each)
+    // Level data (5 levels each)
     const jungleLevels = [
       { trees: 12, coins: 8, kits: 3, lavaSpeed: 0.015, enemyRate: 1.2 },
       { trees: 16, coins: 10, kits: 3, lavaSpeed: 0.020, enemyRate: 1.0 },
@@ -675,6 +692,18 @@
     const voxelLevels = [
       { size: 16, startBlocks: 60 }, { size: 18, startBlocks: 80 }, { size: 20, startBlocks: 100 }, { size: 22, startBlocks: 120 }, { size: 24, startBlocks: 140 }
     ];
+
+    // GAME SETUPS (map names to setup functions for progression)
+    const gameSetups = {
+      jungle: setupJungleTP,
+      platformer: setupPlatformerTP,
+      racer: setupRacerTP,
+      arena: setupArenaTP,
+      runner: setupRunnerTP,
+      maze: setupMazeTP,
+      range: setupRangeTP,
+      voxel: setupVoxelTP
+    };
 
     // GAME 1: Jungle
     function setupJungleTP(quality, skin, levelIndex, ownerFlag) {
@@ -873,6 +902,15 @@
             addScore('jungle', shared.name || 'Guest', Math.round(coinCount));
           }
 
+          // win condition: survive X seconds? For simplicity, coins collected target:
+          if (coinCount >= lvl.coins) {
+            run = false;
+            addScore('jungle', shared.name || 'Guest', coinCount);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+
           hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`;
           hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
 
@@ -963,7 +1001,12 @@
             vel.y = 0; onGround = true; jumpsLeft = 2;
           }
         }
-        if (player.position.y < -30) { run = false; msgText.textContent = `You fell — Platformer (Lvl ${levelIndex+1})`; msg.style.display = 'block'; addScore('platformer', shared.name || 'Guest', Math.round((performance.now() % 100000)/100)); }
+        if (player.position.y < -30) {
+          run = false;
+          msgText.textContent = `You fell — Platformer (Lvl ${levelIndex+1})`;
+          msg.style.display = 'block';
+          addScore('platformer', shared.name || 'Guest', Math.max(1, 100 - levelIndex * 10));
+        }
       }
 
       function restart() { player.position.set(-16, baseY + 6, 0); vel.set(0, 0, 0); yaw = 0; pitch = 0; won = false; run = true; msg.style.display = 'none'; jumpsLeft = 2; }
@@ -991,8 +1034,11 @@
           collide();
 
           if (player.position.distanceTo(goal.position) < 5) {
-            won = true; msgText.textContent = `Goal reached! — Platformer (Lvl ${levelIndex+1})`; msg.style.display = 'block';
-            addScore('platformer', shared.name || 'Guest', 1000 - Math.round((performance.now() % 100000)/100));
+            won = true;
+            addScore('platformer', shared.name || 'Guest', 1000 - levelIndex * 50);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
           }
 
           hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
@@ -1084,7 +1130,13 @@
             if (car.position.distanceTo(g.position) < 4) { score++; sc.remove(g); gates.splice(i, 1); hudSecondary.textContent = `Gates ${score}/${lvl.gates}`; }
           }
 
-          if (gates.length === 0) { run = false; msgText.textContent = `Finish! — Racer (Lvl ${levelIndex+1})`; msg.style.display = 'block'; addScore('racer', shared.name || 'Guest', Math.round(speed*10)); }
+          if (gates.length === 0) {
+            run = false;
+            addScore('racer', shared.name || 'Guest', Math.round(speed*10));
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
           hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
 
           broadcastState();
@@ -1184,7 +1236,13 @@
             }
           }
 
-          if (drones.length === 0) { run = false; msgText.textContent = `All drones cleared! — Arena (Lvl ${levelIndex+1})`; msg.style.display = 'block'; addScore('arena', shared.name || 'Guest', score); }
+          if (drones.length === 0) {
+            run = false;
+            addScore('arena', shared.name || 'Guest', score);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
 
           broadcastState();
         }
@@ -1274,7 +1332,21 @@
               rings++; hudSecondary.textContent = `Rings ${rings}`;
             }
             const dist = new THREE.Vector3(o.position.x - rig.position.x, 0, o.position.z).length();
-            if (dist < 1.0) { run = false; msgText.textContent = `Hit obstacle — Runner (Lvl ${levelIndex+1})`; msg.style.display = 'block'; addScore('runner', shared.name || 'Guest', rings); }
+            if (dist < 1.0) {
+              run = false;
+              msgText.textContent = `Hit obstacle — Runner (Lvl ${levelIndex+1})`;
+              msg.style.display = 'block';
+              addScore('runner', shared.name || 'Guest', rings);
+            }
+          }
+
+          // Level complete condition: collect N rings
+          if (rings >= 10 + levelIndex * 5) {
+            run = false;
+            addScore('runner', shared.name || 'Guest', rings);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
           }
 
           updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
@@ -1350,7 +1422,13 @@
           }
           if (!blocked) rig.position.copy(next);
 
-          if (rig.position.distanceTo(exit.position) < 5) { run = false; msgText.textContent = `Exit found! — Maze (Lvl ${levelIndex+1})`; msg.style.display = 'block'; addScore('maze', shared.name || 'Guest', 1000 - Math.round((performance.now() % 100000)/100)); }
+          if (rig.position.distanceTo(exit.position) < 5) {
+            run = false;
+            addScore('maze', shared.name || 'Guest', 1000 - levelIndex * 50);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
 
           broadcastState();
         }
@@ -1436,10 +1514,19 @@
                 sc.remove(t); targets.splice(j, 1);
                 sc.remove(b); bullets.splice(i, 1);
                 score++; hudSecondary.textContent = `Score ${score} | ACTION to shoot`;
-                if (Math.random() < lvl.respawn) spawnTarget();
+                spawnTarget();
                 break;
               }
             }
+          }
+
+          // Level complete condition: reach score threshold
+          if (score >= 6 + levelIndex * 2) {
+            run = false;
+            addScore('range', shared.name || 'Guest', score);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
           }
 
           broadcastState();
@@ -1457,7 +1544,6 @@
       // Simple voxel grid
       const size = lvl.size; // width/depth
       const blockSize = 1;
-      const half = size/2;
       const groundY = 0;
 
       // Ground plane
@@ -1488,7 +1574,7 @@
         addBlock(x, y, z, 0x88b36a);
       }
 
-      // Place/remove blocks with ACTION/JUMP (ACTION place, JUMP remove near crosshair point)
+      // Place/remove blocks with ACTION/JUMP
       function rayFromCamera() {
         const dir = new THREE.Vector3().subVectors(player.position, cam.position).normalize();
         const origin = cam.position.clone();
@@ -1497,7 +1583,7 @@
       function findNearestGridHit(maxDist=8) {
         const { origin, dir } = rayFromCamera();
         let best = null, bestDist = Infinity;
-        for (const [k, mesh] of blocks) {
+        for (const [, mesh] of blocks) {
           const to = new THREE.Vector3().subVectors(mesh.position, origin);
           const proj = to.dot(dir);
           if (proj > 0 && proj < maxDist) {
@@ -1564,6 +1650,14 @@
 
           hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
 
+          // Level complete condition: reach total block count
+          if (blocks.size >= lvl.startBlocks + 10) {
+            addScore('voxel', shared.name || 'Guest', blocks.size);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+
           broadcastState();
         }
       };
@@ -1594,7 +1688,7 @@
     // Start on menu
     showMenu();
 
-    // Tip: Connect to your server to see peers. Enter code “ownercole” to unlock the OWNER cosmetic.
+    // Tip: Run server.js on your LAN (same Wi‑Fi). Default server uses your local hostname. Enter code “ownercole” to unlock the OWNER cosmetic.
   </script>
 </body>
 </html>
