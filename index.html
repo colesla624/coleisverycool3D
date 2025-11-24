@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Mobile First‑Person (7 Games incl. Lava Monkey Jungle)</title>
+  <title>3D Game Hub — Unified Settings + Fixed Camera (7 Games incl. Lava Monkey Jungle)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, sans-serif; }
@@ -13,11 +13,10 @@
     #topbar .small { font-size:12px; opacity:0.85; font-weight:500; }
     #hud { position:absolute; bottom:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
     #hud .line { margin-top:6px; font-weight:600; }
-
     #menu { position:absolute; inset:0; display:grid; place-items:center; z-index:11; }
-    #menuPanel { width:780px; max-width:92vw; background:#111a; backdrop-filter: blur(6px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
+    #menuPanel { width:820px; max-width:94vw; background:#111a; backdrop-filter: blur(6px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
     #menuPanel h1 { margin:0 0 8px; font-size:28px; }
-    #menuGrid { display:grid; grid-template-columns:repeat(2, minmax(260px, 1fr)); gap:12px; margin-top:10px; }
+    #menuGrid { display:grid; grid-template-columns:repeat(2, minmax(280px, 1fr)); gap:12px; margin-top:10px; }
     .menuBtn { padding:14px; background:#222a; border:1px solid #fff2; color:#fff; border-radius:12px; cursor:pointer; text-align:left; }
     .menuBtn:hover { background:#2a2f; }
     .row { display:flex; gap:8px; align-items:center; margin-top:12px; }
@@ -28,6 +27,17 @@
     #msg { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:12; text-align:center; font-weight:800; font-size:22px; display:none; }
     #msg button { margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer; }
 
+    /* Shared settings panel (Lava Monkey-style) */
+    #settingsBar { position:absolute; top:56px; right:10px; z-index:12; display:none; display:flex; gap:8px; }
+    .settingsBtn { padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; cursor:pointer; }
+
+    /* Shop modal */
+    #shop { position:absolute; top:20%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; width:360px; border:1px solid #fff2; }
+    #shop h2 { margin:0 0 10px; }
+    #shop .row { margin:8px 0; display:flex; justify-content:space-between; align-items:center; }
+    #shop .row button { padding:6px 10px; border:none; border-radius:8px; background:#444; color:#fff; cursor:pointer; }
+    #closeShop { margin-top:12px; width:100%; padding:8px; border:none; border-radius:8px; background:#6a6a6a; color:#fff; cursor:pointer; }
+
     /* Mobile joysticks and buttons */
     #controls { position:absolute; bottom:16px; left:16px; right:16px; z-index:12; display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; }
     .stick { width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); position:relative; pointer-events:auto; touch-action:none; }
@@ -35,22 +45,12 @@
     #rightPanel { display:flex; flex-direction:column; align-items:center; gap:12px; pointer-events:auto; }
     .btn { pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); color:#fff; display:grid; place-items:center; font-weight:800; }
 
-    /* Lava Monkey Jungle-specific overlay + shop */
-    #lmOverlay { position:absolute; top:60px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
-    #viewBtn { position:absolute; top:10px; right:110px; z-index:12; padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; cursor:pointer; display:none; }
-    #shopBtn { position:absolute; top:56px; right:10px; z-index:12; padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; cursor:pointer; display:none; }
-    #shop { position:absolute; top:20%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:12; width:340px; border:1px solid #fff2; }
-    #shop h2 { margin:0 0 10px; }
-    #shop .row { margin:8px 0; display:flex; justify-content:space-between; align-items:center; }
-    #shop .row button { padding:6px 10px; border:none; border-radius:8px; background:#444; color:#fff; cursor:pointer; }
-    #closeShop { margin-top:12px; width:100%; padding:8px; border:none; border-radius:8px; background:#6a6a6a; color:#fff; cursor:pointer; }
-
     * { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — Mobile First‑Person</div>
+    <div id="title">3D Game Hub — Unified Settings + Fixed Camera</div>
     <div class="small" id="hint">Left stick: move. Right stick: look. Jump/Action buttons. Esc/Back to menu.</div>
   </div>
 
@@ -62,31 +62,31 @@
       <div id="menuGrid">
         <button class="menuBtn" data-game="jungle">
           <div style="font-weight:800">Lava Monkey Jungle</div>
-          <div class="small">Survive monkeys, rising lava. Coins & medkits. Shop with upgrades and skins.</div>
+          <div class="small">Survive monkeys and rising lava. Coins & medkits. Full shop, skins, camera toggle.</div>
         </button>
         <button class="menuBtn" data-game="platformer">
           <div style="font-weight:800">Sky Platforms (First‑Person Platformer)</div>
-          <div class="small">Jump across floating platforms to reach the goal.</div>
+          <div class="small">Jump across floating platforms to reach the goal. Full settings & toggle.</div>
         </button>
         <button class="menuBtn" data-game="racer">
           <div style="font-weight:800">Desert Ridge Racer</div>
-          <div class="small">Drive from the cockpit. Pass gates to finish.</div>
+          <div class="small">Drive from the cockpit. Pass gates to finish. Shop applies boosts & maps.</div>
         </button>
         <button class="menuBtn" data-game="arena">
           <div style="font-weight:800">Space Drone Arena</div>
-          <div class="small">Shoot drones in zero‑g from a first‑person rig.</div>
+          <div class="small">Shoot drones in zero‑g. Shop boosts weapon power & map variants.</div>
         </button>
         <button class="menuBtn" data-game="runner">
           <div style="font-weight:800">Forest Endless Runner</div>
-          <div class="small">First‑person lane dodging with rising speed.</div>
+          <div class="small">First‑person lane dodging with rising speed. Skins & map variants included.</div>
         </button>
         <button class="menuBtn" data-game="maze">
           <div style="font-weight:800">Crystal Maze</div>
-          <div class="small">Navigate a glowing maze and find the exit in first‑person.</div>
+          <div class="small">Navigate a glowing maze to find the exit. Map variants and camera toggle.</div>
         </button>
         <button class="menuBtn" data-game="range">
           <div style="font-weight:800">Target Range</div>
-          <div class="small">First‑person aim practice. Hit pop‑up targets quickly.</div>
+          <div class="small">Aim practice. Weapon upgrades and skins affect feel.</div>
         </button>
       </div>
       <div class="row">
@@ -101,18 +101,18 @@
     <div class="line" id="hudSecondary"></div>
   </div>
 
-  <div id="lmOverlay">
-    Survive: <span id="lmTimer">0.0</span>s | Health: <span id="lmHp">100</span> | Coins: <span id="lmCoins">0</span>
+  <!-- Shared settings controls (Monkey-game style) -->
+  <div id="settingsBar">
+    <button id="viewBtn" class="settingsBtn">VIEW: FIRST</button>
+    <button id="shopBtn" class="settingsBtn">SHOP</button>
   </div>
 
-  <button id="viewBtn">VIEW: FIRST</button>
-  <button id="shopBtn">SHOP</button>
-
+  <!-- Shop modal (shared across all games, context-aware effects) -->
   <div id="shop">
     <h2>Shop</h2>
     <div class="row"><span>Weapon upgrade</span><button data-cost="10" data-type="weapon">Buy (10)</button></div>
-    <div class="row"><span>Map: Night jungle</span><button data-cost="20" data-type="mapNight">Buy (20)</button></div>
-    <div class="row"><span>Map: Bright jungle</span><button data-cost="0" data-type="mapDay">Use</button></div>
+    <div class="row"><span>Map: Night</span><button data-cost="20" data-type="mapNight">Buy (20)</button></div>
+    <div class="row"><span>Map: Day</span><button data-cost="0" data-type="mapDay">Use</button></div>
     <div class="row"><span>Skin: Red</span><button data-cost="15" data-type="skinRed">Buy (15)</button></div>
     <div class="row"><span>Skin: Blue</span><button data-cost="0" data-type="skinBlue">Use</button></div>
     <button id="closeShop">Close</button>
@@ -138,7 +138,7 @@
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
-    // Shared renderer
+    // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -159,12 +159,7 @@
     const controls = document.getElementById('controls');
     const jumpBtn = document.getElementById('jumpBtn');
     const actionBtn = document.getElementById('actionBtn');
-
-    // Lava Monkey overlay + shop refs
-    const lmOverlay = document.getElementById('lmOverlay');
-    const lmTimerEl = document.getElementById('lmTimer');
-    const lmHpEl = document.getElementById('lmHp');
-    const lmCoinsEl = document.getElementById('lmCoins');
+    const settingsBar = document.getElementById('settingsBar');
     const viewBtn = document.getElementById('viewBtn');
     const shopBtn = document.getElementById('shopBtn');
     const shopEl = document.getElementById('shop');
@@ -206,23 +201,77 @@
     graphicsHigh.onclick = () => { quality = 'high'; graphicsHigh.style.background = '#44aa44'; graphicsLow.style.background = '#fff1'; };
     graphicsHigh.click();
 
-    // Shared state
+    // Shared hub state
     let scene = null, camera = null, cleanup = null, running = false;
     let keys = {};
     window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') showMenu(); });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
 
+    // Shared player cosmetics state (shop)
+    const shopState = {
+      cameraMode: 'first',
+      mapVariant: 'day',
+      skin: 'blue',
+      weaponLevel: 0 // 0=base, 1=upgraded
+    };
+
     backBtn.onclick = () => showMenu();
     restartBtn.onclick = () => { if (cleanup && cleanup.restart) cleanup.restart(); };
+
+    viewBtn.onclick = () => {
+      shopState.cameraMode = (shopState.cameraMode === 'first') ? 'third' : 'first';
+      viewBtn.textContent = `VIEW: ${shopState.cameraMode.toUpperCase()}`;
+      if (cleanup && cleanup.setCameraMode) cleanup.setCameraMode(shopState.cameraMode);
+    };
+
+    shopBtn.onclick = () => { shopEl.style.display = 'block'; };
+    closeShopBtn.onclick = () => { shopEl.style.display = 'none'; };
+
+    // Shared shop apply
+    shopEl.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'BUTTON' || e.target.id === 'closeShop') return;
+      const cost = parseInt(e.target.dataset.cost || '0', 10);
+      if (cleanup && cleanup.getCurrency && cleanup.setCurrency) {
+        const coins = cleanup.getCurrency();
+        if (cost > coins) { alert('Not enough coins'); return; }
+        if (cost > 0) cleanup.setCurrency(coins - cost);
+      }
+      const type = e.target.dataset.type;
+      applyShop(type);
+    });
+
+    function applyShop(type) {
+      switch (type) {
+        case 'weapon':
+          shopState.weaponLevel = 1;
+          if (cleanup && cleanup.applyWeaponUpgrade) cleanup.applyWeaponUpgrade();
+          break;
+        case 'mapNight':
+          shopState.mapVariant = 'night';
+          if (cleanup && cleanup.applyMapVariant) cleanup.applyMapVariant('night');
+          break;
+        case 'mapDay':
+          shopState.mapVariant = 'day';
+          if (cleanup && cleanup.applyMapVariant) cleanup.applyMapVariant('day');
+          break;
+        case 'skinRed':
+          shopState.skin = 'red';
+          if (cleanup && cleanup.applySkin) cleanup.applySkin('red');
+          break;
+        case 'skinBlue':
+          shopState.skin = 'blue';
+          if (cleanup && cleanup.applySkin) cleanup.applySkin('blue');
+          break;
+      }
+    }
 
     function showMenu() {
       running = false;
       hud.style.display = 'none';
-      lmOverlay.style.display = 'none';
-      viewBtn.style.display = 'none';
-      shopBtn.style.display = 'none';
+      settingsBar.style.display = 'none';
       controls.style.display = 'none';
       msg.style.display = 'none';
+      shopEl.style.display = 'none';
       menu.style.display = 'grid';
       if (cleanup && cleanup.dispose) cleanup.dispose();
       cleanup = null;
@@ -230,27 +279,18 @@
       camera = null;
     }
 
-    function startGame(setup, jungleMode = false) {
+    function startGame(setup) {
       if (cleanup && cleanup.dispose) cleanup.dispose();
-      cleanup = setup(quality);
+      cleanup = setup(quality, shopState);
       scene = cleanup.scene;
       camera = cleanup.camera;
       running = true;
       hud.style.display = 'block';
       backBtn.style.display = 'inline-block';
       controls.style.display = 'flex';
+      settingsBar.style.display = 'flex';
       menu.style.display = 'none';
-
-      // Jungle UI toggles
-      if (jungleMode) {
-        lmOverlay.style.display = 'block';
-        viewBtn.style.display = 'inline-block';
-        shopBtn.style.display = 'inline-block';
-      } else {
-        lmOverlay.style.display = 'none';
-        viewBtn.style.display = 'none';
-        shopBtn.style.display = 'none';
-      }
+      viewBtn.textContent = `VIEW: ${shopState.cameraMode.toUpperCase()}`;
     }
 
     // Menu button routing
@@ -258,7 +298,7 @@
       btn.addEventListener('click', () => {
         const game = btn.dataset.game;
         switch (game) {
-          case 'jungle': startGame(setupJungleFP, true); break;
+          case 'jungle': startGame(setupJungleFP); break;
           case 'platformer': startGame(setupPlatformerFP); break;
           case 'racer': startGame(setupRacerFP); break;
           case 'arena': startGame(setupArenaFP); break;
@@ -291,19 +331,33 @@
       return group;
     }
 
-    // Shared first-person camera update
+    // Camera helpers (fixed yaw/pitch, no roll)
     function updateFirstPersonCamera(cam, playerPos, yaw, pitch, eyeHeight=1.1) {
       cam.position.set(playerPos.x, playerPos.y + eyeHeight, playerPos.z);
       cam.rotation.set(0, 0, 0);
-      cam.rotateX(pitch);
+      cam.rotateX(THREE.MathUtils.clamp(pitch, -1.2, 1.2));
       cam.rotateY(yaw);
+    }
+    function updateThirdPersonCamera(cam, playerPos, yaw, dist=6.0, height=2.5) {
+      const offset = new THREE.Vector3(Math.sin(yaw) * dist, height, -Math.cos(yaw) * dist);
+      cam.position.copy(playerPos).add(offset);
+      cam.lookAt(playerPos.x, playerPos.y + 1.0, playerPos.z);
+    }
+
+    // Shared look application from right stick
+    function applyLookFromStick(yawPitch, dt, sensitivity=1.8, flip=false) {
+      const ls = lookStick.get();
+      const lx = flip ? -ls.x : ls.x;
+      const ly = flip ? -ls.y : ls.y;
+      yawPitch.yaw += lx * sensitivity * dt;
+      yawPitch.pitch = THREE.MathUtils.clamp(yawPitch.pitch + ly * sensitivity * dt, -1.2, 1.2);
     }
 
     // GAME 1: Lava Monkey Jungle (Full features preserved)
-    function setupJungleFP(quality) {
+    function setupJungleFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
-      sc.add(makeLights('day'));
+      const lights = makeLights('day'); sc.add(lights);
 
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 }));
       ground.rotation.x = -Math.PI / 2; sc.add(ground);
@@ -320,22 +374,20 @@
         addTree(Math.cos(a) * d, Math.sin(a) * d);
       }
 
-      // Player + weapon (skins via shop)
       const playerRadius = 0.5;
-      const playerMat = new THREE.MeshStandardMaterial({ color: 0x66aaff });
+      const playerMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
       const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16), playerMat);
       player.position.set(0, playerRadius + 0.3, 0); sc.add(player);
 
       const weaponMat = new THREE.MeshStandardMaterial({ color: 0x885000 });
       const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), weaponMat);
+      if (shopState.weaponLevel > 0) { weapon.scale.set(1.1, 1.3, 1.1); weaponMat.color.set(0x553300); }
       weapon.position.set(0.45, 0.35, 0.0); player.add(weapon);
 
-      // Lava
       const lava = new THREE.Mesh(new THREE.CylinderGeometry(80, 80, 0.3, 48, 1, true),
         new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.95 }));
       lava.position.y = -2.5; sc.add(lava);
 
-      // Enemies
       const enemies = [];
       function createMonkey() {
         const g = new THREE.Group();
@@ -356,7 +408,6 @@
       let run = true;
       let spawnTimer = setInterval(() => { if (run) spawnEnemy(); }, 1000);
 
-      // Collectibles
       const coins = [], medkits = []; let coinCount = 0;
       function coin() {
         const c = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 24), new THREE.MeshStandardMaterial({ color: 0xFFD700 }));
@@ -372,76 +423,26 @@
       for (let i = 0; i < (quality === 'high' ? 14 : 8); i++) coin();
       for (let i = 0; i < (quality === 'high' ? 6 : 3); i++) medkit();
 
-      // State + physics
       let health = 100, start = performance.now();
       const velocity = new THREE.Vector3();
       const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.2, gravity = 18, jumpStrength = 10.8;
-      let onGround = true, yaw = 0, pitch = 0, cameraMode = 'first';
+      let onGround = true;
+      let yaw = 0, pitch = 0;
+      let cameraMode = shopState.cameraMode;
 
-      // HUD
       hudPrimary.textContent = 'Jungle — Survive';
-      hudSecondary.textContent = 'Jump/Action to fight. Shop available.';
-      lmHpEl.textContent = '100'; lmCoinsEl.textContent = '0'; lmTimerEl.textContent = '0.0';
-
-      // Shop UI
-      shopBtn.onclick = () => { shopEl.style.display = 'block'; };
-      closeShopBtn.onclick = () => { shopEl.style.display = 'none'; };
-      viewBtn.onclick = () => {
-        cameraMode = (cameraMode === 'first') ? 'third' : 'first';
-        viewBtn.textContent = `VIEW: ${cameraMode.toUpperCase()}`;
-      };
-
-      shopEl.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'BUTTON' || e.target.id === 'closeShop') return;
-        const cost = parseInt(e.target.dataset.cost || '0', 10);
-        const type = e.target.dataset.type;
-        if (cost > coinCount) { alert('Not enough coins'); return; }
-        if (cost > 0) { coinCount -= cost; lmCoinsEl.textContent = coinCount; }
-        applyShop(type);
-      });
-
-      function applyShop(type) {
-        switch (type) {
-          case 'weapon':
-            weapon.scale.set(1.1, 1.3, 1.1);
-            weaponMat.color.set(0x553300);
-            attackRange = 1.8;
-            break;
-          case 'mapNight':
-            sc.background = new THREE.Color(0x0a1020);
-            hemi.color.set(0xaaccff);
-            sun.color.set(0x88aaff);
-            sun.intensity = 0.8;
-            ground.material.color.set(0x1c3a1c);
-            break;
-          case 'mapDay':
-            sc.background = new THREE.Color(0x87ceeb);
-            hemi.color.set(0xffffff);
-            sun.color.set(0xffffff);
-            sun.intensity = 1.5;
-            ground.material.color.set(0x228B22);
-            break;
-          case 'skinRed':
-            playerMat.color.set(0xff4444);
-            break;
-          case 'skinBlue':
-            playerMat.color.set(0x66aaff);
-            break;
-        }
-      }
+      hudSecondary.textContent = 'Health 100 | Coins 0';
 
       // Attack
       let attacking = false, attackStart = 0;
-      let attackDuration = 200, attackRange = 1.4; const attackArcCos = Math.cos(Math.PI / 3);
+      let attackDuration = 200;
+      let attackRange = (shopState.weaponLevel > 0) ? 1.8 : 1.4;
+      const attackArcCos = Math.cos(Math.PI / 3);
 
       function startAttack() {
         if (attacking || !run) return;
         attacking = true; attackStart = performance.now();
         weapon.rotation.z = -Math.PI * 0.35;
-        performAttackHit();
-        setTimeout(() => { attacking = false; weapon.rotation.z = 0; }, attackDuration);
-      }
-      function performAttackHit() {
         const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
         const p = player.position.clone();
         for (let i = enemies.length - 1; i >= 0; i--) {
@@ -451,15 +452,34 @@
           to.normalize(); const dot = to.dot(forward);
           if (dot >= attackArcCos) { sc.remove(e); enemies.splice(i, 1); }
         }
+        setTimeout(() => { attacking = false; weapon.rotation.z = 0; }, attackDuration);
       }
-
       actionBtn.onclick = startAttack;
       jumpBtn.onclick = () => { if (onGround && run) velocity.y = jumpStrength; };
 
+      function applyMapVariant(variant) {
+        const hemi = lights.children.find(l => l.isHemisphereLight);
+        const sun = lights.children.find(l => l.isDirectionalLight);
+        if (variant === 'night') {
+          sc.background = new THREE.Color(0x0a1020);
+          if (hemi) hemi.color.set(0xaaccff);
+          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
+          ground.material.color.set(0x1c3a1c);
+        } else {
+          sc.background = new THREE.Color(0x87ceeb);
+          if (hemi) hemi.color.set(0xffffff);
+          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
+          ground.material.color.set(0x228B22);
+        }
+      }
+      applyMapVariant(shopState.mapVariant);
+
+      function applySkin(skin) {
+        playerMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff);
+      }
+
       function restart() {
-        health = 100; lmHpEl.textContent = '100';
-        coinCount = 0; lmCoinsEl.textContent = '0';
-        start = performance.now();
+        health = 100; coinCount = 0; start = performance.now();
         velocity.set(0, 0, 0); player.position.set(0, playerRadius + 0.3, 0);
         yaw = 0; pitch = 0; lava.position.y = -2.5;
         enemies.forEach(e => sc.remove(e)); enemies.length = 0;
@@ -468,14 +488,12 @@
         for (let i = 0; i < (quality === 'high' ? 14 : 8); i++) coin();
         for (let i = 0; i < (quality === 'high' ? 6 : 3); i++) medkit();
         run = true; msg.style.display = 'none';
+        hudSecondary.textContent = 'Health 100 | Coins 0';
       }
 
-      function dispose() {
-        clearInterval(spawnTimer);
-        shopEl.style.display = 'none';
-      }
+      function dispose() { clearInterval(spawnTimer); }
 
-      // Keyboard input fallback
+      // Keyboard fallback
       window.addEventListener('keydown', e => {
         if (e.code === 'Space' && onGround && run) velocity.y = jumpStrength;
         if (e.code === 'KeyF' && run) startAttack();
@@ -486,28 +504,34 @@
         camera: cam,
         restart,
         dispose,
+        getCurrency: () => coinCount,
+        setCurrency: v => { coinCount = v; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`; },
+        applyMapVariant,
+        applySkin,
+        applyWeaponUpgrade: () => { attackRange = 1.8; weapon.scale.set(1.1, 1.3, 1.1); weaponMat.color.set(0x553300); },
+        setCameraMode: mode => { cameraMode = mode; },
         update(dt, now) {
           if (!run) return;
 
-          // Look stick: flip in first-person, normal in third (preserved behavior)
+          // Look (flip axes in first-person for feel)
+          const flip = (cameraMode === 'first');
+          applyLookFromStick({ yaw, pitch }, dt, 1.8, flip);
+          // assign back (applyLookFromStick uses a temp object)
           const ls = lookStick.get();
-          const lookSensitivity = 1.8;
-          let lx = ls.x, ly = ls.y;
-          if (cameraMode === 'first') { lx = -lx; ly = -ly; }
-          yaw += lx * lookSensitivity * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ly * lookSensitivity * dt, -1.2, 1.2);
+          const lx = flip ? -ls.x : ls.x;
+          const ly = flip ? -ls.y : ls.y;
+          yaw += lx * 1.8 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
 
-          // Movement from left stick + keyboard fallback
+          // Movement
           const mv = moveStick.get();
-          let sx = mv.x, sy = mv.y;
-          if (cameraMode === 'third') { sx = -sx; sy = -sy; }
+          let inputX = mv.x, inputY = -mv.y;
           const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
-          const kBack    = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
-          const kLeft    = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
-          const kRight   = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
-
-          let inputX = (kRight - kLeft) + sx;
-          let inputY = (kForward - kBack) - sy;
+          const kBack = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
+          const kLeft = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
+          const kRight = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
+          inputX += (kRight - kLeft);
+          inputY += (kForward - kBack);
 
           const mag = Math.hypot(inputX, inputY);
           if (mag > 1) { inputX /= mag; inputY /= mag; }
@@ -521,6 +545,7 @@
           const accel = onGround ? accelGround : accelAir;
           velocity.addScaledVector(wishdir, accel * dt);
 
+          // Friction
           if (onGround && mag < 0.05) {
             const horiz = new THREE.Vector2(velocity.x, velocity.z);
             const speed = horiz.length();
@@ -532,14 +557,12 @@
             }
           }
 
-          // Cap
-          {
-            const horiz = new THREE.Vector2(velocity.x, velocity.z);
-            const speed = horiz.length();
-            if (speed > maxSpeed) {
-              horiz.multiplyScalar(maxSpeed / speed);
-              velocity.x = horiz.x; velocity.z = horiz.y;
-            }
+          // Cap speed
+          const horiz = new THREE.Vector2(velocity.x, velocity.z);
+          const speed = horiz.length();
+          if (speed > maxSpeed) {
+            horiz.multiplyScalar(maxSpeed / speed);
+            velocity.x = horiz.x; velocity.z = horiz.y;
           }
 
           // Gravity/integration
@@ -551,15 +574,9 @@
           if (player.position.y < groundY) { player.position.y = groundY; velocity.y = 0; onGround = true; }
           else onGround = false;
 
-          // Camera (no roll)
-          if (cameraMode === 'first') {
-            updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
-          } else {
-            const camDist = 6.0, camHeight = 2.5;
-            const offset = new THREE.Vector3(Math.sin(yaw) * camDist, camHeight, -Math.cos(yaw) * camDist);
-            cam.position.copy(player.position).add(offset);
-            cam.lookAt(player.position.x, player.position.y + 1.0, player.position.z);
-          }
+          // Camera
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
+          else updateThirdPersonCamera(cam, player.position, yaw);
 
           // Weapon anim
           if (!attacking) {
@@ -574,7 +591,7 @@
           // Lava rise
           lava.position.y += 0.018 * dt;
 
-          // Enemies AI + separation + damage
+          // Enemies + separation + damage
           const bob = Math.sin(now * 0.004) * 0.02;
           for (let i = 0; i < enemies.length; i++) {
             const e = enemies[i];
@@ -602,7 +619,7 @@
           for (let i = coins.length - 1; i >= 0; i--) {
             const c = coins[i];
             if (c.position.distanceTo(player.position) < 0.8) {
-              coinCount += 1; lmCoinsEl.textContent = coinCount;
+              coinCount += 1; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
               sc.remove(c); coins.splice(i, 1);
             }
           }
@@ -610,7 +627,7 @@
             const m = medkits[i];
             if (m.position.distanceTo(player.position) < 0.9) {
               health = Math.min(100, health + 25);
-              lmHpEl.textContent = Math.round(health);
+              hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
               sc.remove(m); medkits.splice(i, 1);
             }
           }
@@ -622,18 +639,18 @@
             run = false; msgText.textContent = 'Game Over — Jungle'; msg.style.display = 'block';
           }
 
-          // Jungle overlay
-          lmHpEl.textContent = Math.round(health);
-          lmTimerEl.textContent = ((performance.now() - start) / 1000).toFixed(1);
+          // HUD
+          hudPrimary.textContent = `Jungle — ${((performance.now() - start) / 1000).toFixed(1)}s`;
+          hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
         }
       };
     }
 
-    // GAME 2: First‑Person Platformer
-    function setupPlatformerFP(quality) {
+    // GAME 2: First‑Person Platformer (with shared settings)
+    function setupPlatformerFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
-      sc.add(makeLights('day'));
+      const lights = makeLights('day'); sc.add(lights);
 
       const platMat = new THREE.MeshStandardMaterial({ color: 0x6aa86a, roughness: 0.8 });
       const plats = [];
@@ -653,21 +670,41 @@
       const goal = new THREE.Mesh(new THREE.TorusKnotGeometry(3, 1, 90, 12), new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0x553300, emissiveIntensity: 0.3 }));
       goal.position.set(120, baseY + 40, 6); sc.add(goal);
 
-      // Player collider
       const playerRadius = 0.6;
-      const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), new THREE.MeshStandardMaterial({ color: 0x44aaff }));
+      const playerMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x44aaff) });
+      const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), playerMat);
       player.visible = false; player.position.set(-16, baseY + 6, 0); sc.add(player);
 
       const vel = new THREE.Vector3(0, 0, 0);
       const gravity = 18, moveSpeed = 10, jumpVel = 12.5;
       let onGround = false, run = true, won = false;
       let yaw = 0, pitch = 0;
+      let cameraMode = shopState.cameraMode;
 
       hudPrimary.textContent = 'Sky Platforms';
       hudSecondary.textContent = 'Reach the glowing goal';
 
+      function applyMapVariant(variant) {
+        const hemi = lights.children.find(l => l.isHemisphereLight);
+        const sun = lights.children.find(l => l.isDirectionalLight);
+        if (variant === 'night') {
+          sc.background = new THREE.Color(0x0a2030);
+          if (hemi) hemi.color.set(0xaaccff);
+          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
+          platMat.color.set(0x355a35);
+        } else {
+          sc.background = new THREE.Color(0x87b3ff);
+          if (hemi) hemi.color.set(0xffffff);
+          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
+          platMat.color.set(0x6aa86a);
+        }
+      }
+      applyMapVariant(shopState.mapVariant);
+
+      function applySkin(skin) { playerMat.color.set(skin === 'red' ? 0xff4444 : 0x44aaff); }
+
       jumpBtn.onclick = () => { if (onGround && run) vel.y = jumpVel; };
-      actionBtn.onclick = () => {}; // not used
+      actionBtn.onclick = () => {}; // no attack
 
       function collide() {
         onGround = false;
@@ -693,25 +730,34 @@
         yaw = 0; pitch = 0;
         won = false; run = true; msg.style.display = 'none';
       }
-      function dispose() {}
 
       return {
         scene: sc,
         camera: cam,
         restart,
-        dispose,
+        dispose() {},
+        getCurrency: () => 0,
+        setCurrency: () => {},
+        applyMapVariant,
+        applySkin,
+        applyWeaponUpgrade: () => {}, // not used
+        setCameraMode: mode => { cameraMode = mode; },
         update(dt) {
           if (!run || won) return;
 
+          // Look
+          const flip = (cameraMode === 'first');
           const ls = lookStick.get();
-          yaw += ls.x * 1.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ls.y * 1.8 * dt, -1.2, 1.2);
+          const lx = flip ? -ls.x : ls.x;
+          const ly = flip ? -ls.y : ls.y;
+          yaw += lx * 1.8 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
 
+          // Move
           const mv = moveStick.get();
           let inputX = mv.x, inputY = -mv.y;
           const mag = Math.hypot(inputX, inputY);
           if (mag > 1) { inputX /= mag; inputY /= mag; }
-
           const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
           const fwd = new THREE.Vector3(sinY, 0, -cosY);
           const right = new THREE.Vector3(cosY, 0, sinY);
@@ -726,25 +772,31 @@
 
           collide();
 
-          updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
+          // Camera
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
+          else updateThirdPersonCamera(cam, player.position, yaw);
 
           if (player.position.distanceTo(goal.position) < 5) {
             won = true; msgText.textContent = 'Goal reached! — Platformer'; msg.style.display = 'block';
           }
+
+          hudPrimary.textContent = 'Sky Platforms';
+          hudSecondary.textContent = onGround ? 'On platform' : 'In air';
         }
       };
     }
 
-    // GAME 3: Racer (First‑Person cockpit)
-    function setupRacerFP(quality) {
+    // GAME 3: Racer (with shared settings)
+    function setupRacerFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd0b38a);
       const cam = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1200);
-      sc.add(makeLights('day'));
+      const lights = makeLights('day'); sc.add(lights);
 
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), new THREE.MeshStandardMaterial({ color: 0xb5894a, roughness: 0.8 }));
       ground.rotation.x = -Math.PI / 2; sc.add(ground);
 
-      const car = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), new THREE.MeshStandardMaterial({ color: 0x3366ff }));
+      const carMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x3366ff) });
+      const car = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), carMat);
       car.position.set(0, 0.6, 0); sc.add(car);
 
       const gates = [];
@@ -757,6 +809,28 @@
 
       let speed = 0, heading = 0, score = 0, run = true;
       let yaw = 0, pitch = 0;
+      let cameraMode = shopState.cameraMode;
+
+      // Weapon upgrade repurposed to slight performance boost
+      const accelBoost = (shopState.weaponLevel > 0) ? 1.1 : 1.0;
+
+      function applyMapVariant(variant) {
+        const hemi = lights.children.find(l => l.isHemisphereLight);
+        const sun = lights.children.find(l => l.isDirectionalLight);
+        if (variant === 'night') {
+          sc.background = new THREE.Color(0x302018);
+          if (hemi) hemi.color.set(0xaaccff);
+          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
+          ground.material.color.set(0x8b6a3a);
+        } else {
+          sc.background = new THREE.Color(0xd0b38a);
+          if (hemi) hemi.color.set(0xffffff);
+          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
+          ground.material.color.set(0xb5894a);
+        }
+      }
+      applyMapVariant(shopState.mapVariant);
+      function applySkin(skin) { carMat.color.set(skin === 'red' ? 0xff4444 : 0x3366ff); }
 
       hudPrimary.textContent = 'Desert Racer';
       hudSecondary.textContent = 'Gates 0/12';
@@ -771,13 +845,18 @@
         for (let i = 0; i < 12; i++) gate(0 + i * 28, -40 + Math.sin(i * 0.8) * 60);
         hudSecondary.textContent = 'Gates 0/12';
       }
-      function dispose() {}
 
       return {
         scene: sc,
         camera: cam,
         restart,
-        dispose,
+        dispose() {},
+        getCurrency: () => score, // treat score as currency here
+        setCurrency: v => { score = v; hudSecondary.textContent = `Gates ${score}/12`; },
+        applyMapVariant,
+        applySkin,
+        applyWeaponUpgrade: () => {},
+        setCameraMode: mode => { cameraMode = mode; },
         update(dt) {
           if (!run) return;
 
@@ -790,19 +869,24 @@
           const throttle = Math.max(0, -mv.y);
           const brake = Math.max(0, mv.y);
 
-          speed += (throttle * 22 - brake * 28 - speed * 0.85) * dt;
+          speed += ((throttle * 22 * accelBoost) - (brake * 28) - speed * 0.85) * dt;
           heading += steer * 1.8 * dt;
 
           const dir = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
           car.position.addScaledVector(dir, speed * dt);
           car.rotation.y = heading;
 
-          const eye = new THREE.Vector3(0, 0.9, 1.2).applyEuler(new THREE.Euler(0, heading, 0));
-          const eyePos = new THREE.Vector3().copy(car.position).add(eye);
-          cam.position.copy(eyePos);
-          cam.rotation.set(0, heading, 0);
-          cam.rotateX(pitch);
-          cam.rotateY(yaw * 0.2);
+          // Camera: FP cockpit vs 3rd-person chase
+          if (cameraMode === 'first') {
+            const eye = new THREE.Vector3(0, 0.9, 1.2).applyEuler(new THREE.Euler(0, heading, 0));
+            const eyePos = new THREE.Vector3().copy(car.position).add(eye);
+            cam.position.copy(eyePos);
+            cam.rotation.set(0, heading, 0);
+            cam.rotateX(pitch);
+            cam.rotateY(yaw * 0.2);
+          } else {
+            updateThirdPersonCamera(cam, car.position, heading, 8.0, 3.2);
+          }
 
           for (let i = gates.length - 1; i >= 0; i--) {
             const g = gates[i];
@@ -813,21 +897,24 @@
           }
 
           if (gates.length === 0) { run = false; msgText.textContent = 'Finish! — Racer'; msg.style.display = 'block'; }
+          hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
         }
       };
     }
 
-    // GAME 4: Space Drone Arena (First‑Person shooter)
-    function setupArenaFP(quality) {
+    // GAME 4: Space Drone Arena (shared settings)
+    function setupArenaFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x080a12);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
-      sc.add(makeLights('space'));
+      const lights = makeLights('space'); sc.add(lights);
 
       const arena = new THREE.Mesh(new THREE.CylinderGeometry(80, 80, 2, 40), new THREE.MeshStandardMaterial({ color: 0x1c2233, metalness: 0.2, roughness: 0.7 }));
       arena.position.y = -2; sc.add(arena);
 
-      const rig = new THREE.Object3D();
-      rig.position.set(0, 1, 0); sc.add(rig);
+      const rigMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
+      const rigVis = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.6, 8, 12), rigMat);
+      rigVis.visible = false; sc.add(rigVis);
+      const rig = new THREE.Object3D(); rig.position.set(0, 1, 0); sc.add(rig);
 
       const drones = [];
       function drone() {
@@ -840,6 +927,7 @@
       for (let i = 0; i < (quality === 'high' ? 16 : 8); i++) drone();
 
       const bullets = [];
+      const bulletSpeed = (shopState.weaponLevel > 0) ? 50 : 40;
       function shoot() {
         const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
         const dir = new THREE.Vector3(0, 0, -1).applyEuler(cam.rotation);
@@ -851,9 +939,16 @@
       jumpBtn.onclick = () => {};
 
       let run = true, score = 0, yaw = 0, pitch = 0;
+      let cameraMode = shopState.cameraMode;
 
       hudPrimary.textContent = 'Space Arena';
       hudSecondary.textContent = 'Score 0 | ACTION to shoot';
+
+      function applyMapVariant(variant) {
+        sc.background = (variant === 'night') ? new THREE.Color(0x04060c) : new THREE.Color(0x080a12);
+      }
+      applyMapVariant(shopState.mapVariant);
+      function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
 
       function restart() {
         drones.forEach(d => sc.remove(d)); drones.length = 0;
@@ -862,20 +957,30 @@
         score = 0; hudSecondary.textContent = 'Score 0 | ACTION to shoot';
         rig.position.set(0, 1, 0); yaw = 0; pitch = 0; run = true; msg.style.display = 'none';
       }
-      function dispose() {}
 
       return {
         scene: sc,
         camera: cam,
         restart,
-        dispose,
+        dispose() {},
+        getCurrency: () => score,
+        setCurrency: v => { score = v; hudSecondary.textContent = `Score ${score} | ACTION to shoot`; },
+        applyMapVariant,
+        applySkin,
+        applyWeaponUpgrade: () => {},
+        setCameraMode: mode => { cameraMode = mode; },
         update(dt) {
           if (!run) return;
 
+          // Look
+          const flip = (cameraMode === 'first');
           const ls = lookStick.get();
-          yaw += ls.x * 1.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ls.y * 1.8 * dt, -1.2, 1.2);
+          const lx = flip ? -ls.x : ls.x;
+          const ly = flip ? -ls.y : ls.y;
+          yaw += lx * 1.8 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
 
+          // Move
           const mv = moveStick.get();
           let inputX = mv.x, inputY = -mv.y;
           const mag = Math.hypot(inputX, inputY);
@@ -885,19 +990,23 @@
           const right = new THREE.Vector3(cosY, 0, sinY);
           const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
           if (dir.lengthSq() > 0) dir.normalize();
-
           rig.position.addScaledVector(dir, 10 * dt);
+          rigVis.position.copy(rig.position);
 
-          updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
+          // Camera
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
+          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
 
+          // Drones
           for (const d of drones) {
             d.position.addScaledVector(d.userData.vel, dt);
             if (d.position.length() > 78) d.userData.vel.multiplyScalar(-1);
           }
 
+          // Bullets
           for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
-            b.position.addScaledVector(b.userData.dir, 40 * dt);
+            b.position.addScaledVector(b.userData.dir, bulletSpeed * dt);
             if (b.position.length() > 120) { sc.remove(b); bullets.splice(i, 1); continue; }
             for (let j = drones.length - 1; j >= 0; j--) {
               const d = drones[j];
@@ -915,17 +1024,19 @@
       };
     }
 
-    // GAME 5: Runner (First‑Person lanes)
-    function setupRunnerFP(quality) {
+    // GAME 5: Runner (shared settings)
+    function setupRunnerFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
-      sc.add(makeLights('day'));
+      const lights = makeLights('day'); sc.add(lights);
 
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 60), new THREE.MeshStandardMaterial({ color: 0x228B22 }));
       ground.rotation.x = -Math.PI / 2; ground.position.z = -40; sc.add(ground);
 
-      const rig = new THREE.Object3D();
-      rig.position.set(0, 1, 0); sc.add(rig);
+      const rigMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
+      const rigVis = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rigVis.visible = false; sc.add(rigVis);
+      const rig = new THREE.Object3D(); rig.position.set(0, 1, 0); sc.add(rig);
 
       const obstacles = [];
       function makeObs(z) {
@@ -937,9 +1048,25 @@
 
       let laneX = 0, speed = 8, time = 0, run = true, rings = 0;
       let yaw = 0, pitch = 0;
+      let cameraMode = shopState.cameraMode;
 
-      hudPrimary.textContent = 'Endless Runner';
-      hudSecondary.textContent = 'Rings 0';
+      function applyMapVariant(variant) {
+        const hemi = lights.children.find(l => l.isHemisphereLight);
+        const sun = lights.children.find(l => l.isDirectionalLight);
+        if (variant === 'night') {
+          sc.background = new THREE.Color(0x102020);
+          if (hemi) hemi.color.set(0xaaccff);
+          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
+          ground.material.color.set(0x1c3a1c);
+        } else {
+          sc.background = new THREE.Color(0x87ceeb);
+          if (hemi) hemi.color.set(0xffffff);
+          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
+          ground.material.color.set(0x228B22);
+        }
+      }
+      applyMapVariant(shopState.mapVariant);
+      function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
 
       jumpBtn.onclick = () => {};
       actionBtn.onclick = () => {};
@@ -951,236 +1078,19 @@
         rig.position.set(0, 1, 0);
         hudSecondary.textContent = 'Rings 0';
       }
-      function dispose() {}
+
+      hudPrimary.textContent = 'Endless Runner';
+      hudSecondary.textContent = 'Rings 0';
 
       return {
         scene: sc,
         camera: cam,
         restart,
-        dispose,
+        dispose() {},
+        getCurrency: () => rings,
+        setCurrency: v => { rings = v; hudSecondary.textContent = `Rings ${rings}`; },
+        applyMapVariant,
+        applySkin,
+        applyWeaponUpgrade: () => {},
+        setCameraMode: mode => { cameraMode = mode; },
         update(dt) {
-          if (!run) return;
-          time += dt;
-          speed = 8 + time * 1.2;
-
-          const ls = lookStick.get();
-          yaw += ls.x * 1.5 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ls.y * 1.0 * dt, -0.4, 0.4);
-
-          const mv = moveStick.get();
-          if (mv.x < -0.3) laneX = -2;
-          else if (mv.x > 0.3) laneX = 2;
-          else laneX = 0;
-
-          rig.position.x = THREE.MathUtils.lerp(rig.position.x, laneX, 6 * dt);
-
-          for (const o of obstacles) {
-            o.position.z += speed * dt;
-            if (o.position.z > 4) {
-              o.position.z = -180 - Math.random() * 40;
-              o.position.x = (Math.random() < 0.5 ? -2 : 2) + (Math.random() - 0.5) * 2;
-              rings++; hudSecondary.textContent = `Rings ${rings}`;
-            }
-            const dist = new THREE.Vector3(o.position.x - rig.position.x, 0.6 - rig.position.y, o.position.z - 0).length();
-            if (dist < 1.0) { run = false; msgText.textContent = 'You hit an obstacle — Runner'; msg.style.display = 'block'; }
-          }
-
-          updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
-        }
-      };
-    }
-
-    // GAME 6: Crystal Maze (First‑Person maze navigation)
-    function setupMazeFP(quality) {
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x101424);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
-      sc.add(makeLights('maze'));
-
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), new THREE.MeshStandardMaterial({ color: 0x222a44, roughness: 0.9 }));
-      floor.rotation.x = -Math.PI / 2; sc.add(floor);
-
-      const walls = [];
-      function wall(x, y, z, sx, sy, sz) {
-        const w = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), new THREE.MeshStandardMaterial({ color: 0x3a64a6, emissive: 0x0a1530, emissiveIntensity: 0.2 }));
-        w.position.set(x, y, z); sc.add(w); walls.push(w);
-      }
-      // Simple grid maze
-      for (let i = -70; i <= 70; i += 20) {
-        wall(i, 1.5, -70, 20, 3, 2);
-        wall(i, 1.5, 70, 20, 3, 2);
-      }
-      for (let j = -70; j <= 70; j += 20) {
-        wall(-70, 1.5, j, 2, 3, 20);
-        wall(70, 1.5, j, 2, 3, 20);
-      }
-      // Internal walls
-      for (let k = 0; k < 16; k++) {
-        const wx = -50 + Math.floor(Math.random() * 6) * 20;
-        const wz = -50 + Math.floor(Math.random() * 6) * 20;
-        if (Math.random() < 0.5) wall(wx, 1.5, wz, 20, 3, 2);
-        else wall(wx, 1.5, wz, 2, 3, 20);
-      }
-
-      const exit = new THREE.Mesh(new THREE.TorusGeometry(3, 0.3, 12, 32), new THREE.MeshStandardMaterial({ color: 0x88ffcc }));
-      exit.position.set(60, 2.5, 60); sc.add(exit);
-
-      const rig = new THREE.Object3D(); rig.position.set(-60, 0.9, -60); sc.add(rig);
-      let yaw = 0, pitch = 0, run = true;
-
-      hudPrimary.textContent = 'Crystal Maze';
-      hudSecondary.textContent = 'Find the exit ring';
-
-      jumpBtn.onclick = () => {};
-      actionBtn.onclick = () => {};
-
-      function restart() {
-        rig.position.set(-60, 0.9, -60);
-        yaw = 0; pitch = 0; run = true; msg.style.display = 'none';
-      }
-      function dispose() {}
-
-      return {
-        scene: sc,
-        camera: cam,
-        restart,
-        dispose,
-        update(dt) {
-          if (!run) return;
-          const ls = lookStick.get();
-          yaw += ls.x * 1.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ls.y * 1.0 * dt, -0.4, 0.4);
-
-          const mv = moveStick.get();
-          let inputX = mv.x, inputY = -mv.y;
-          const mag = Math.hypot(inputX, inputY);
-          if (mag > 1) { inputX /= mag; inputY /= mag; }
-
-          const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
-          const fwd = new THREE.Vector3(sinY, 0, -cosY);
-          const right = new THREE.Vector3(cosY, 0, sinY);
-          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
-          if (dir.lengthSq() > 0) dir.normalize();
-
-          // Movement with collision against walls (simple pushback)
-          const next = rig.position.clone().addScaledVector(dir, 8 * dt);
-          let blocked = false;
-          for (const w of walls) {
-            const dx = Math.abs(next.x - w.position.x) - w.geometry.parameters.width / 2 - 0.5;
-            const dz = Math.abs(next.z - w.position.z) - w.geometry.parameters.depth / 2 - 0.5;
-            if (dx < 0 && dz < 0) { blocked = true; break; }
-          }
-          if (!blocked) rig.position.copy(next);
-
-          updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
-
-          if (rig.position.distanceTo(exit.position) < 5) { run = false; msgText.textContent = 'Exit found! — Maze'; msg.style.display = 'block'; }
-        }
-      };
-    }
-
-    // GAME 7: Target Range (First‑Person aim practice)
-    function setupRangeFP(quality) {
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x223344);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
-      sc.add(makeLights('day'));
-
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: 0x335577 }));
-      floor.rotation.x = -Math.PI / 2; sc.add(floor);
-
-      const rig = new THREE.Object3D(); rig.position.set(0, 1, 40); sc.add(rig);
-
-      const targets = [];
-      function spawnTarget() {
-        const t = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.25, 10, 20), new THREE.MeshStandardMaterial({ color: 0xffcc55, emissive: 0x553300, emissiveIntensity: 0.2 }));
-        t.position.set((Math.random() - 0.5) * 60, 2 + Math.random() * 6, -20 - Math.random() * 30);
-        sc.add(t); targets.push(t);
-      }
-      for (let i = 0; i < (quality === 'high' ? 16 : 8); i++) spawnTarget();
-
-      const bullets = [];
-      function shoot() {
-        const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
-        const dir = new THREE.Vector3(0, 0, -1).applyEuler(cam.rotation);
-        b.position.copy(cam.position);
-        b.userData.dir = dir.clone();
-        sc.add(b); bullets.push(b);
-      }
-      actionBtn.onclick = shoot;
-
-      let yaw = 0, pitch = 0, run = true, score = 0;
-
-      hudPrimary.textContent = 'Target Range';
-      hudSecondary.textContent = 'Score 0 | ACTION to shoot';
-
-      jumpBtn.onclick = () => {};
-
-      function restart() {
-        bullets.forEach(b => sc.remove(b)); bullets.length = 0;
-        targets.forEach(t => sc.remove(t)); targets.length = 0;
-        for (let i = 0; i < (quality === 'high' ? 16 : 8); i++) spawnTarget();
-        rig.position.set(0, 1, 40);
-        yaw = 0; pitch = 0; score = 0; hudSecondary.textContent = 'Score 0 | ACTION to shoot';
-        run = true; msg.style.display = 'none';
-      }
-      function dispose() {}
-
-      return {
-        scene: sc,
-        camera: cam,
-        restart,
-        dispose,
-        update(dt) {
-          if (!run) return;
-
-          const ls = lookStick.get();
-          yaw += ls.x * 1.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ls.y * 1.0 * dt, -0.8, 0.8);
-
-          const mv = moveStick.get();
-          rig.position.x += mv.x * 6 * dt;
-          rig.position.z += -mv.y * 6 * dt;
-
-          updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
-
-          for (let i = bullets.length - 1; i >= 0; i--) {
-            const b = bullets[i];
-            b.position.addScaledVector(b.userData.dir, 40 * dt);
-            if (b.position.length() > 160) { sc.remove(b); bullets.splice(i, 1); continue; }
-            for (let j = targets.length - 1; j >= 0; j--) {
-              const t = targets[j];
-              if (b.position.distanceTo(t.position) < 1.2) {
-                sc.remove(t); targets.splice(j, 1);
-                sc.remove(b); bullets.splice(i, 1);
-                score++; hudSecondary.textContent = `Score ${score} | ACTION to shoot`;
-                spawnTarget();
-                break;
-              }
-            }
-          }
-        }
-      };
-    }
-
-    // MAIN LOOP
-    let last = performance.now();
-    function loop(now) {
-      const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
-      if (running && cleanup && cleanup.update) cleanup.update(dt, now);
-      if (scene && camera) renderer.render(scene, camera);
-      requestAnimationFrame(loop);
-    }
-    requestAnimationFrame(loop);
-
-    // Resize
-    window.addEventListener('resize', () => {
-      if (!camera) return;
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // Start on menu
-    showMenu();
-  </script>
-</body>
-</html>
