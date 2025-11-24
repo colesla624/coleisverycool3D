@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Unified Settings + Fixed Camera (7 Games incl. Lava Monkey Jungle)</title>
+  <title>3D Game Hub — Camera limited to X/Y axes (7 games, unified settings)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
-    html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, sans-serif; }
+    html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
     canvas { display:block; }
 
     /* Top bar, HUD, menu */
@@ -13,10 +13,11 @@
     #topbar .small { font-size:12px; opacity:0.85; font-weight:500; }
     #hud { position:absolute; bottom:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
     #hud .line { margin-top:6px; font-weight:600; }
+
     #menu { position:absolute; inset:0; display:grid; place-items:center; z-index:11; }
-    #menuPanel { width:860px; max-width:95vw; background:#111a; backdrop-filter: blur(6px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
+    #menuPanel { width:880px; max-width:95vw; background:#111a; backdrop-filter: blur(8px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
     #menuPanel h1 { margin:0 0 8px; font-size:28px; }
-    #menuGrid { display:grid; grid-template-columns:repeat(2, minmax(300px, 1fr)); gap:12px; margin-top:10px; }
+    #menuGrid { display:grid; grid-template-columns:repeat(2, minmax(320px, 1fr)); gap:12px; margin-top:10px; }
     .menuBtn { padding:14px; background:#222a; border:1px solid #fff2; color:#fff; border-radius:12px; cursor:pointer; text-align:left; }
     .menuBtn:hover { background:#2a2f; }
     .row { display:flex; gap:8px; align-items:center; margin-top:12px; }
@@ -27,12 +28,12 @@
     #msg { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:12; text-align:center; font-weight:800; font-size:22px; display:none; }
     #msg button { margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer; }
 
-    /* Shared settings panel (Lava Monkey-style) */
+    /* Shared settings panel */
     #settingsBar { position:absolute; top:56px; right:10px; z-index:12; display:none; display:flex; gap:8px; }
     .settingsBtn { padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; cursor:pointer; }
 
     /* Shop modal */
-    #shop { position:absolute; top:20%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; width:360px; border:1px solid #fff2; }
+    #shop { position:absolute; top:20%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; width:380px; border:1px solid #fff2; }
     #shop h2 { margin:0 0 10px; }
     #shop .row { margin:8px 0; display:flex; justify-content:space-between; align-items:center; }
     #shop .row button { padding:6px 10px; border:none; border-radius:8px; background:#444; color:#fff; cursor:pointer; }
@@ -50,8 +51,8 @@
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — Unified Settings + Fixed Camera</div>
-    <div class="small" id="hint">Left stick: move. Right stick: look. Jump/Action buttons. Esc/Back to menu.</div>
+    <div id="title">3D Game Hub — Camera limited to X/Y axes</div>
+    <div class="small" id="hint">Left stick: move. Right stick: look (yaw/pitch only). Jump/Action buttons. Esc/Back to menu.</div>
   </div>
 
   <button id="backBtn">Back to menu</button>
@@ -66,27 +67,27 @@
         </button>
         <button class="menuBtn" data-game="platformer">
           <div style="font-weight:800">Sky Platforms (First‑Person Platformer)</div>
-          <div class="small">Jump across floating platforms to reach the goal. Full settings & toggle.</div>
+          <div class="small">Jump across floating platforms to reach the goal.</div>
         </button>
         <button class="menuBtn" data-game="racer">
           <div style="font-weight:800">Desert Ridge Racer</div>
-          <div class="small">Drive from the cockpit. Pass gates to finish. Shop applies boosts & maps.</div>
+          <div class="small">Drive from the cockpit. Pass gates to finish.</div>
         </button>
         <button class="menuBtn" data-game="arena">
           <div style="font-weight:800">Space Drone Arena</div>
-          <div class="small">Shoot drones in zero‑g. Shop boosts weapon power & map variants.</div>
+          <div class="small">Shoot drones in zero‑g.</div>
         </button>
         <button class="menuBtn" data-game="runner">
           <div style="font-weight:800">Forest Endless Runner</div>
-          <div class="small">First‑person lane dodging with rising speed. Skins & map variants included.</div>
+          <div class="small">First‑person lane dodging with rising speed.</div>
         </button>
         <button class="menuBtn" data-game="maze">
           <div style="font-weight:800">Crystal Maze</div>
-          <div class="small">Navigate a glowing maze to find the exit. Map variants and camera toggle.</div>
+          <div class="small">Navigate a glowing maze to find the exit.</div>
         </button>
         <button class="menuBtn" data-game="range">
           <div style="font-weight:800">Target Range</div>
-          <div class="small">Aim practice. Weapon upgrades and skins affect feel.</div>
+          <div class="small">Aim practice. Pop‑up targets.</div>
         </button>
       </div>
       <div class="row">
@@ -195,7 +196,7 @@
     document.addEventListener('gesturechange', e => e.preventDefault());
     document.addEventListener('gestureend', e => e.preventDefault());
 
-    // Graphics quality
+    // Graphics quality toggle
     let quality = 'high';
     graphicsLow.onclick = () => { quality = 'low'; graphicsLow.style.background = '#44aa44'; graphicsHigh.style.background = '#fff1'; };
     graphicsHigh.onclick = () => { quality = 'high'; graphicsHigh.style.background = '#44aa44'; graphicsLow.style.background = '#fff1'; };
@@ -221,7 +222,6 @@
 
     shopBtn.onclick = () => { shopEl.style.display = 'block'; };
     closeShopBtn.onclick = () => { shopEl.style.display = 'none'; };
-
     shopEl.addEventListener('click', (e) => {
       if (e.target.tagName !== 'BUTTON' || e.target.id === 'closeShop') return;
       const cost = parseInt(e.target.dataset.cost || '0', 10);
@@ -233,7 +233,6 @@
       const type = e.target.dataset.type;
       applyShop(type);
     });
-
     function applyShop(type) {
       switch (type) {
         case 'weapon':
@@ -268,16 +267,12 @@
       shopEl.style.display = 'none';
       menu.style.display = 'grid';
       if (cleanup && cleanup.dispose) cleanup.dispose();
-      cleanup = null;
-      scene = null;
-      camera = null;
+      cleanup = null; scene = null; camera = null;
     }
-
     function startGame(setup) {
       if (cleanup && cleanup.dispose) cleanup.dispose();
       cleanup = setup(quality, shopState);
-      scene = cleanup.scene;
-      camera = cleanup.camera;
+      scene = cleanup.scene; camera = cleanup.camera;
       running = true;
       hud.style.display = 'block';
       backBtn.style.display = 'inline-block';
@@ -325,7 +320,7 @@
       return group;
     }
 
-    // Camera helpers (fixed yaw/pitch, no roll)
+    // Camera helpers — strictly X (pitch) and Y (yaw), no roll
     function updateFirstPersonCamera(cam, playerPos, yaw, pitch, eyeHeight=1.1) {
       cam.position.set(playerPos.x, playerPos.y + eyeHeight, playerPos.z);
       cam.rotation.set(0, 0, 0);
@@ -336,6 +331,17 @@
       const offset = new THREE.Vector3(Math.sin(yaw) * dist, height, -Math.cos(yaw) * dist);
       cam.position.copy(playerPos).add(offset);
       cam.lookAt(playerPos.x, playerPos.y + 1.0, playerPos.z);
+    }
+
+    // Camera-forward XZ basis for movement (optional, feels natural with yaw/pitch-only camera)
+    function getCameraBasisXZ(cam) {
+      const forward = new THREE.Vector3();
+      cam.getWorldDirection(forward);
+      forward.y = 0;
+      if (forward.lengthSq() < 1e-6) forward.set(0,0,-1);
+      forward.normalize();
+      const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0,1,0)).normalize();
+      return { forward, right };
     }
 
     // GAME 1: Lava Monkey Jungle
@@ -410,7 +416,7 @@
 
       let health = 100, start = performance.now();
       const velocity = new THREE.Vector3();
-      const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.2, gravity = 18, jumpStrength = 10.8;
+      const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.2, gravity = 18, jumpStrength = 14.5; // stronger jump feel
       let onGround = true;
       let yaw = 0, pitch = 0;
       let cameraMode = shopState.cameraMode;
@@ -458,10 +464,7 @@
         }
       }
       applyMapVariant(shopState.mapVariant);
-
-      function applySkin(skin) {
-        playerMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff);
-      }
+      function applySkin(skin) { playerMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
 
       function restart() {
         health = 100; coinCount = 0; start = performance.now();
@@ -475,9 +478,7 @@
         run = true; msg.style.display = 'none';
         hudSecondary.textContent = 'Health 100 | Coins 0';
       }
-
       function dispose() { clearInterval(spawnTimer); }
-
       window.addEventListener('keydown', e => {
         if (e.code === 'Space' && onGround && run) velocity.y = jumpStrength;
         if (e.code === 'KeyF' && run) startAttack();
@@ -497,7 +498,7 @@
         update(dt, now) {
           if (!run) return;
 
-          // Look (flip axes in FP)
+          // Look (yaw/pitch only)
           const ls = lookStick.get();
           const flip = (cameraMode === 'first');
           const lx = flip ? -ls.x : ls.x;
@@ -505,7 +506,12 @@
           yaw += lx * 1.8 * dt;
           pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
 
-          // Movement
+          // Camera placement
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
+          else updateThirdPersonCamera(cam, player.position, yaw);
+
+          // Movement (camera-forward basis)
+          const { forward, right } = getCameraBasisXZ(cam);
           const mv = moveStick.get();
           let inputX = mv.x, inputY = -mv.y;
           const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
@@ -514,19 +520,16 @@
           const kRight = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
           inputX += (kRight - kLeft);
           inputY += (kForward - kBack);
-
           const mag = Math.hypot(inputX, inputY);
           if (mag > 1) { inputX /= mag; inputY /= mag; }
 
-          const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
-          const fwd = new THREE.Vector3(sinY, 0, -cosY);
-          const right = new THREE.Vector3(cosY, 0, sinY);
-          const wishdir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
+          const wishdir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
           if (wishdir.lengthSq() > 0) wishdir.normalize();
 
           const accel = onGround ? accelGround : accelAir;
           velocity.addScaledVector(wishdir, accel * dt);
 
+          // Friction
           if (onGround && mag < 0.05) {
             const horiz = new THREE.Vector2(velocity.x, velocity.z);
             const speed = horiz.length();
@@ -538,23 +541,26 @@
             }
           }
 
-          const horiz = new THREE.Vector2(velocity.x, velocity.z);
-          const speed = horiz.length();
-          if (speed > maxSpeed) {
-            horiz.multiplyScalar(maxSpeed / speed);
-            velocity.x = horiz.x; velocity.z = horiz.y;
+          // Cap speed
+          {
+            const horiz = new THREE.Vector2(velocity.x, velocity.z);
+            const speed = horiz.length();
+            if (speed > maxSpeed) {
+              horiz.multiplyScalar(maxSpeed / speed);
+              velocity.x = horiz.x; velocity.z = horiz.y;
+            }
           }
 
+          // Gravity/integration
           velocity.y -= gravity * dt;
           player.position.addScaledVector(velocity, dt);
 
+          // Ground
           const groundY = playerRadius + 0.3;
           if (player.position.y < groundY) { player.position.y = groundY; velocity.y = 0; onGround = true; }
           else onGround = false;
 
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
-          else updateThirdPersonCamera(cam, player.position, yaw);
-
+          // Weapon anim
           if (!attacking) {
             weapon.rotation.x = Math.sin(now * 0.004) * 0.08;
             weapon.rotation.z = 0;
@@ -564,8 +570,10 @@
             weapon.rotation.z = -Math.PI * 0.35 + Math.sin(t * Math.PI) * 0.5;
           }
 
+          // Lava rise
           lava.position.y += 0.018 * dt;
 
+          // Enemies + separation + damage
           const bob = Math.sin(now * 0.004) * 0.02;
           for (let i = 0; i < enemies.length; i++) {
             const e = enemies[i];
@@ -589,6 +597,7 @@
             if (d < 0.85) { health -= 18 * dt; if (health < 0) health = 0; }
           }
 
+          // Collectibles
           for (let i = coins.length - 1; i >= 0; i--) {
             const c = coins[i];
             if (c.position.distanceTo(player.position) < 0.8) {
@@ -605,19 +614,21 @@
             }
           }
 
+          // Lose
           const feet = player.position.y - groundY;
           const lavaTop = lava.position.y + 0.15;
           if (feet <= lavaTop || health <= 0) {
             run = false; msgText.textContent = 'Game Over — Jungle'; msg.style.display = 'block';
           }
 
+          // HUD
           hudPrimary.textContent = `Jungle — ${((performance.now() - start) / 1000).toFixed(1)}s`;
           hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
         }
       };
     }
 
-    // GAME 2: FP Platformer
+    // GAME 2: First‑Person Platformer
     function setupPlatformerFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
@@ -627,8 +638,7 @@
       const plats = [];
       function platform(w, h, d, x, y, z) {
         const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), platMat);
-        p.position.set(x, y, z);
-        sc.add(p); plats.push(p);
+        p.position.set(x, y, z); sc.add(p); plats.push(p);
       }
       const baseY = 0;
       platform(40, 2, 12, 0, baseY, 0);
@@ -647,7 +657,7 @@
       player.visible = false; player.position.set(-16, baseY + 6, 0); sc.add(player);
 
       const vel = new THREE.Vector3(0, 0, 0);
-      const gravity = 18, moveSpeed = 10, jumpVel = 12.5;
+      const gravity = 18, moveSpeed = 10, jumpVel = 16.5;
       let onGround = false, run = true, won = false;
       let yaw = 0, pitch = 0;
       let cameraMode = shopState.cameraMode;
@@ -722,15 +732,15 @@
           yaw += lx * 1.8 * dt;
           pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
 
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
+          else updateThirdPersonCamera(cam, player.position, yaw);
+
+          const { forward, right } = getCameraBasisXZ(cam);
           const mv = moveStick.get();
           let inputX = mv.x, inputY = -mv.y;
           const mag = Math.hypot(inputX, inputY);
           if (mag > 1) { inputX /= mag; inputY /= mag; }
-
-          const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
-          const fwd = new THREE.Vector3(sinY, 0, -cosY);
-          const right = new THREE.Vector3(cosY, 0, sinY);
-          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
+          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
           if (dir.lengthSq() > 0) dir.normalize();
 
           vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, 8 * dt);
@@ -740,9 +750,6 @@
           player.position.addScaledVector(vel, dt);
 
           collide();
-
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
-          else updateThirdPersonCamera(cam, player.position, yaw);
 
           if (player.position.distanceTo(goal.position) < 5) {
             won = true; msgText.textContent = 'Goal reached! — Platformer'; msg.style.display = 'block';
@@ -802,8 +809,8 @@
       hudPrimary.textContent = 'Desert Racer';
       hudSecondary.textContent = 'Gates 0/12';
 
-      actionBtn.onclick = () => {};
       jumpBtn.onclick = () => {};
+      actionBtn.onclick = () => {};
 
       function restart() {
         car.position.set(0, 0.6, 0);
@@ -818,7 +825,7 @@
         camera: cam,
         restart,
         dispose() {},
-        getCurrency: () => score,
+        getCurrency: () => score, // treat score as currency here
         setCurrency: v => { score = v; hudSecondary.textContent = `Gates ${score}/12`; },
         applyMapVariant,
         applySkin,
@@ -910,9 +917,7 @@
       hudPrimary.textContent = 'Space Arena';
       hudSecondary.textContent = 'Score 0 | ACTION to shoot';
 
-      function applyMapVariant(variant) {
-        sc.background = (variant === 'night') ? new THREE.Color(0x04060c) : new THREE.Color(0x080a12);
-      }
+      function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x04060c) : new THREE.Color(0x080a12); }
       applyMapVariant(shopState.mapVariant);
       function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
 
@@ -945,20 +950,18 @@
           yaw += lx * 1.8 * dt;
           pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
 
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
+          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
+
+          const { forward, right } = getCameraBasisXZ(cam);
           const mv = moveStick.get();
           let inputX = mv.x, inputY = -mv.y;
           const mag = Math.hypot(inputX, inputY);
           if (mag > 1) { inputX /= mag; inputY /= mag; }
-          const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
-          const fwd = new THREE.Vector3(sinY, 0, -cosY);
-          const right = new THREE.Vector3(cosY, 0, sinY);
-          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
+          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
           if (dir.lengthSq() > 0) dir.normalize();
           rig.position.addScaledVector(dir, 10 * dt);
           rigVis.position.copy(rig.position);
-
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
-          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
 
           for (const d of drones) {
             d.position.addScaledVector(d.userData.vel, dt);
@@ -985,7 +988,7 @@
       };
     }
 
-    // GAME 5: Runner
+    // GAME 5: Runner (lane-based; camera yaw/pitch limited)
     function setupRunnerFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
@@ -1162,18 +1165,16 @@
           yaw += lx * 1.8 * dt;
           pitch = THREE.MathUtils.clamp(pitch + ly * 1.0 * dt, -0.4, 0.4);
 
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
+          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
+
+          const { forward, right } = getCameraBasisXZ(cam);
           const mv = moveStick.get();
           let inputX = mv.x, inputY = -mv.y;
           const mag = Math.hypot(inputX, inputY);
           if (mag > 1) { inputX /= mag; inputY /= mag; }
+          const next = rig.position.clone().addScaledVector(right, inputX * 8 * dt).addScaledVector(forward, inputY * 8 * dt);
 
-          const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
-          const fwd = new THREE.Vector3(sinY, 0, -cosY);
-          const right = new THREE.Vector3(cosY, 0, sinY);
-          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
-          if (dir.lengthSq() > 0) dir.normalize();
-
-          const next = rig.position.clone().addScaledVector(dir, 8 * dt);
           let blocked = false;
           for (const w of walls) {
             const dx = Math.abs(next.x - w.position.x) - w.geometry.parameters.width / 2 - 0.5;
@@ -1182,9 +1183,6 @@
           }
           if (!blocked) rig.position.copy(next);
           rigVis.position.copy(rig.position);
-
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
-          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
 
           if (rig.position.distanceTo(exit.position) < 5) { run = false; msgText.textContent = 'Exit found! — Maze'; msg.style.display = 'block'; }
         }
@@ -1223,6 +1221,7 @@
         sc.add(b); bullets.push(b);
       }
       actionBtn.onclick = shoot;
+      jumpBtn.onclick = () => {};
 
       let yaw = 0, pitch = 0, run = true, score = 0;
       let cameraMode = shopState.cameraMode;
@@ -1230,9 +1229,7 @@
       hudPrimary.textContent = 'Target Range';
       hudSecondary.textContent = 'Score 0 | ACTION to shoot';
 
-      function applyMapVariant(variant) {
-        sc.background = (variant === 'night') ? new THREE.Color(0x162238) : new THREE.Color(0x223344);
-      }
+      function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x162238) : new THREE.Color(0x223344); }
       applyMapVariant(shopState.mapVariant);
       function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
 
@@ -1266,13 +1263,14 @@
           yaw += lx * 1.8 * dt;
           pitch = THREE.MathUtils.clamp(pitch + ly * 1.0 * dt, -0.8, 0.8);
 
-          const mv = moveStick.get();
-          rig.position.x += mv.x * 6 * dt;
-          rig.position.z += -mv.y * 6 * dt;
-          rigVis.position.copy(rig.position);
-
           if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
           else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
+
+          const { forward, right } = getCameraBasisXZ(cam);
+          const mv = moveStick.get();
+          rig.position.addScaledVector(right, mv.x * 6 * dt);
+          rig.position.addScaledVector(forward, -mv.y * 6 * dt);
+          rigVis.position.copy(rig.position);
 
           for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
