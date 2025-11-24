@@ -14,9 +14,9 @@
     #hud { position:absolute; bottom:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
     #hud .line { margin-top:6px; font-weight:600; }
     #menu { position:absolute; inset:0; display:grid; place-items:center; z-index:11; }
-    #menuPanel { width:820px; max-width:94vw; background:#111a; backdrop-filter: blur(6px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
+    #menuPanel { width:860px; max-width:95vw; background:#111a; backdrop-filter: blur(6px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
     #menuPanel h1 { margin:0 0 8px; font-size:28px; }
-    #menuGrid { display:grid; grid-template-columns:repeat(2, minmax(280px, 1fr)); gap:12px; margin-top:10px; }
+    #menuGrid { display:grid; grid-template-columns:repeat(2, minmax(300px, 1fr)); gap:12px; margin-top:10px; }
     .menuBtn { padding:14px; background:#222a; border:1px solid #fff2; color:#fff; border-radius:12px; cursor:pointer; text-align:left; }
     .menuBtn:hover { background:#2a2f; }
     .row { display:flex; gap:8px; align-items:center; margin-top:12px; }
@@ -101,13 +101,13 @@
     <div class="line" id="hudSecondary"></div>
   </div>
 
-  <!-- Shared settings controls (Monkey-game style) -->
+  <!-- Shared settings controls -->
   <div id="settingsBar">
     <button id="viewBtn" class="settingsBtn">VIEW: FIRST</button>
     <button id="shopBtn" class="settingsBtn">SHOP</button>
   </div>
 
-  <!-- Shop modal (shared across all games, context-aware effects) -->
+  <!-- Shop modal -->
   <div id="shop">
     <h2>Shop</h2>
     <div class="row"><span>Weapon upgrade</span><button data-cost="10" data-type="weapon">Buy (10)</button></div>
@@ -123,7 +123,7 @@
     <button id="restart">Restart</button>
   </div>
 
-  <!-- Mobile controls shared across all games -->
+  <!-- Mobile controls -->
   <div id="controls" style="display:none">
     <div id="leftStick" class="stick"><div class="knob" id="leftKnob"></div></div>
     <div id="rightPanel">
@@ -145,7 +145,7 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.appendChild(renderer.domElement);
 
-    // Shared UI elements
+    // UI refs
     const menu = document.getElementById('menu');
     const backBtn = document.getElementById('backBtn');
     const hud = document.getElementById('hud');
@@ -165,7 +165,7 @@
     const shopEl = document.getElementById('shop');
     const closeShopBtn = document.getElementById('closeShop');
 
-    // Joystick setup (shared)
+    // Joystick setup
     function setupStick(stickId, knobId) {
       const stick = document.getElementById(stickId), knob = document.getElementById(knobId);
       let vec = { x: 0, y: 0 }, active = false;
@@ -201,19 +201,14 @@
     graphicsHigh.onclick = () => { quality = 'high'; graphicsHigh.style.background = '#44aa44'; graphicsLow.style.background = '#fff1'; };
     graphicsHigh.click();
 
-    // Shared hub state
+    // Hub state
     let scene = null, camera = null, cleanup = null, running = false;
     let keys = {};
     window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') showMenu(); });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-    // Shared player cosmetics state (shop)
-    const shopState = {
-      cameraMode: 'first',
-      mapVariant: 'day',
-      skin: 'blue',
-      weaponLevel: 0 // 0=base, 1=upgraded
-    };
+    // Shared settings state
+    const shopState = { cameraMode: 'first', mapVariant: 'day', skin: 'blue', weaponLevel: 0 };
 
     backBtn.onclick = () => showMenu();
     restartBtn.onclick = () => { if (cleanup && cleanup.restart) cleanup.restart(); };
@@ -227,7 +222,6 @@
     shopBtn.onclick = () => { shopEl.style.display = 'block'; };
     closeShopBtn.onclick = () => { shopEl.style.display = 'none'; };
 
-    // Shared shop apply
     shopEl.addEventListener('click', (e) => {
       if (e.target.tagName !== 'BUTTON' || e.target.id === 'closeShop') return;
       const cost = parseInt(e.target.dataset.cost || '0', 10);
@@ -293,7 +287,7 @@
       viewBtn.textContent = `VIEW: ${shopState.cameraMode.toUpperCase()}`;
     }
 
-    // Menu button routing
+    // Routing
     document.querySelectorAll('.menuBtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const game = btn.dataset.game;
@@ -309,7 +303,7 @@
       });
     });
 
-    // Common helpers
+    // Lights
     function makeLights(env) {
       const group = new THREE.Group();
       if (env === 'day') {
@@ -344,16 +338,7 @@
       cam.lookAt(playerPos.x, playerPos.y + 1.0, playerPos.z);
     }
 
-    // Shared look application from right stick
-    function applyLookFromStick(yawPitch, dt, sensitivity=1.8, flip=false) {
-      const ls = lookStick.get();
-      const lx = flip ? -ls.x : ls.x;
-      const ly = flip ? -ls.y : ls.y;
-      yawPitch.yaw += lx * sensitivity * dt;
-      yawPitch.pitch = THREE.MathUtils.clamp(yawPitch.pitch + ly * sensitivity * dt, -1.2, 1.2);
-    }
-
-    // GAME 1: Lava Monkey Jungle (Full features preserved)
+    // GAME 1: Lava Monkey Jungle
     function setupJungleFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
@@ -493,7 +478,6 @@
 
       function dispose() { clearInterval(spawnTimer); }
 
-      // Keyboard fallback
       window.addEventListener('keydown', e => {
         if (e.code === 'Space' && onGround && run) velocity.y = jumpStrength;
         if (e.code === 'KeyF' && run) startAttack();
@@ -513,11 +497,9 @@
         update(dt, now) {
           if (!run) return;
 
-          // Look (flip axes in first-person for feel)
-          const flip = (cameraMode === 'first');
-          applyLookFromStick({ yaw, pitch }, dt, 1.8, flip);
-          // assign back (applyLookFromStick uses a temp object)
+          // Look (flip axes in FP)
           const ls = lookStick.get();
+          const flip = (cameraMode === 'first');
           const lx = flip ? -ls.x : ls.x;
           const ly = flip ? -ls.y : ls.y;
           yaw += lx * 1.8 * dt;
@@ -545,7 +527,6 @@
           const accel = onGround ? accelGround : accelAir;
           velocity.addScaledVector(wishdir, accel * dt);
 
-          // Friction
           if (onGround && mag < 0.05) {
             const horiz = new THREE.Vector2(velocity.x, velocity.z);
             const speed = horiz.length();
@@ -557,7 +538,6 @@
             }
           }
 
-          // Cap speed
           const horiz = new THREE.Vector2(velocity.x, velocity.z);
           const speed = horiz.length();
           if (speed > maxSpeed) {
@@ -565,20 +545,16 @@
             velocity.x = horiz.x; velocity.z = horiz.y;
           }
 
-          // Gravity/integration
           velocity.y -= gravity * dt;
           player.position.addScaledVector(velocity, dt);
 
-          // Ground
           const groundY = playerRadius + 0.3;
           if (player.position.y < groundY) { player.position.y = groundY; velocity.y = 0; onGround = true; }
           else onGround = false;
 
-          // Camera
           if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
           else updateThirdPersonCamera(cam, player.position, yaw);
 
-          // Weapon anim
           if (!attacking) {
             weapon.rotation.x = Math.sin(now * 0.004) * 0.08;
             weapon.rotation.z = 0;
@@ -588,10 +564,8 @@
             weapon.rotation.z = -Math.PI * 0.35 + Math.sin(t * Math.PI) * 0.5;
           }
 
-          // Lava rise
           lava.position.y += 0.018 * dt;
 
-          // Enemies + separation + damage
           const bob = Math.sin(now * 0.004) * 0.02;
           for (let i = 0; i < enemies.length; i++) {
             const e = enemies[i];
@@ -615,7 +589,6 @@
             if (d < 0.85) { health -= 18 * dt; if (health < 0) health = 0; }
           }
 
-          // Collectibles
           for (let i = coins.length - 1; i >= 0; i--) {
             const c = coins[i];
             if (c.position.distanceTo(player.position) < 0.8) {
@@ -632,21 +605,19 @@
             }
           }
 
-          // Lose
           const feet = player.position.y - groundY;
           const lavaTop = lava.position.y + 0.15;
           if (feet <= lavaTop || health <= 0) {
             run = false; msgText.textContent = 'Game Over — Jungle'; msg.style.display = 'block';
           }
 
-          // HUD
           hudPrimary.textContent = `Jungle — ${((performance.now() - start) / 1000).toFixed(1)}s`;
           hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
         }
       };
     }
 
-    // GAME 2: First‑Person Platformer (with shared settings)
+    // GAME 2: FP Platformer
     function setupPlatformerFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
@@ -700,11 +671,10 @@
         }
       }
       applyMapVariant(shopState.mapVariant);
-
       function applySkin(skin) { playerMat.color.set(skin === 'red' ? 0xff4444 : 0x44aaff); }
 
       jumpBtn.onclick = () => { if (onGround && run) vel.y = jumpVel; };
-      actionBtn.onclick = () => {}; // no attack
+      actionBtn.onclick = () => {};
 
       function collide() {
         onGround = false;
@@ -740,24 +710,23 @@
         setCurrency: () => {},
         applyMapVariant,
         applySkin,
-        applyWeaponUpgrade: () => {}, // not used
+        applyWeaponUpgrade: () => {},
         setCameraMode: mode => { cameraMode = mode; },
         update(dt) {
           if (!run || won) return;
 
-          // Look
-          const flip = (cameraMode === 'first');
           const ls = lookStick.get();
+          const flip = (cameraMode === 'first');
           const lx = flip ? -ls.x : ls.x;
           const ly = flip ? -ls.y : ls.y;
           yaw += lx * 1.8 * dt;
           pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
 
-          // Move
           const mv = moveStick.get();
           let inputX = mv.x, inputY = -mv.y;
           const mag = Math.hypot(inputX, inputY);
           if (mag > 1) { inputX /= mag; inputY /= mag; }
+
           const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
           const fwd = new THREE.Vector3(sinY, 0, -cosY);
           const right = new THREE.Vector3(cosY, 0, sinY);
@@ -772,7 +741,6 @@
 
           collide();
 
-          // Camera
           if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
           else updateThirdPersonCamera(cam, player.position, yaw);
 
@@ -786,7 +754,7 @@
       };
     }
 
-    // GAME 3: Racer (with shared settings)
+    // GAME 3: Racer
     function setupRacerFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd0b38a);
       const cam = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1200);
@@ -811,7 +779,6 @@
       let yaw = 0, pitch = 0;
       let cameraMode = shopState.cameraMode;
 
-      // Weapon upgrade repurposed to slight performance boost
       const accelBoost = (shopState.weaponLevel > 0) ? 1.1 : 1.0;
 
       function applyMapVariant(variant) {
@@ -851,7 +818,7 @@
         camera: cam,
         restart,
         dispose() {},
-        getCurrency: () => score, // treat score as currency here
+        getCurrency: () => score,
         setCurrency: v => { score = v; hudSecondary.textContent = `Gates ${score}/12`; },
         applyMapVariant,
         applySkin,
@@ -876,7 +843,6 @@
           car.position.addScaledVector(dir, speed * dt);
           car.rotation.y = heading;
 
-          // Camera: FP cockpit vs 3rd-person chase
           if (cameraMode === 'first') {
             const eye = new THREE.Vector3(0, 0.9, 1.2).applyEuler(new THREE.Euler(0, heading, 0));
             const eyePos = new THREE.Vector3().copy(car.position).add(eye);
@@ -902,7 +868,7 @@
       };
     }
 
-    // GAME 4: Space Drone Arena (shared settings)
+    // GAME 4: Space Drone Arena
     function setupArenaFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x080a12);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
@@ -972,15 +938,13 @@
         update(dt) {
           if (!run) return;
 
-          // Look
-          const flip = (cameraMode === 'first');
           const ls = lookStick.get();
+          const flip = (cameraMode === 'first');
           const lx = flip ? -ls.x : ls.x;
           const ly = flip ? -ls.y : ls.y;
           yaw += lx * 1.8 * dt;
           pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
 
-          // Move
           const mv = moveStick.get();
           let inputX = mv.x, inputY = -mv.y;
           const mag = Math.hypot(inputX, inputY);
@@ -993,17 +957,14 @@
           rig.position.addScaledVector(dir, 10 * dt);
           rigVis.position.copy(rig.position);
 
-          // Camera
           if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
           else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
 
-          // Drones
           for (const d of drones) {
             d.position.addScaledVector(d.userData.vel, dt);
             if (d.position.length() > 78) d.userData.vel.multiplyScalar(-1);
           }
 
-          // Bullets
           for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
             b.position.addScaledVector(b.userData.dir, bulletSpeed * dt);
@@ -1024,7 +985,7 @@
       };
     }
 
-    // GAME 5: Runner (shared settings)
+    // GAME 5: Runner
     function setupRunnerFP(quality, shopState) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
@@ -1094,3 +1055,264 @@
         applyWeaponUpgrade: () => {},
         setCameraMode: mode => { cameraMode = mode; },
         update(dt) {
+          if (!run) return;
+          time += dt;
+          speed = 8 + time * 1.2;
+
+          const ls = lookStick.get();
+          const flip = (cameraMode === 'first');
+          const lx = flip ? -ls.x : ls.x;
+          const ly = flip ? -ls.y : ls.y;
+          yaw += lx * 1.5 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * 1.0 * dt, -0.4, 0.4);
+
+          const mv = moveStick.get();
+          if (mv.x < -0.3) laneX = -2;
+          else if (mv.x > 0.3) laneX = 2;
+          else laneX = 0;
+
+          rig.position.x = THREE.MathUtils.lerp(rig.position.x, laneX, 6 * dt);
+          rigVis.position.copy(rig.position);
+
+          for (const o of obstacles) {
+            o.position.z += speed * dt;
+            if (o.position.z > 4) {
+              o.position.z = -180 - Math.random() * 40;
+              o.position.x = (Math.random() < 0.5 ? -2 : 2) + (Math.random() - 0.5) * 2;
+              rings++; hudSecondary.textContent = `Rings ${rings}`;
+            }
+            const dist = new THREE.Vector3(o.position.x - rig.position.x, 0, o.position.z).length();
+            if (dist < 1.0) { run = false; msgText.textContent = 'You hit an obstacle — Runner'; msg.style.display = 'block'; }
+          }
+
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
+          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
+
+          hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
+        }
+      };
+    }
+
+    // GAME 6: Crystal Maze
+    function setupMazeFP(quality, shopState) {
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x101424);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+      const lights = makeLights('maze'); sc.add(lights);
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), new THREE.MeshStandardMaterial({ color: 0x222a44, roughness: 0.9 }));
+      floor.rotation.x = -Math.PI / 2; sc.add(floor);
+
+      const walls = [];
+      function wall(x, y, z, sx, sy, sz) {
+        const w = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), new THREE.MeshStandardMaterial({ color: 0x3a64a6, emissive: 0x0a1530, emissiveIntensity: 0.2 }));
+        w.position.set(x, y, z); sc.add(w); walls.push(w);
+      }
+      for (let i = -70; i <= 70; i += 20) { wall(i, 1.5, -70, 20, 3, 2); wall(i, 1.5, 70, 20, 3, 2); }
+      for (let j = -70; j <= 70; j += 20) { wall(-70, 1.5, j, 2, 3, 20); wall(70, 1.5, j, 2, 3, 20); }
+      for (let k = 0; k < 16; k++) {
+        const wx = -50 + Math.floor(Math.random() * 6) * 20;
+        const wz = -50 + Math.floor(Math.random() * 6) * 20;
+        if (Math.random() < 0.5) wall(wx, 1.5, wz, 20, 3, 2);
+        else wall(wx, 1.5, wz, 2, 3, 20);
+      }
+
+      const exit = new THREE.Mesh(new THREE.TorusGeometry(3, 0.3, 12, 32), new THREE.MeshStandardMaterial({ color: 0x88ffcc }));
+      exit.position.set(60, 2.5, 60); sc.add(exit);
+
+      const rigMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
+      const rigVis = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rigVis.visible = false; sc.add(rigVis);
+      const rig = new THREE.Object3D(); rig.position.set(-60, 0.9, -60); sc.add(rig);
+
+      let yaw = 0, pitch = 0, run = true;
+      let cameraMode = shopState.cameraMode;
+
+      hudPrimary.textContent = 'Crystal Maze';
+      hudSecondary.textContent = 'Find the exit ring';
+
+      function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x0a0d1a) : new THREE.Color(0x101424); }
+      applyMapVariant(shopState.mapVariant);
+      function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
+
+      jumpBtn.onclick = () => {};
+      actionBtn.onclick = () => {};
+
+      function restart() {
+        rig.position.set(-60, 0.9, -60);
+        yaw = 0; pitch = 0; run = true; msg.style.display = 'none';
+      }
+
+      return {
+        scene: sc,
+        camera: cam,
+        restart,
+        dispose() {},
+        getCurrency: () => 0,
+        setCurrency: () => {},
+        applyMapVariant,
+        applySkin,
+        applyWeaponUpgrade: () => {},
+        setCameraMode: mode => { cameraMode = mode; },
+        update(dt) {
+          if (!run) return;
+          const ls = lookStick.get();
+          const flip = (cameraMode === 'first');
+          const lx = flip ? -ls.x : ls.x;
+          const ly = flip ? -ls.y : ls.y;
+          yaw += lx * 1.8 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * 1.0 * dt, -0.4, 0.4);
+
+          const mv = moveStick.get();
+          let inputX = mv.x, inputY = -mv.y;
+          const mag = Math.hypot(inputX, inputY);
+          if (mag > 1) { inputX /= mag; inputY /= mag; }
+
+          const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
+          const fwd = new THREE.Vector3(sinY, 0, -cosY);
+          const right = new THREE.Vector3(cosY, 0, sinY);
+          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
+          if (dir.lengthSq() > 0) dir.normalize();
+
+          const next = rig.position.clone().addScaledVector(dir, 8 * dt);
+          let blocked = false;
+          for (const w of walls) {
+            const dx = Math.abs(next.x - w.position.x) - w.geometry.parameters.width / 2 - 0.5;
+            const dz = Math.abs(next.z - w.position.z) - w.geometry.parameters.depth / 2 - 0.5;
+            if (dx < 0 && dz < 0) { blocked = true; break; }
+          }
+          if (!blocked) rig.position.copy(next);
+          rigVis.position.copy(rig.position);
+
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
+          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
+
+          if (rig.position.distanceTo(exit.position) < 5) { run = false; msgText.textContent = 'Exit found! — Maze'; msg.style.display = 'block'; }
+        }
+      };
+    }
+
+    // GAME 7: Target Range
+    function setupRangeFP(quality, shopState) {
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x223344);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+      const lights = makeLights('day'); sc.add(lights);
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: 0x335577 }));
+      floor.rotation.x = -Math.PI / 2; sc.add(floor);
+
+      const rigMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
+      const rigVis = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rigVis.visible = false; sc.add(rigVis);
+      const rig = new THREE.Object3D(); rig.position.set(0, 1, 40); sc.add(rig);
+
+      const targets = [];
+      function spawnTarget() {
+        const t = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.25, 10, 20), new THREE.MeshStandardMaterial({ color: 0xffcc55, emissive: 0x553300, emissiveIntensity: 0.2 }));
+        t.position.set((Math.random() - 0.5) * 60, 2 + Math.random() * 6, -20 - Math.random() * 30);
+        sc.add(t); targets.push(t);
+      }
+      for (let i = 0; i < (quality === 'high' ? 16 : 8); i++) spawnTarget();
+
+      const bullets = [];
+      const bulletSpeed = (shopState.weaponLevel > 0) ? 50 : 40;
+      function shoot() {
+        const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
+        const dir = new THREE.Vector3(0, 0, -1).applyEuler(cam.rotation);
+        b.position.copy(cam.position);
+        b.userData.dir = dir.clone();
+        sc.add(b); bullets.push(b);
+      }
+      actionBtn.onclick = shoot;
+
+      let yaw = 0, pitch = 0, run = true, score = 0;
+      let cameraMode = shopState.cameraMode;
+
+      hudPrimary.textContent = 'Target Range';
+      hudSecondary.textContent = 'Score 0 | ACTION to shoot';
+
+      function applyMapVariant(variant) {
+        sc.background = (variant === 'night') ? new THREE.Color(0x162238) : new THREE.Color(0x223344);
+      }
+      applyMapVariant(shopState.mapVariant);
+      function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
+
+      function restart() {
+        bullets.forEach(b => sc.remove(b)); bullets.length = 0;
+        targets.forEach(t => sc.remove(t)); targets.length = 0;
+        for (let i = 0; i < (quality === 'high' ? 16 : 8); i++) spawnTarget();
+        rig.position.set(0, 1, 40);
+        yaw = 0; pitch = 0; score = 0; hudSecondary.textContent = 'Score 0 | ACTION to shoot';
+        run = true; msg.style.display = 'none';
+      }
+
+      return {
+        scene: sc,
+        camera: cam,
+        restart,
+        dispose() {},
+        getCurrency: () => score,
+        setCurrency: v => { score = v; hudSecondary.textContent = `Score ${score} | ACTION to shoot`; },
+        applyMapVariant,
+        applySkin,
+        applyWeaponUpgrade: () => {},
+        setCameraMode: mode => { cameraMode = mode; },
+        update(dt) {
+          if (!run) return;
+
+          const ls = lookStick.get();
+          const flip = (cameraMode === 'first');
+          const lx = flip ? -ls.x : ls.x;
+          const ly = flip ? -ls.y : ls.y;
+          yaw += lx * 1.8 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * 1.0 * dt, -0.8, 0.8);
+
+          const mv = moveStick.get();
+          rig.position.x += mv.x * 6 * dt;
+          rig.position.z += -mv.y * 6 * dt;
+          rigVis.position.copy(rig.position);
+
+          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
+          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
+
+          for (let i = bullets.length - 1; i >= 0; i--) {
+            const b = bullets[i];
+            b.position.addScaledVector(b.userData.dir, bulletSpeed * dt);
+            if (b.position.length() > 160) { sc.remove(b); bullets.splice(i, 1); continue; }
+            for (let j = targets.length - 1; j >= 0; j--) {
+              const t = targets[j];
+              if (b.position.distanceTo(t.position) < 1.2) {
+                sc.remove(t); targets.splice(j, 1);
+                sc.remove(b); bullets.splice(i, 1);
+                score++; hudSecondary.textContent = `Score ${score} | ACTION to shoot`;
+                spawnTarget();
+                break;
+              }
+            }
+          }
+        }
+      };
+    }
+
+    // MAIN LOOP
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+      if (running && cleanup && cleanup.update) cleanup.update(dt, now);
+      if (scene && camera) renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    // Resize
+    window.addEventListener('resize', () => {
+      if (!camera) return;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Start on menu
+    showMenu();
+  </script>
+</body>
+</html>
