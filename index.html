@@ -80,6 +80,7 @@
     <label>Player:<input id="playerName" placeholder="Guest" /></label>
     <label>Server:<input id="serverUrl" class="server" /></label>
     <button id="connectBtn">Connect</button>
+    <button id="hostBtn">Host server</button>
     <span id="connStatus" style="margin-left:8px; opacity:0.8"></span>
   </div>
 
@@ -134,7 +135,7 @@
     <button id="shopBtn" class="settingsBtn">SHOP</button>
   </div>
 
-  <div id="skins">
+  <div id="skins" style="display:none">
     <h2>Choose your player skin</h2>
     <div class="grid">
       <div class="swatch" data-skin="blue" style="background:#4da3ff"></div>
@@ -158,7 +159,7 @@
     <button id="closeShop">Close</button>
   </div>
 
-  <div id="leaderboard">
+  <div id="leaderboard" style="display:none">
     <h2>Leaderboard</h2>
     <div class="row">
       <label>Game:
@@ -243,13 +244,14 @@
     const playerNameInput = document.getElementById('playerName');
     const serverUrlInput = document.getElementById('serverUrl');
     const connectBtn = document.getElementById('connectBtn');
+    const hostBtn = document.getElementById('hostBtn');
     const connStatus = document.getElementById('connStatus');
 
     const codeInput = document.getElementById('codeInput');
     const applyCodeBtn = document.getElementById('applyCodeBtn');
     const codeStatus = document.getElementById('codeStatus');
 
-    // Joystick setup
+    // Joysticks
     function setupStick(stickId, knobId) {
       const stick = document.getElementById(stickId), knob = document.getElementById(knobId);
       let vec = { x: 0, y: 0 }, active = false;
@@ -274,12 +276,12 @@
     const moveStick = setupStick('leftStick', 'leftKnob');
     const lookStick = setupStick('rightStick', 'rightKnob');
 
-    // Prevent iOS pinch/zoom gesture
+    // Prevent iOS pinch/zoom
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
     document.addEventListener('gestureend', e => e.preventDefault());
 
-    // Graphics quality toggle
+    // Graphics
     let quality = 'high';
     graphicsLow.onclick = () => { quality = 'low'; graphicsLow.style.background = '#44aa44'; graphicsHigh.style.background = '#fff1'; };
     graphicsHigh.onclick = () => { quality = 'high'; graphicsHigh.style.background = '#44aa44'; graphicsLow.style.background = '#fff1'; };
@@ -288,7 +290,6 @@
     // Hub state
     let scene = null, camera = null, cleanup = null, running = false, selectedLevel = 0;
 
-    // Progression order (after finishing all levels in a game, advance to the next game)
     const gameOrder = ['jungle', 'platformer', 'racer', 'arena', 'runner', 'maze', 'range', 'voxel'];
     const maxLevels = 5;
 
@@ -296,7 +297,7 @@
     window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') showMenu(); });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-    // Shared state (local-only networking: default to LAN server on same hostname)
+    // Shared state (LAN default)
     const defaultLAN = 'ws://' + window.location.hostname + ':8080';
     const shared = {
       skin: localStorage.getItem('skin') || 'blue',
@@ -304,7 +305,7 @@
       server: localStorage.getItem('server') || defaultLAN,
       ws: null,
       id: Math.random().toString(36).slice(2),
-      peers: new Map(), // id -> {mesh, label, lastSeen, data}
+      peers: new Map(),
       currentGame: null,
       owner: localStorage.getItem('owner') === 'true' || false
     };
@@ -313,7 +314,7 @@
     serverUrlInput.value = shared.server;
     netbar.style.display = 'block';
 
-    // Utility: color by skin
+    // Skin color
     function skinToColor(skin) {
       switch (skin) {
         case 'red': return 0xff4d4d;
@@ -323,24 +324,19 @@
         case 'white': return 0xf0f0f0;
         case 'black': return 0x222222;
         case 'yellow': return 0xffd84d;
-        default: return 0x4da3ff; // blue
+        default: return 0x4da3ff;
       }
     }
 
-    // Owner cosmetic: billboard text “OWNER”
+    // Owner label
     function makeOwnerLabel() {
       const canvas = document.createElement('canvas');
       canvas.width = 256; canvas.height = 128;
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = '#ff3b3b';
-      ctx.font = 'bold 60px system-ui';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#ff3b3b'; ctx.font = 'bold 60px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('OWNER', canvas.width/2, canvas.height/2);
       const tex = new THREE.CanvasTexture(canvas);
-      tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
       const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
       const sprite = new THREE.Sprite(mat);
       sprite.scale.set(2.4, 1.2, 1);
@@ -348,7 +344,7 @@
       return sprite;
     }
 
-    // Skins modal
+    // Skins
     skinsBtn.onclick = () => { skinsEl.style.display = 'block'; };
     closeSkinsBtn.onclick = () => { skinsEl.style.display = 'none'; };
     skinsEl.addEventListener('click', (e) => {
@@ -360,7 +356,7 @@
       }
     });
 
-    // Code input (owner cosmetic)
+    // Code input (ownercole)
     applyCodeBtn.onclick = () => {
       const code = codeInput.value.trim().toLowerCase();
       if (code === 'ownercole') {
@@ -375,10 +371,10 @@
       }
     };
 
-    // Exit button (web)
+    // Exit
     exitBtn.onclick = () => { window.location.href = 'about:blank'; };
 
-    // Levels selection
+    // Levels select
     document.querySelectorAll('.levelBtn').forEach(b => {
       b.onclick = () => {
         selectedLevel = parseInt(b.dataset.level,10) || 0;
@@ -393,10 +389,7 @@
     lbGame.onchange = () => refreshLeaderboard(lbGame.value);
     resetLeaderboardBtn.onclick = () => { localStorage.removeItem('leaderboard'); refreshLeaderboard(lbGame.value); };
 
-    function getLB() {
-      const raw = localStorage.getItem('leaderboard');
-      return raw ? JSON.parse(raw) : {};
-    }
+    function getLB() { const raw = localStorage.getItem('leaderboard'); return raw ? JSON.parse(raw) : {}; }
     function setLB(data) { localStorage.setItem('leaderboard', JSON.stringify(data)); }
     function addScore(game, name, score) {
       const lb = getLB();
@@ -416,15 +409,18 @@
       });
     }
 
-    // Networking (LAN-only default)
+    // Networking (LAN)
     connectBtn.onclick = () => {
       const name = playerNameInput.value.trim();
       const server = serverUrlInput.value.trim();
       shared.name = name || 'Guest';
-      shared.server = server || defaultLAN; // default to local hostname
+      shared.server = server || defaultLAN;
       localStorage.setItem('name', shared.name);
       localStorage.setItem('server', shared.server);
       connectWS();
+    };
+    hostBtn.onclick = () => {
+      alert("To host a local server:\n1) Install Node.js\n2) Run `node server.js`\n3) Others on same Wi‑Fi connect to ws://YOUR_LOCAL_IP:8080");
     };
 
     function connectWS() {
@@ -443,7 +439,6 @@
     }
 
     function handleNetMessage(msg) {
-      // {type:'state', id, name, skin, owner, game, x,y,z, yaw, t}
       if (msg.type === 'state' && msg.id && msg.id !== shared.id) {
         if (msg.game !== shared.currentGame || !scene) return;
         let peer = shared.peers.get(msg.id);
@@ -468,15 +463,10 @@
       const canvas = document.createElement('canvas');
       canvas.width = 256; canvas.height = 128;
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 48px system-ui';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 48px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(name || 'Guest', canvas.width/2, canvas.height/2);
       const tex = new THREE.CanvasTexture(canvas);
-      tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
       const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
       const sprite = new THREE.Sprite(mat);
       sprite.scale.set(2.0, 1.0, 1);
@@ -495,16 +485,13 @@
         mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), new THREE.MeshStandardMaterial({ color }));
       }
       mesh.userData.isPeer = true;
-      if (owner) {
-        const ownerSprite = makeOwnerLabel();
-        mesh.add(ownerSprite);
-      }
+      if (owner) mesh.add(makeOwnerLabel());
       return mesh;
     }
     function setPeerYaw(mesh, yaw) { mesh.rotation.y = yaw || 0; }
     function setPeerSkin(mesh, skin) { const color = skinToColor(skin); if (mesh.material && mesh.material.color) mesh.material.color.setHex(color); }
     function setPeerOwner(mesh, owner) {
-      const existing = mesh.children.find(ch => ch.isSprite && ch.material && ch.material.map && ch.material.map.image);
+      const existing = mesh.children.find(ch => ch.isSprite);
       if (owner && !existing) mesh.add(makeOwnerLabel());
       if (!owner && existing) mesh.remove(existing);
     }
@@ -527,7 +514,7 @@
       try { shared.ws.send(JSON.stringify(msg)); } catch {}
     }
 
-    // Clean old peers periodically
+    // Clean peers
     setInterval(() => {
       const now = performance.now();
       for (const [id, peer] of shared.peers) {
@@ -569,7 +556,6 @@
       menu.style.display = 'none';
       if (cleanup.applySkin) cleanup.applySkin(shared.skin);
       if (cleanup.applyOwner) cleanup.applyOwner(shared.owner);
-      // Attach progression hooks
       cleanup.nextLevel = () => advanceLevel(gameKey, levelIdx + 1);
       cleanup.nextGame = () => advanceToNextGame(gameKey);
       broadcastState(true);
@@ -579,11 +565,9 @@
       if (nextIndex < maxLevels) {
         startGame(gameSetups[gameKey], gameKey, nextIndex);
       } else {
-        // Finished all levels in this game: move to next game
         advanceToNextGame(gameKey);
       }
     }
-
     function advanceToNextGame(current) {
       const idx = gameOrder.indexOf(current);
       const nextGame = gameOrder[(idx + 1) % gameOrder.length];
@@ -597,7 +581,7 @@
       });
     });
 
-    // Shop minimal behavior
+    // Shop
     shopBtn.onclick = () => { shopEl.style.display = 'block'; };
     closeShopBtn.onclick = () => { shopEl.style.display = 'none'; };
     shopEl.addEventListener('click', (e) => {
@@ -614,7 +598,7 @@
       if (type === 'mapDay' && cleanup.applyMapVariant) cleanup.applyMapVariant('day');
     });
 
-    // Camera helpers (third person only)
+    // Camera helpers
     function updateThirdPersonCamera(cam, playerPos, yaw, pitch=0, dist=6.5, height=2.6) {
       const h = height + Math.sin(pitch) * 0.5;
       const offset = new THREE.Vector3(Math.sin(yaw) * dist, h, -Math.cos(yaw) * dist);
@@ -659,7 +643,7 @@
       return group;
     }
 
-    // Level data (5 levels each)
+    // Levels
     const jungleLevels = [
       { trees: 12, coins: 8, kits: 3, lavaSpeed: 0.015, enemyRate: 1.2 },
       { trees: 16, coins: 10, kits: 3, lavaSpeed: 0.020, enemyRate: 1.0 },
@@ -693,7 +677,7 @@
       { size: 16, startBlocks: 60 }, { size: 18, startBlocks: 80 }, { size: 20, startBlocks: 100 }, { size: 22, startBlocks: 120 }, { size: 24, startBlocks: 140 }
     ];
 
-    // GAME SETUPS (map names to setup functions for progression)
+    // Game registry
     const gameSetups = {
       jungle: setupJungleTP,
       platformer: setupPlatformerTP,
@@ -764,7 +748,7 @@
       for (let i = 0; i < lvl.coins; i++) coin();
       for (let i = 0; i < lvl.kits; i++) medkit();
 
-      let health = 100, start = performance.now();
+      let health = 100;
       const velocity = new THREE.Vector3();
       const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.2, gravity = 18, jumpStrength = 14.5;
       let onGround = true;
@@ -779,7 +763,7 @@
       const attackArcCos = Math.cos(Math.PI / 3);
 
       function startAttack() {
-        if (attacking || !run) return;
+        if (attacking) return;
         attacking = true; attackStart = performance.now();
         weapon.rotation.z = -Math.PI * 0.35;
         const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
@@ -793,8 +777,9 @@
         }
         setTimeout(() => { attacking = false; weapon.rotation.z = 0; }, attackDuration);
       }
-      actionBtn.onclick = startAttack;
-      jumpBtn.onclick = () => { if (onGround && run) velocity.y = jumpStrength; };
+      actionBtn.onclick = startAttack; // allow action anytime
+      jumpBtn.onclick = () => { if (onGround) velocity.y = jumpStrength; }; // allow jump while moving
+      window.addEventListener('keydown', e => { if (e.code === 'Space') { if (onGround) velocity.y = jumpStrength; } });
 
       function applyMapVariant(variant) {
         const hemi = lights.children.find(l => l.isHemisphereLight);
@@ -821,7 +806,7 @@
       }
 
       function restart() {
-        health = 100; coinCount = 0; start = performance.now();
+        health = 100; coinCount = 0;
         velocity.set(0, 0, 0); player.position.set(0, playerRadius + 0.3, 0);
         yaw = 0; pitch = 0; lava.position.y = -2.5;
         enemies.forEach(e => sc.remove(e)); enemies.length = 0;
@@ -902,7 +887,6 @@
             addScore('jungle', shared.name || 'Guest', Math.round(coinCount));
           }
 
-          // win condition: survive X seconds? For simplicity, coins collected target:
           if (coinCount >= lvl.coins) {
             run = false;
             addScore('jungle', shared.name || 'Guest', coinCount);
@@ -919,7 +903,7 @@
       };
     }
 
-    // GAME 2: Platformer (double jump)
+    // GAME 2: Platformer
     function setupPlatformerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = platformerLevels[levelIndex] || platformerLevels[0];
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
@@ -946,7 +930,7 @@
       const playerRadius = 0.6;
       const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), playerMat);
-      player.visible = true; player.position.set(-16, baseY + 6, 0); sc.add(player);
+      player.position.set(-16, baseY + 6, 0); sc.add(player);
       if (ownerFlag) player.add(makeOwnerLabel());
 
       const vel = new THREE.Vector3(0, 0, 0);
@@ -984,8 +968,9 @@
         if (onGround) { vel.y = jumpVel; jumpsLeft = 1; onGround = false; }
         else if (jumpsLeft > 0) { vel.y = jumpVel * 0.95; jumpsLeft = 0; }
       }
-      jumpBtn.onclick = tryJump;
+      jumpBtn.onclick = tryJump; // allow jump while moving
       window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
+      actionBtn.onclick = () => {}; // no action needed here, but kept consistent
 
       function collide() {
         onGround = false;
@@ -1049,7 +1034,7 @@
       };
     }
 
-    // GAME 3: Racer
+    // GAME 3: Racer (bug fix: smoother physics)
     function setupRacerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = racerLevels[levelIndex] || racerLevels[0];
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd0b38a);
@@ -1116,8 +1101,12 @@
           const throttle = Math.max(0, -mv.y);
           const brake = Math.max(0, mv.y);
 
-          speed += ((throttle * 22 * lvl.speedMul) - (brake * 28) - speed * 0.85) * dt;
-          heading += steer * 1.8 * dt;
+          // Simplified, stable physics
+          speed += (throttle * 30 - brake * 40) * dt;
+          speed *= 0.98; // friction
+          speed = Math.max(0, Math.min(speed, 40));
+
+          heading += steer * 2.0 * dt;
 
           const dir = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
           car.position.addScaledVector(dir, speed * dt);
@@ -1178,7 +1167,8 @@
         b.userData.dir = dir.clone();
         sc.add(b); bullets.push(b);
       }
-      actionBtn.onclick = shoot;
+      actionBtn.onclick = shoot; // allow action anytime
+      jumpBtn.onclick = () => {}; // no jump mechanic here, but kept consistent
 
       let run = true, score = 0, yaw = 0, pitch = 0;
 
@@ -1340,7 +1330,6 @@
             }
           }
 
-          // Level complete condition: collect N rings
           if (rings >= 10 + levelIndex * 5) {
             run = false;
             addScore('runner', shared.name || 'Guest', rings);
@@ -1468,7 +1457,8 @@
         b.userData.dir = dir.clone();
         sc.add(b); bullets.push(b);
       }
-      actionBtn.onclick = shoot;
+      actionBtn.onclick = shoot; // allow action anytime
+      jumpBtn.onclick = () => {}; // no jump mechanic
 
       let yaw = 0, pitch = 0, run = true, score = 0;
 
@@ -1520,7 +1510,6 @@
             }
           }
 
-          // Level complete condition: reach score threshold
           if (score >= 6 + levelIndex * 2) {
             run = false;
             addScore('range', shared.name || 'Guest', score);
@@ -1534,36 +1523,27 @@
       };
     }
 
-    // GAME 8: Voxel Builder (Minecraft-like, basic)
+    // GAME 8: Voxel Builder
     function setupVoxelTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = voxelLevels[levelIndex] || voxelLevels[0];
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       const lights = makeLights('day'); sc.add(lights);
 
-      // Simple voxel grid
-      const size = lvl.size; // width/depth
+      const size = lvl.size;
       const blockSize = 1;
-      const groundY = 0;
-
-      // Ground plane
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(size*blockSize, size*blockSize), new THREE.MeshStandardMaterial({ color: 0x88b36a }));
-      ground.rotation.x = -Math.PI / 2; ground.position.set(0, groundY, 0); sc.add(ground);
+      ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0, 0); sc.add(ground);
 
-      // Player
       const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const player = new THREE.Mesh(new THREE.BoxGeometry(1, 1.8, 1), playerMat);
       player.position.set(0, 1, 0); sc.add(player);
       if (ownerFlag) player.add(makeOwnerLabel());
 
-      // Block palette
-      const palettes = [0x8B4513, 0xaaaaaa, 0x228B22, 0x3366ff, 0xffd84d]; // wood, stone, grass, waterish, sand
+      const palettes = [0x8B4513, 0xaaaaaa, 0x228B22, 0x3366ff, 0xffd84d];
       let paletteIndex = 0;
 
-      // Stored blocks
-      const blocks = new Map(); // key "x,y,z" -> mesh
-
-      // Seed some blocks
+      const blocks = new Map();
       function key(x,y,z){return `${x},${y},${z}`;}
       function addBlock(x,y,z,color=null){
         const mesh = new THREE.Mesh(new THREE.BoxGeometry(blockSize, blockSize, blockSize), new THREE.MeshStandardMaterial({ color: color ?? palettes[paletteIndex] }));
@@ -1574,12 +1554,7 @@
         addBlock(x, y, z, 0x88b36a);
       }
 
-      // Place/remove blocks with ACTION/JUMP
-      function rayFromCamera() {
-        const dir = new THREE.Vector3().subVectors(player.position, cam.position).normalize();
-        const origin = cam.position.clone();
-        return { origin, dir };
-      }
+      function rayFromCamera() { const dir = new THREE.Vector3().subVectors(player.position, cam.position).normalize(); const origin = cam.position.clone(); return { origin, dir }; }
       function findNearestGridHit(maxDist=8) {
         const { origin, dir } = rayFromCamera();
         let best = null, bestDist = Infinity;
@@ -1650,7 +1625,6 @@
 
           hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
 
-          // Level complete condition: reach total block count
           if (blocks.size >= lvl.startBlocks + 10) {
             addScore('voxel', shared.name || 'Guest', blocks.size);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
@@ -1688,7 +1662,7 @@
     // Start on menu
     showMenu();
 
-    // Tip: Run server.js on your LAN (same Wi‑Fi). Default server uses your local hostname. Enter code “ownercole” to unlock the OWNER cosmetic.
+    // Tip: Host with server.js on your LAN. Default server uses your local hostname. Enter code “ownercole” to unlock the OWNER cosmetic.
   </script>
 </body>
 </html>
