@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Camera limited to X/Y axes (7 games, unified settings)</title>
+  <title>3D Game Hub — Online, visible player models, skins menu (third person)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
@@ -15,7 +15,7 @@
     #hud .line { margin-top:6px; font-weight:600; }
 
     #menu { position:absolute; inset:0; display:grid; place-items:center; z-index:11; }
-    #menuPanel { width:880px; max-width:95vw; background:#111a; backdrop-filter: blur(8px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
+    #menuPanel { width:920px; max-width:95vw; background:#111a; backdrop-filter: blur(8px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
     #menuPanel h1 { margin:0 0 8px; font-size:28px; }
     #menuGrid { display:grid; grid-template-columns:repeat(2, minmax(320px, 1fr)); gap:12px; margin-top:10px; }
     .menuBtn { padding:14px; background:#222a; border:1px solid #fff2; color:#fff; border-radius:12px; cursor:pointer; text-align:left; }
@@ -28,16 +28,17 @@
     #msg { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:12; text-align:center; font-weight:800; font-size:22px; display:none; }
     #msg button { margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer; }
 
-    /* Shared settings panel */
+    /* Settings bar */
     #settingsBar { position:absolute; top:56px; right:10px; z-index:12; display:none; display:flex; gap:8px; }
     .settingsBtn { padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; cursor:pointer; }
 
-    /* Shop modal */
-    #shop { position:absolute; top:20%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; width:380px; border:1px solid #fff2; }
-    #shop h2 { margin:0 0 10px; }
-    #shop .row { margin:8px 0; display:flex; justify-content:space-between; align-items:center; }
-    #shop .row button { padding:6px 10px; border:none; border-radius:8px; background:#444; color:#fff; cursor:pointer; }
-    #closeShop { margin-top:12px; width:100%; padding:8px; border:none; border-radius:8px; background:#6a6a6a; color:#fff; cursor:pointer; }
+    /* Skins modal */
+    #skins { position:absolute; top:18%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; width:420px; border:1px solid #fff2; }
+    #skins h2 { margin:0 0 10px; }
+    #skins .grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+    .swatch { height:40px; border-radius:10px; border:1px solid #fff3; cursor:pointer; }
+    #skins .row { display:flex; gap:8px; align-items:center; margin-top:12px; }
+    #closeSkins { margin-top:12px; width:100%; padding:8px; border:none; border-radius:8px; background:#6a6a6a; color:#fff; cursor:pointer; }
 
     /* Mobile joysticks and buttons */
     #controls { position:absolute; bottom:16px; left:16px; right:16px; z-index:12; display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; }
@@ -46,13 +47,23 @@
     #rightPanel { display:flex; flex-direction:column; align-items:center; gap:12px; pointer-events:auto; }
     .btn { pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); color:#fff; display:grid; place-items:center; font-weight:800; }
 
-    * { -webkit-tap-highlight-color: transparent; }
+    /* Name and server bar */
+    #netbar { position:absolute; top:10px; left:50%; transform:translateX(-50%); background:#111a; color:#fff; padding:8px 12px; border-radius:10px; border:1px solid #fff2; z-index:12; display:none; }
+    #netbar input { background:#222; border:1px solid #444; color:#fff; border-radius:8px; padding:6px 8px; margin-left:6px; width:160px; }
+    #netbar .server { width:240px; }
   </style>
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — Camera limited to X/Y axes</div>
-    <div class="small" id="hint">Left stick: move. Right stick: look (yaw/pitch only). Jump/Action buttons. Esc/Back to menu.</div>
+    <div id="title">3D Game Hub — Online, visible players, skins menu</div>
+    <div class="small" id="hint">Left stick: move. Right stick: look. Jump/Action buttons. Esc/Back to menu.</div>
+  </div>
+
+  <div id="netbar">
+    <label>Player name:<input id="playerName" placeholder="Guest" /></label>
+    <label>Server:<input id="serverUrl" class="server" placeholder="ws://localhost:8080" /></label>
+    <button id="connectBtn">Connect</button>
+    <span id="connStatus" style="margin-left:8px; opacity:0.8"></span>
   </div>
 
   <button id="backBtn">Back to menu</button>
@@ -63,36 +74,37 @@
       <div id="menuGrid">
         <button class="menuBtn" data-game="jungle">
           <div style="font-weight:800">Lava Monkey Jungle</div>
-          <div class="small">Survive monkeys and rising lava. Coins & medkits. Full shop, skins, camera toggle.</div>
+          <div class="small">Survive monkeys and rising lava. Coins & medkits. Online ghosts.</div>
         </button>
         <button class="menuBtn" data-game="platformer">
-          <div style="font-weight:800">Sky Platforms (First‑Person Platformer)</div>
-          <div class="small">Jump across floating platforms to reach the goal.</div>
+          <div style="font-weight:800">Sky Platforms (Double Jump)</div>
+          <div class="small">Jump across floating platforms. Player visible. Online ghosts.</div>
         </button>
         <button class="menuBtn" data-game="racer">
           <div style="font-weight:800">Desert Ridge Racer</div>
-          <div class="small">Drive from the cockpit. Pass gates to finish.</div>
+          <div class="small">Drive through gates. Online ghosts.</div>
         </button>
         <button class="menuBtn" data-game="arena">
           <div style="font-weight:800">Space Drone Arena</div>
-          <div class="small">Shoot drones in zero‑g.</div>
+          <div class="small">Shoot drones. Online ghosts.</div>
         </button>
         <button class="menuBtn" data-game="runner">
           <div style="font-weight:800">Forest Endless Runner</div>
-          <div class="small">First‑person lane dodging with rising speed.</div>
+          <div class="small">Lane dodging. Online ghosts.</div>
         </button>
         <button class="menuBtn" data-game="maze">
           <div style="font-weight:800">Crystal Maze</div>
-          <div class="small">Navigate a glowing maze to find the exit.</div>
+          <div class="small">Find the ring. Online ghosts.</div>
         </button>
         <button class="menuBtn" data-game="range">
           <div style="font-weight:800">Target Range</div>
-          <div class="small">Aim practice. Pop‑up targets.</div>
+          <div class="small">Pop‑up targets. Online ghosts.</div>
         </button>
       </div>
       <div class="row">
         <div class="pill" id="graphicsLow">Graphics: Low</div>
         <div class="pill" id="graphicsHigh">Graphics: High</div>
+        <div class="pill" id="skinsBtn">Player skins</div>
       </div>
     </div>
   </div>
@@ -102,21 +114,37 @@
     <div class="line" id="hudSecondary"></div>
   </div>
 
-  <!-- Shared settings controls -->
-  <div id="settingsBar">
-    <button id="viewBtn" class="settingsBtn">VIEW: FIRST</button>
+  <!-- Settings controls -->
+  <div id="settingsBar" style="display:none">
     <button id="shopBtn" class="settingsBtn">SHOP</button>
   </div>
 
-  <!-- Shop modal -->
-  <div id="shop">
-    <h2>Shop</h2>
+  <!-- Skins modal -->
+  <div id="skins">
+    <h2>Choose your player skin</h2>
+    <div class="grid">
+      <div class="swatch" data-skin="blue" style="background:#4da3ff"></div>
+      <div class="swatch" data-skin="red" style="background:#ff4d4d"></div>
+      <div class="swatch" data-skin="green" style="background:#43c86b"></div>
+      <div class="swatch" data-skin="purple" style="background:#aa66ff"></div>
+      <div class="swatch" data-skin="orange" style="background:#ff9a3c"></div>
+      <div class="swatch" data-skin="white" style="background:#f0f0f0"></div>
+      <div class="swatch" data-skin="black" style="background:#222"></div>
+      <div class="swatch" data-skin="yellow" style="background:#ffd84d"></div>
+    </div>
+    <div class="row">
+      <span style="opacity:0.8">Applies to all games and your online presence.</span>
+    </div>
+    <button id="closeSkins">Close</button>
+  </div>
+
+  <!-- Shop (kept minimal; currency varies per game) -->
+  <div id="shop" style="display:none">
+    <h2 style="margin:0 0 10px">Shop</h2>
     <div class="row"><span>Weapon upgrade</span><button data-cost="10" data-type="weapon">Buy (10)</button></div>
     <div class="row"><span>Map: Night</span><button data-cost="20" data-type="mapNight">Buy (20)</button></div>
     <div class="row"><span>Map: Day</span><button data-cost="0" data-type="mapDay">Use</button></div>
-    <div class="row"><span>Skin: Red</span><button data-cost="15" data-type="skinRed">Buy (15)</button></div>
-    <div class="row"><span>Skin: Blue</span><button data-cost="0" data-type="skinBlue">Use</button></div>
-    <button id="closeShop">Close</button>
+    <button id="closeShop" style="margin-top:12px; width:100%; padding:8px; border:none; border-radius:8px; background:#6a6a6a; color:#fff; cursor:pointer;">Close</button>
   </div>
 
   <div id="msg">
@@ -161,10 +189,18 @@
     const jumpBtn = document.getElementById('jumpBtn');
     const actionBtn = document.getElementById('actionBtn');
     const settingsBar = document.getElementById('settingsBar');
-    const viewBtn = document.getElementById('viewBtn');
     const shopBtn = document.getElementById('shopBtn');
     const shopEl = document.getElementById('shop');
     const closeShopBtn = document.getElementById('closeShop');
+    const skinsBtn = document.getElementById('skinsBtn');
+    const skinsEl = document.getElementById('skins');
+    const closeSkinsBtn = document.getElementById('closeSkins');
+
+    const netbar = document.getElementById('netbar');
+    const playerNameInput = document.getElementById('playerName');
+    const serverUrlInput = document.getElementById('serverUrl');
+    const connectBtn = document.getElementById('connectBtn');
+    const connStatus = document.getElementById('connStatus');
 
     // Joystick setup
     function setupStick(stickId, knobId) {
@@ -208,18 +244,145 @@
     window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') showMenu(); });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-    // Shared settings state
-    const shopState = { cameraMode: 'first', mapVariant: 'day', skin: 'blue', weaponLevel: 0 };
-
-    backBtn.onclick = () => showMenu();
-    restartBtn.onclick = () => { if (cleanup && cleanup.restart) cleanup.restart(); };
-
-    viewBtn.onclick = () => {
-      shopState.cameraMode = (shopState.cameraMode === 'first') ? 'third' : 'first';
-      viewBtn.textContent = `VIEW: ${shopState.cameraMode.toUpperCase()}`;
-      if (cleanup && cleanup.setCameraMode) cleanup.setCameraMode(shopState.cameraMode);
+    // Shared state
+    const shared = {
+      skin: localStorage.getItem('skin') || 'blue',
+      name: localStorage.getItem('name') || '',
+      server: localStorage.getItem('server') || 'ws://localhost:8080',
+      ws: null,
+      id: Math.random().toString(36).slice(2),
+      peers: new Map(), // id -> {mesh, lastSeen, data}
+      currentGame: null
     };
 
+    playerNameInput.value = shared.name;
+    serverUrlInput.value = shared.server;
+    netbar.style.display = 'block';
+
+    function skinToColor(skin) {
+      switch (skin) {
+        case 'red': return 0xff4d4d;
+        case 'green': return 0x43c86b;
+        case 'purple': return 0xaa66ff;
+        case 'orange': return 0xff9a3c;
+        case 'white': return 0xf0f0f0;
+        case 'black': return 0x222222;
+        case 'yellow': return 0xffd84d;
+        default: return 0x4da3ff; // blue
+      }
+    }
+
+    // Skins modal
+    skinsBtn.onclick = () => { skinsEl.style.display = 'block'; };
+    closeSkinsBtn.onclick = () => { skinsEl.style.display = 'none'; };
+    skinsEl.addEventListener('click', (e) => {
+      if (e.target.classList.contains('swatch')) {
+        shared.skin = e.target.dataset.skin;
+        localStorage.setItem('skin', shared.skin);
+        if (cleanup && cleanup.applySkin) cleanup.applySkin(shared.skin);
+        broadcastState(); // update peers with new skin
+      }
+    });
+
+    // Networking (simple WebSocket presence and position sync)
+    connectBtn.onclick = () => {
+      const name = playerNameInput.value.trim();
+      const server = serverUrlInput.value.trim();
+      shared.name = name || 'Guest';
+      shared.server = server || 'ws://localhost:8080';
+      localStorage.setItem('name', shared.name);
+      localStorage.setItem('server', shared.server);
+      connectWS();
+    };
+
+    function connectWS() {
+      try {
+        if (shared.ws) { shared.ws.close(); shared.ws = null; }
+        const ws = new WebSocket(shared.server);
+        shared.ws = ws;
+        connStatus.textContent = 'Connecting...';
+        ws.onopen = () => { connStatus.textContent = 'Connected'; broadcastState(true); };
+        ws.onmessage = (evt) => {
+          try {
+            const msg = JSON.parse(evt.data);
+            handleNetMessage(msg);
+          } catch {}
+        };
+        ws.onclose = () => { connStatus.textContent = 'Disconnected'; };
+        ws.onerror = () => { connStatus.textContent = 'Error'; };
+      } catch {
+        connStatus.textContent = 'Error';
+      }
+    }
+
+    function handleNetMessage(msg) {
+      // Expect messages: {type:'state', id, name, skin, game, x,y,z, yaw, t}
+      if (msg.type === 'state' && msg.id && msg.id !== shared.id) {
+        // Only display peers in the same game
+        if (msg.game !== shared.currentGame) return;
+        let peer = shared.peers.get(msg.id);
+        if (!peer) {
+          const mesh = createPeerMesh(msg.game, msg.skin);
+          scene && scene.add(mesh);
+          peer = { mesh, lastSeen: performance.now(), data: msg };
+          shared.peers.set(msg.id, peer);
+        }
+        peer.lastSeen = performance.now();
+        peer.data = msg;
+        peer.mesh.position.set(msg.x, msg.y, msg.z);
+        setPeerYaw(peer.mesh, msg.yaw);
+        setPeerSkin(peer.mesh, msg.skin);
+      }
+    }
+
+    function createPeerMesh(game, skin) {
+      const color = skinToColor(skin);
+      let mesh;
+      if (game === 'racer') {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), new THREE.MeshStandardMaterial({ color }));
+      } else {
+        mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), new THREE.MeshStandardMaterial({ color }));
+      }
+      mesh.userData.isPeer = true;
+      return mesh;
+    }
+    function setPeerYaw(mesh, yaw) {
+      mesh.rotation.y = yaw || 0;
+    }
+    function setPeerSkin(mesh, skin) {
+      const color = skinToColor(skin);
+      if (mesh.material && mesh.material.color) mesh.material.color.setHex(color);
+    }
+    function broadcastState(initial=false) {
+      if (!shared.ws || shared.ws.readyState !== 1 || !cleanup) return;
+      const p = cleanup.getLocalState ? cleanup.getLocalState() : null;
+      if (!p) return;
+      const msg = {
+        type: 'state',
+        id: shared.id,
+        name: shared.name || 'Guest',
+        skin: shared.skin,
+        game: shared.currentGame || '',
+        x: p.pos.x, y: p.pos.y, z: p.pos.z,
+        yaw: p.yaw || 0,
+        t: Date.now(),
+        initial
+      };
+      try { shared.ws.send(JSON.stringify(msg)); } catch {}
+    }
+
+    // Clean old peers periodically
+    setInterval(() => {
+      const now = performance.now();
+      for (const [id, peer] of shared.peers) {
+        if (now - peer.lastSeen > 8000) {
+          if (scene) scene.remove(peer.mesh);
+          shared.peers.delete(id);
+        }
+      }
+    }, 4000);
+
+    // Shop minimal behavior
     shopBtn.onclick = () => { shopEl.style.display = 'block'; };
     closeShopBtn.onclick = () => { shopEl.style.display = 'none'; };
     shopEl.addEventListener('click', (e) => {
@@ -227,37 +390,16 @@
       const cost = parseInt(e.target.dataset.cost || '0', 10);
       if (cleanup && cleanup.getCurrency && cleanup.setCurrency) {
         const coins = cleanup.getCurrency();
-        if (cost > coins) { alert('Not enough coins'); return; }
+        if (cost > coins) { alert('Not enough currency'); return; }
         if (cost > 0) cleanup.setCurrency(coins - cost);
       }
       const type = e.target.dataset.type;
-      applyShop(type);
+      if (type === 'weapon' && cleanup.applyWeaponUpgrade) cleanup.applyWeaponUpgrade();
+      if (type === 'mapNight' && cleanup.applyMapVariant) cleanup.applyMapVariant('night');
+      if (type === 'mapDay' && cleanup.applyMapVariant) cleanup.applyMapVariant('day');
     });
-    function applyShop(type) {
-      switch (type) {
-        case 'weapon':
-          shopState.weaponLevel = 1;
-          if (cleanup && cleanup.applyWeaponUpgrade) cleanup.applyWeaponUpgrade();
-          break;
-        case 'mapNight':
-          shopState.mapVariant = 'night';
-          if (cleanup && cleanup.applyMapVariant) cleanup.applyMapVariant('night');
-          break;
-        case 'mapDay':
-          shopState.mapVariant = 'day';
-          if (cleanup && cleanup.applyMapVariant) cleanup.applyMapVariant('day');
-          break;
-        case 'skinRed':
-          shopState.skin = 'red';
-          if (cleanup && cleanup.applySkin) cleanup.applySkin('red');
-          break;
-        case 'skinBlue':
-          shopState.skin = 'blue';
-          if (cleanup && cleanup.applySkin) cleanup.applySkin('blue');
-          break;
-      }
-    }
 
+    // Show/hide
     function showMenu() {
       running = false;
       hud.style.display = 'none';
@@ -265,35 +407,46 @@
       controls.style.display = 'none';
       msg.style.display = 'none';
       shopEl.style.display = 'none';
+      skinsEl.style.display = 'none';
       menu.style.display = 'grid';
       if (cleanup && cleanup.dispose) cleanup.dispose();
+      // Remove peer meshes from scene
+      if (scene) {
+        for (const [, peer] of shared.peers) scene.remove(peer.mesh);
+      }
+      shared.peers.clear();
       cleanup = null; scene = null; camera = null;
+      netbar.style.display = 'block';
     }
-    function startGame(setup) {
+    function startGame(setup, gameKey) {
       if (cleanup && cleanup.dispose) cleanup.dispose();
-      cleanup = setup(quality, shopState);
+      cleanup = setup(quality, shared.skin);
       scene = cleanup.scene; camera = cleanup.camera;
+      shared.currentGame = gameKey;
       running = true;
       hud.style.display = 'block';
       backBtn.style.display = 'inline-block';
       controls.style.display = 'flex';
       settingsBar.style.display = 'flex';
+      netbar.style.display = 'block';
       menu.style.display = 'none';
-      viewBtn.textContent = `VIEW: ${shopState.cameraMode.toUpperCase()}`;
+      // Apply current skin to local model
+      if (cleanup.applySkin) cleanup.applySkin(shared.skin);
+      // Inform server of new presence
+      broadcastState(true);
     }
 
-    // Routing
     document.querySelectorAll('.menuBtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const game = btn.dataset.game;
         switch (game) {
-          case 'jungle': startGame(setupJungleFP); break;
-          case 'platformer': startGame(setupPlatformerFP); break;
-          case 'racer': startGame(setupRacerFP); break;
-          case 'arena': startGame(setupArenaFP); break;
-          case 'runner': startGame(setupRunnerFP); break;
-          case 'maze': startGame(setupMazeFP); break;
-          case 'range': startGame(setupRangeFP); break;
+          case 'jungle': startGame(setupJungleTP, 'jungle'); break;
+          case 'platformer': startGame(setupPlatformerTP, 'platformer'); break;
+          case 'racer': startGame(setupRacerTP, 'racer'); break;
+          case 'arena': startGame(setupArenaTP, 'arena'); break;
+          case 'runner': startGame(setupRunnerTP, 'runner'); break;
+          case 'maze': startGame(setupMazeTP, 'maze'); break;
+          case 'range': startGame(setupRangeTP, 'range'); break;
         }
       });
     });
@@ -320,23 +473,18 @@
       return group;
     }
 
-    // Camera helpers — strictly X (pitch) and Y (yaw), no roll
-    function updateFirstPersonCamera(cam, playerPos, yaw, pitch, eyeHeight=1.1) {
-      cam.position.set(playerPos.x, playerPos.y + eyeHeight, playerPos.z);
-      cam.rotation.set(0, 0, 0);
-      cam.rotateX(THREE.MathUtils.clamp(pitch, -1.2, 1.2));
-      cam.rotateY(yaw);
-    }
-    function updateThirdPersonCamera(cam, playerPos, yaw, dist=6.0, height=2.5) {
-      const offset = new THREE.Vector3(Math.sin(yaw) * dist, height, -Math.cos(yaw) * dist);
+    // Camera helpers (third person only; yaw/pitch applied to camera placement)
+    function updateThirdPersonCamera(cam, playerPos, yaw, pitch=0, dist=6.0, height=2.5) {
+      // Rotate around player on yaw, add slight pitch height bias
+      const h = height + Math.sin(pitch) * 0.5;
+      const offset = new THREE.Vector3(Math.sin(yaw) * dist, h, -Math.cos(yaw) * dist);
       cam.position.copy(playerPos).add(offset);
       cam.lookAt(playerPos.x, playerPos.y + 1.0, playerPos.z);
     }
 
-    // Camera-forward XZ basis for movement (optional, feels natural with yaw/pitch-only camera)
-    function getCameraBasisXZ(cam) {
-      const forward = new THREE.Vector3();
-      cam.getWorldDirection(forward);
+    // Camera-forward XZ basis for movement
+    function getCameraBasisXZ(cam, center) {
+      const forward = new THREE.Vector3().subVectors(center, cam.position);
       forward.y = 0;
       if (forward.lengthSq() < 1e-6) forward.set(0,0,-1);
       forward.normalize();
@@ -344,8 +492,26 @@
       return { forward, right };
     }
 
-    // GAME 1: Lava Monkey Jungle
-    function setupJungleFP(quality, shopState) {
+    // Shared input helpers
+    function getLookDelta(mult=1.8) {
+      const ls = lookStick.get();
+      return { lx: ls.x * mult, ly: ls.y * mult };
+    }
+    function getMoveInput(keys, mv) {
+      let inputX = mv.x, inputY = -mv.y;
+      const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
+      const kBack = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
+      const kLeft = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
+      const kRight = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
+      inputX += (kRight - kLeft);
+      inputY += (kForward - kBack);
+      const mag = Math.hypot(inputX, inputY);
+      if (mag > 1) { inputX /= mag; inputY /= mag; }
+      return { inputX, inputY };
+    }
+
+    // GAME 1: Lava Monkey Jungle (visible player)
+    function setupJungleTP(quality, skin) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       const lights = makeLights('day'); sc.add(lights);
@@ -366,13 +532,12 @@
       }
 
       const playerRadius = 0.5;
-      const playerMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
+      const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16), playerMat);
       player.position.set(0, playerRadius + 0.3, 0); sc.add(player);
 
       const weaponMat = new THREE.MeshStandardMaterial({ color: 0x885000 });
       const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), weaponMat);
-      if (shopState.weaponLevel > 0) { weapon.scale.set(1.1, 1.3, 1.1); weaponMat.color.set(0x553300); }
       weapon.position.set(0.45, 0.35, 0.0); player.add(weapon);
 
       const lava = new THREE.Mesh(new THREE.CylinderGeometry(80, 80, 0.3, 48, 1, true),
@@ -416,25 +581,23 @@
 
       let health = 100, start = performance.now();
       const velocity = new THREE.Vector3();
-      const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.2, gravity = 18, jumpStrength = 14.5; // stronger jump feel
+      const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.2, gravity = 18, jumpStrength = 14.5;
       let onGround = true;
       let yaw = 0, pitch = 0;
-      let cameraMode = shopState.cameraMode;
 
       hudPrimary.textContent = 'Jungle — Survive';
       hudSecondary.textContent = 'Health 100 | Coins 0';
 
-      // Attack
       let attacking = false, attackStart = 0;
       let attackDuration = 200;
-      let attackRange = (shopState.weaponLevel > 0) ? 1.8 : 1.4;
+      let attackRange = 1.4;
       const attackArcCos = Math.cos(Math.PI / 3);
 
       function startAttack() {
         if (attacking || !run) return;
         attacking = true; attackStart = performance.now();
         weapon.rotation.z = -Math.PI * 0.35;
-        const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
+        const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
         const p = player.position.clone();
         for (let i = enemies.length - 1; i >= 0; i--) {
           const e = enemies[i];
@@ -447,6 +610,7 @@
       }
       actionBtn.onclick = startAttack;
       jumpBtn.onclick = () => { if (onGround && run) velocity.y = jumpStrength; };
+      window.addEventListener('keydown', e => { if (e.code === 'Space' && onGround && run) velocity.y = jumpStrength; if (e.code === 'KeyF') startAttack(); });
 
       function applyMapVariant(variant) {
         const hemi = lights.children.find(l => l.isHemisphereLight);
@@ -463,8 +627,9 @@
           ground.material.color.set(0x228B22);
         }
       }
-      applyMapVariant(shopState.mapVariant);
-      function applySkin(skin) { playerMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
+      applyMapVariant('day');
+
+      function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
 
       function restart() {
         health = 100; coinCount = 0; start = performance.now();
@@ -479,10 +644,6 @@
         hudSecondary.textContent = 'Health 100 | Coins 0';
       }
       function dispose() { clearInterval(spawnTimer); }
-      window.addEventListener('keydown', e => {
-        if (e.code === 'Space' && onGround && run) velocity.y = jumpStrength;
-        if (e.code === 'KeyF' && run) startAttack();
-      });
 
       return {
         scene: sc,
@@ -494,35 +655,22 @@
         applyMapVariant,
         applySkin,
         applyWeaponUpgrade: () => { attackRange = 1.8; weapon.scale.set(1.1, 1.3, 1.1); weaponMat.color.set(0x553300); },
-        setCameraMode: mode => { cameraMode = mode; },
+        getLocalState: () => ({ pos: player.position, yaw }),
         update(dt, now) {
           if (!run) return;
 
-          // Look (yaw/pitch only)
-          const ls = lookStick.get();
-          const flip = (cameraMode === 'first');
-          const lx = flip ? -ls.x : ls.x;
-          const ly = flip ? -ls.y : ls.y;
-          yaw += lx * 1.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
+          // Look (yaw/pitch for camera)
+          const { lx, ly } = getLookDelta(1.8);
+          yaw += lx * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
 
-          // Camera placement
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
-          else updateThirdPersonCamera(cam, player.position, yaw);
+          // Camera placement (third person)
+          updateThirdPersonCamera(cam, player.position, yaw, pitch, 7.0, 2.6);
 
           // Movement (camera-forward basis)
-          const { forward, right } = getCameraBasisXZ(cam);
           const mv = moveStick.get();
-          let inputX = mv.x, inputY = -mv.y;
-          const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
-          const kBack = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
-          const kLeft = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
-          const kRight = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
-          inputX += (kRight - kLeft);
-          inputY += (kForward - kBack);
-          const mag = Math.hypot(inputX, inputY);
-          if (mag > 1) { inputX /= mag; inputY /= mag; }
-
+          const { inputX, inputY } = getMoveInput(keys, mv);
+          const { forward, right } = getCameraBasisXZ(cam, player.position);
           const wishdir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
           if (wishdir.lengthSq() > 0) wishdir.normalize();
 
@@ -530,7 +678,7 @@
           velocity.addScaledVector(wishdir, accel * dt);
 
           // Friction
-          if (onGround && mag < 0.05) {
+          if (onGround && Math.hypot(inputX, inputY) < 0.05) {
             const horiz = new THREE.Vector2(velocity.x, velocity.z);
             const speed = horiz.length();
             const drop = friction * dt;
@@ -573,7 +721,7 @@
           // Lava rise
           lava.position.y += 0.018 * dt;
 
-          // Enemies + separation + damage
+          // Enemies behavior
           const bob = Math.sin(now * 0.004) * 0.02;
           for (let i = 0; i < enemies.length; i++) {
             const e = enemies[i];
@@ -624,12 +772,15 @@
           // HUD
           hudPrimary.textContent = `Jungle — ${((performance.now() - start) / 1000).toFixed(1)}s`;
           hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
+
+          // Networking: broadcast local state
+          broadcastState();
         }
       };
     }
 
-    // GAME 2: First‑Person Platformer
-    function setupPlatformerFP(quality, shopState) {
+    // GAME 2: Platformer (double jump, player visible)
+    function setupPlatformerTP(quality, skin) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       const lights = makeLights('day'); sc.add(lights);
@@ -652,18 +803,18 @@
       goal.position.set(120, baseY + 40, 6); sc.add(goal);
 
       const playerRadius = 0.6;
-      const playerMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x44aaff) });
+      const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), playerMat);
-      player.visible = false; player.position.set(-16, baseY + 6, 0); sc.add(player);
+      player.visible = true; player.position.set(-16, baseY + 6, 0); sc.add(player);
 
       const vel = new THREE.Vector3(0, 0, 0);
       const gravity = 18, moveSpeed = 10, jumpVel = 16.5;
       let onGround = false, run = true, won = false;
       let yaw = 0, pitch = 0;
-      let cameraMode = shopState.cameraMode;
+      let jumpsLeft = 2; // double jump
 
       hudPrimary.textContent = 'Sky Platforms';
-      hudSecondary.textContent = 'Reach the glowing goal';
+      hudSecondary.textContent = 'Reach the glowing goal (Double jump)';
 
       function applyMapVariant(variant) {
         const hemi = lights.children.find(l => l.isHemisphereLight);
@@ -680,11 +831,16 @@
           platMat.color.set(0x6aa86a);
         }
       }
-      applyMapVariant(shopState.mapVariant);
-      function applySkin(skin) { playerMat.color.set(skin === 'red' ? 0xff4444 : 0x44aaff); }
+      applyMapVariant('day');
+      function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
 
-      jumpBtn.onclick = () => { if (onGround && run) vel.y = jumpVel; };
-      actionBtn.onclick = () => {};
+      function tryJump() {
+        if (!run) return;
+        if (onGround) { vel.y = jumpVel; jumpsLeft = 1; onGround = false; }
+        else if (jumpsLeft > 0) { vel.y = jumpVel * 0.95; jumpsLeft = 0; }
+      }
+      jumpBtn.onclick = tryJump;
+      window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
 
       function collide() {
         onGround = false;
@@ -699,6 +855,7 @@
             player.position.y = top + playerRadius;
             vel.y = 0;
             onGround = true;
+            jumpsLeft = 2; // reset double jump on land
           }
         }
         if (player.position.y < -30) { run = false; msgText.textContent = 'You fell — Platformer'; msg.style.display = 'block'; }
@@ -709,6 +866,7 @@
         vel.set(0, 0, 0);
         yaw = 0; pitch = 0;
         won = false; run = true; msg.style.display = 'none';
+        jumpsLeft = 2;
       }
 
       return {
@@ -721,34 +879,27 @@
         applyMapVariant,
         applySkin,
         applyWeaponUpgrade: () => {},
-        setCameraMode: mode => { cameraMode = mode; },
+        getLocalState: () => ({ pos: player.position, yaw }),
         update(dt) {
           if (!run || won) return;
 
-          const ls = lookStick.get();
-          const flip = (cameraMode === 'first');
-          const lx = flip ? -ls.x : ls.x;
-          const ly = flip ? -ls.y : ls.y;
-          yaw += lx * 1.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
+          const { lx, ly } = getLookDelta(1.8);
+          yaw += lx * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
 
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
-          else updateThirdPersonCamera(cam, player.position, yaw);
+          updateThirdPersonCamera(cam, player.position, yaw, pitch, 7.0, 2.6);
 
-          const { forward, right } = getCameraBasisXZ(cam);
           const mv = moveStick.get();
-          let inputX = mv.x, inputY = -mv.y;
-          const mag = Math.hypot(inputX, inputY);
-          if (mag > 1) { inputX /= mag; inputY /= mag; }
+          const { inputX, inputY } = getMoveInput(keys, mv);
+          const { forward, right } = getCameraBasisXZ(cam, player.position);
           const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
           if (dir.lengthSq() > 0) dir.normalize();
 
           vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, 8 * dt);
           vel.z = THREE.MathUtils.lerp(vel.z, dir.z * moveSpeed, 8 * dt);
-
           vel.y -= gravity * dt;
-          player.position.addScaledVector(vel, dt);
 
+          player.position.addScaledVector(vel, dt);
           collide();
 
           if (player.position.distanceTo(goal.position) < 5) {
@@ -756,13 +907,15 @@
           }
 
           hudPrimary.textContent = 'Sky Platforms';
-          hudSecondary.textContent = onGround ? 'On platform' : 'In air';
+          hudSecondary.textContent = onGround ? 'On platform (Double jump ready)' : (jumpsLeft > 0 ? 'Air (Double jump available)' : 'Air');
+
+          broadcastState();
         }
       };
     }
 
-    // GAME 3: Racer
-    function setupRacerFP(quality, shopState) {
+    // GAME 3: Racer (car visible)
+    function setupRacerTP(quality, skin) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd0b38a);
       const cam = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1200);
       const lights = makeLights('day'); sc.add(lights);
@@ -770,7 +923,7 @@
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), new THREE.MeshStandardMaterial({ color: 0xb5894a, roughness: 0.8 }));
       ground.rotation.x = -Math.PI / 2; sc.add(ground);
 
-      const carMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x3366ff) });
+      const carMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const car = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), carMat);
       car.position.set(0, 0.6, 0); sc.add(car);
 
@@ -784,9 +937,6 @@
 
       let speed = 0, heading = 0, score = 0, run = true;
       let yaw = 0, pitch = 0;
-      let cameraMode = shopState.cameraMode;
-
-      const accelBoost = (shopState.weaponLevel > 0) ? 1.1 : 1.0;
 
       function applyMapVariant(variant) {
         const hemi = lights.children.find(l => l.isHemisphereLight);
@@ -803,14 +953,8 @@
           ground.material.color.set(0xb5894a);
         }
       }
-      applyMapVariant(shopState.mapVariant);
-      function applySkin(skin) { carMat.color.set(skin === 'red' ? 0xff4444 : 0x3366ff); }
-
-      hudPrimary.textContent = 'Desert Racer';
-      hudSecondary.textContent = 'Gates 0/12';
-
-      jumpBtn.onclick = () => {};
-      actionBtn.onclick = () => {};
+      applyMapVariant('day');
+      function applySkin(newSkin) { carMat.color.setHex(skinToColor(newSkin)); }
 
       function restart() {
         car.position.set(0, 0.6, 0);
@@ -820,46 +964,40 @@
         hudSecondary.textContent = 'Gates 0/12';
       }
 
+      hudPrimary.textContent = 'Desert Racer';
+      hudSecondary.textContent = 'Gates 0/12';
+
       return {
         scene: sc,
         camera: cam,
         restart,
         dispose() {},
-        getCurrency: () => score, // treat score as currency here
+        getCurrency: () => score,
         setCurrency: v => { score = v; hudSecondary.textContent = `Gates ${score}/12`; },
         applyMapVariant,
         applySkin,
         applyWeaponUpgrade: () => {},
-        setCameraMode: mode => { cameraMode = mode; },
+        getLocalState: () => ({ pos: car.position, yaw: heading }),
         update(dt) {
           if (!run) return;
 
-          const ls = lookStick.get();
-          yaw += ls.x * 0.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ls.y * 0.8 * dt, -0.5, 0.5);
+          const { lx, ly } = getLookDelta(0.8);
+          yaw += lx * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.5, 0.5);
 
           const mv = moveStick.get();
           const steer = mv.x;
           const throttle = Math.max(0, -mv.y);
           const brake = Math.max(0, mv.y);
 
-          speed += ((throttle * 22 * accelBoost) - (brake * 28) - speed * 0.85) * dt;
+          speed += ((throttle * 22) - (brake * 28) - speed * 0.85) * dt;
           heading += steer * 1.8 * dt;
 
           const dir = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
           car.position.addScaledVector(dir, speed * dt);
           car.rotation.y = heading;
 
-          if (cameraMode === 'first') {
-            const eye = new THREE.Vector3(0, 0.9, 1.2).applyEuler(new THREE.Euler(0, heading, 0));
-            const eyePos = new THREE.Vector3().copy(car.position).add(eye);
-            cam.position.copy(eyePos);
-            cam.rotation.set(0, heading, 0);
-            cam.rotateX(pitch);
-            cam.rotateY(yaw * 0.2);
-          } else {
-            updateThirdPersonCamera(cam, car.position, heading, 8.0, 3.2);
-          }
+          updateThirdPersonCamera(cam, car.position, heading, pitch, 9.0, 3.2);
 
           for (let i = gates.length - 1; i >= 0; i--) {
             const g = gates[i];
@@ -871,12 +1009,14 @@
 
           if (gates.length === 0) { run = false; msgText.textContent = 'Finish! — Racer'; msg.style.display = 'block'; }
           hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
+
+          broadcastState();
         }
       };
     }
 
-    // GAME 4: Space Drone Arena
-    function setupArenaFP(quality, shopState) {
+    // GAME 4: Space Drone Arena (rig visible)
+    function setupArenaTP(quality, skin) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x080a12);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       const lights = makeLights('space'); sc.add(lights);
@@ -884,10 +1024,9 @@
       const arena = new THREE.Mesh(new THREE.CylinderGeometry(80, 80, 2, 40), new THREE.MeshStandardMaterial({ color: 0x1c2233, metalness: 0.2, roughness: 0.7 }));
       arena.position.y = -2; sc.add(arena);
 
-      const rigMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
-      const rigVis = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.6, 8, 12), rigMat);
-      rigVis.visible = false; sc.add(rigVis);
-      const rig = new THREE.Object3D(); rig.position.set(0, 1, 0); sc.add(rig);
+      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rig.position.set(0, 1, 0); sc.add(rig);
 
       const drones = [];
       function drone() {
@@ -900,26 +1039,27 @@
       for (let i = 0; i < (quality === 'high' ? 16 : 8); i++) drone();
 
       const bullets = [];
-      const bulletSpeed = (shopState.weaponLevel > 0) ? 50 : 40;
+      const bulletSpeed = 40;
       function shoot() {
         const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
-        const dir = new THREE.Vector3(0, 0, -1).applyEuler(cam.rotation);
+        const dir = new THREE.Vector3().subVectors(new THREE.Vector3().copy(rig.position), cam.position);
+        dir.y = 0;
+        if (dir.lengthSq() < 1e-6) dir.set(0,0,-1);
+        dir.normalize();
         b.position.copy(cam.position);
         b.userData.dir = dir.clone();
         sc.add(b); bullets.push(b);
       }
       actionBtn.onclick = shoot;
-      jumpBtn.onclick = () => {};
 
       let run = true, score = 0, yaw = 0, pitch = 0;
-      let cameraMode = shopState.cameraMode;
 
       hudPrimary.textContent = 'Space Arena';
       hudSecondary.textContent = 'Score 0 | ACTION to shoot';
 
       function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x04060c) : new THREE.Color(0x080a12); }
-      applyMapVariant(shopState.mapVariant);
-      function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
+      applyMapVariant('day');
+      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
 
       function restart() {
         drones.forEach(d => sc.remove(d)); drones.length = 0;
@@ -939,29 +1079,22 @@
         applyMapVariant,
         applySkin,
         applyWeaponUpgrade: () => {},
-        setCameraMode: mode => { cameraMode = mode; },
+        getLocalState: () => ({ pos: rig.position, yaw }),
         update(dt) {
           if (!run) return;
 
-          const ls = lookStick.get();
-          const flip = (cameraMode === 'first');
-          const lx = flip ? -ls.x : ls.x;
-          const ly = flip ? -ls.y : ls.y;
-          yaw += lx * 1.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ly * 1.8 * dt, -1.2, 1.2);
+          const { lx, ly } = getLookDelta(1.8);
+          yaw += lx * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
 
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
-          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
 
-          const { forward, right } = getCameraBasisXZ(cam);
           const mv = moveStick.get();
-          let inputX = mv.x, inputY = -mv.y;
-          const mag = Math.hypot(inputX, inputY);
-          if (mag > 1) { inputX /= mag; inputY /= mag; }
+          const { inputX, inputY } = getMoveInput(keys, mv);
+          const { forward, right } = getCameraBasisXZ(cam, rig.position);
           const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
           if (dir.lengthSq() > 0) dir.normalize();
           rig.position.addScaledVector(dir, 10 * dt);
-          rigVis.position.copy(rig.position);
 
           for (const d of drones) {
             d.position.addScaledVector(d.userData.vel, dt);
@@ -984,12 +1117,14 @@
           }
 
           if (drones.length === 0) { run = false; msgText.textContent = 'All drones cleared! — Arena'; msg.style.display = 'block'; }
+
+          broadcastState();
         }
       };
     }
 
-    // GAME 5: Runner (lane-based; camera yaw/pitch limited)
-    function setupRunnerFP(quality, shopState) {
+    // GAME 5: Runner (rig visible)
+    function setupRunnerTP(quality, skin) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       const lights = makeLights('day'); sc.add(lights);
@@ -997,10 +1132,9 @@
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 60), new THREE.MeshStandardMaterial({ color: 0x228B22 }));
       ground.rotation.x = -Math.PI / 2; ground.position.z = -40; sc.add(ground);
 
-      const rigMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
-      const rigVis = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-      rigVis.visible = false; sc.add(rigVis);
-      const rig = new THREE.Object3D(); rig.position.set(0, 1, 0); sc.add(rig);
+      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rig.position.set(0, 1, 0); sc.add(rig);
 
       const obstacles = [];
       function makeObs(z) {
@@ -1012,7 +1146,6 @@
 
       let laneX = 0, speed = 8, time = 0, run = true, rings = 0;
       let yaw = 0, pitch = 0;
-      let cameraMode = shopState.cameraMode;
 
       function applyMapVariant(variant) {
         const hemi = lights.children.find(l => l.isHemisphereLight);
@@ -1029,19 +1162,8 @@
           ground.material.color.set(0x228B22);
         }
       }
-      applyMapVariant(shopState.mapVariant);
-      function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
-
-      jumpBtn.onclick = () => {};
-      actionBtn.onclick = () => {};
-
-      function restart() {
-        obstacles.forEach(o => sc.remove(o)); obstacles.length = 0;
-        for (let i = 0; i < (quality === 'high' ? 30 : 18); i++) makeObs(6 + i * 6);
-        laneX = 0; speed = 8; time = 0; rings = 0; run = true; msg.style.display = 'none';
-        rig.position.set(0, 1, 0);
-        hudSecondary.textContent = 'Rings 0';
-      }
+      applyMapVariant('day');
+      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
 
       hudPrimary.textContent = 'Endless Runner';
       hudSecondary.textContent = 'Rings 0';
@@ -1049,25 +1171,28 @@
       return {
         scene: sc,
         camera: cam,
-        restart,
+        restart() {
+          obstacles.forEach(o => sc.remove(o)); obstacles.length = 0;
+          for (let i = 0; i < (quality === 'high' ? 30 : 18); i++) makeObs(6 + i * 6);
+          laneX = 0; speed = 8; time = 0; rings = 0; run = true; msg.style.display = 'none';
+          rig.position.set(0, 1, 0);
+          hudSecondary.textContent = 'Rings 0';
+        },
         dispose() {},
         getCurrency: () => rings,
         setCurrency: v => { rings = v; hudSecondary.textContent = `Rings ${rings}`; },
         applyMapVariant,
         applySkin,
         applyWeaponUpgrade: () => {},
-        setCameraMode: mode => { cameraMode = mode; },
+        getLocalState: () => ({ pos: rig.position, yaw }),
         update(dt) {
           if (!run) return;
           time += dt;
           speed = 8 + time * 1.2;
 
-          const ls = lookStick.get();
-          const flip = (cameraMode === 'first');
-          const lx = flip ? -ls.x : ls.x;
-          const ly = flip ? -ls.y : ls.y;
-          yaw += lx * 1.5 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ly * 1.0 * dt, -0.4, 0.4);
+          const { lx, ly } = getLookDelta(1.5);
+          yaw += lx * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.4, 0.4);
 
           const mv = moveStick.get();
           if (mv.x < -0.3) laneX = -2;
@@ -1075,7 +1200,6 @@
           else laneX = 0;
 
           rig.position.x = THREE.MathUtils.lerp(rig.position.x, laneX, 6 * dt);
-          rigVis.position.copy(rig.position);
 
           for (const o of obstacles) {
             o.position.z += speed * dt;
@@ -1088,16 +1212,16 @@
             if (dist < 1.0) { run = false; msgText.textContent = 'You hit an obstacle — Runner'; msg.style.display = 'block'; }
           }
 
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
-          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
-
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
           hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
+
+          broadcastState();
         }
       };
     }
 
-    // GAME 6: Crystal Maze
-    function setupMazeFP(quality, shopState) {
+    // GAME 6: Crystal Maze (rig visible)
+    function setupMazeTP(quality, skin) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x101424);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       const lights = makeLights('maze'); sc.add(lights);
@@ -1122,23 +1246,18 @@
       const exit = new THREE.Mesh(new THREE.TorusGeometry(3, 0.3, 12, 32), new THREE.MeshStandardMaterial({ color: 0x88ffcc }));
       exit.position.set(60, 2.5, 60); sc.add(exit);
 
-      const rigMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
-      const rigVis = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-      rigVis.visible = false; sc.add(rigVis);
-      const rig = new THREE.Object3D(); rig.position.set(-60, 0.9, -60); sc.add(rig);
+      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rig.position.set(-60, 0.9, -60); sc.add(rig);
 
       let yaw = 0, pitch = 0, run = true;
-      let cameraMode = shopState.cameraMode;
 
       hudPrimary.textContent = 'Crystal Maze';
       hudSecondary.textContent = 'Find the exit ring';
 
       function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x0a0d1a) : new THREE.Color(0x101424); }
-      applyMapVariant(shopState.mapVariant);
-      function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
-
-      jumpBtn.onclick = () => {};
-      actionBtn.onclick = () => {};
+      applyMapVariant('day');
+      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
 
       function restart() {
         rig.position.set(-60, 0.9, -60);
@@ -1155,24 +1274,18 @@
         applyMapVariant,
         applySkin,
         applyWeaponUpgrade: () => {},
-        setCameraMode: mode => { cameraMode = mode; },
+        getLocalState: () => ({ pos: rig.position, yaw }),
         update(dt) {
           if (!run) return;
-          const ls = lookStick.get();
-          const flip = (cameraMode === 'first');
-          const lx = flip ? -ls.x : ls.x;
-          const ly = flip ? -ls.y : ls.y;
-          yaw += lx * 1.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ly * 1.0 * dt, -0.4, 0.4);
+          const { lx, ly } = getLookDelta(1.8);
+          yaw += lx * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.4, 0.4);
 
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
-          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
 
-          const { forward, right } = getCameraBasisXZ(cam);
           const mv = moveStick.get();
-          let inputX = mv.x, inputY = -mv.y;
-          const mag = Math.hypot(inputX, inputY);
-          if (mag > 1) { inputX /= mag; inputY /= mag; }
+          const { inputX, inputY } = getMoveInput(keys, mv);
+          const { forward, right } = getCameraBasisXZ(cam, rig.position);
           const next = rig.position.clone().addScaledVector(right, inputX * 8 * dt).addScaledVector(forward, inputY * 8 * dt);
 
           let blocked = false;
@@ -1182,15 +1295,16 @@
             if (dx < 0 && dz < 0) { blocked = true; break; }
           }
           if (!blocked) rig.position.copy(next);
-          rigVis.position.copy(rig.position);
 
           if (rig.position.distanceTo(exit.position) < 5) { run = false; msgText.textContent = 'Exit found! — Maze'; msg.style.display = 'block'; }
+
+          broadcastState();
         }
       };
     }
 
-    // GAME 7: Target Range
-    function setupRangeFP(quality, shopState) {
+    // GAME 7: Target Range (rig visible)
+    function setupRangeTP(quality, skin) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x223344);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       const lights = makeLights('day'); sc.add(lights);
@@ -1198,10 +1312,9 @@
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: 0x335577 }));
       floor.rotation.x = -Math.PI / 2; sc.add(floor);
 
-      const rigMat = new THREE.MeshStandardMaterial({ color: (shopState.skin === 'red' ? 0xff4444 : 0x66aaff) });
-      const rigVis = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-      rigVis.visible = false; sc.add(rigVis);
-      const rig = new THREE.Object3D(); rig.position.set(0, 1, 40); sc.add(rig);
+      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rig.position.set(0, 1, 40); sc.add(rig);
 
       const targets = [];
       function spawnTarget() {
@@ -1212,26 +1325,27 @@
       for (let i = 0; i < (quality === 'high' ? 16 : 8); i++) spawnTarget();
 
       const bullets = [];
-      const bulletSpeed = (shopState.weaponLevel > 0) ? 50 : 40;
+      const bulletSpeed = 40;
       function shoot() {
         const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
-        const dir = new THREE.Vector3(0, 0, -1).applyEuler(cam.rotation);
+        const dir = new THREE.Vector3().subVectors(new THREE.Vector3().copy(rig.position), cam.position);
+        dir.y = 0;
+        if (dir.lengthSq() < 1e-6) dir.set(0,0,-1);
+        dir.normalize();
         b.position.copy(cam.position);
         b.userData.dir = dir.clone();
         sc.add(b); bullets.push(b);
       }
       actionBtn.onclick = shoot;
-      jumpBtn.onclick = () => {};
 
       let yaw = 0, pitch = 0, run = true, score = 0;
-      let cameraMode = shopState.cameraMode;
 
       hudPrimary.textContent = 'Target Range';
       hudSecondary.textContent = 'Score 0 | ACTION to shoot';
 
       function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x162238) : new THREE.Color(0x223344); }
-      applyMapVariant(shopState.mapVariant);
-      function applySkin(skin) { rigMat.color.set(skin === 'red' ? 0xff4444 : 0x66aaff); }
+      applyMapVariant('day');
+      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
 
       function restart() {
         bullets.forEach(b => sc.remove(b)); bullets.length = 0;
@@ -1252,25 +1366,19 @@
         applyMapVariant,
         applySkin,
         applyWeaponUpgrade: () => {},
-        setCameraMode: mode => { cameraMode = mode; },
+        getLocalState: () => ({ pos: rig.position, yaw }),
         update(dt) {
           if (!run) return;
 
-          const ls = lookStick.get();
-          const flip = (cameraMode === 'first');
-          const lx = flip ? -ls.x : ls.x;
-          const ly = flip ? -ls.y : ls.y;
-          yaw += lx * 1.8 * dt;
-          pitch = THREE.MathUtils.clamp(pitch + ly * 1.0 * dt, -0.8, 0.8);
+          const { lx, ly } = getLookDelta(1.8);
+          yaw += lx * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
 
-          if (cameraMode === 'first') updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
-          else updateThirdPersonCamera(cam, rig.position, yaw, 8.0, 3.0);
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
 
-          const { forward, right } = getCameraBasisXZ(cam);
           const mv = moveStick.get();
-          rig.position.addScaledVector(right, mv.x * 6 * dt);
-          rig.position.addScaledVector(forward, -mv.y * 6 * dt);
-          rigVis.position.copy(rig.position);
+          rig.position.x += mv.x * 6 * dt;
+          rig.position.z += -mv.y * 6 * dt;
 
           for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
@@ -1287,6 +1395,8 @@
               }
             }
           }
+
+          broadcastState();
         }
       };
     }
@@ -1311,6 +1421,8 @@
 
     // Start on menu
     showMenu();
+
+    // Tip: click Connect after choosing a server to see other players as “ghosts” in the same game.
   </script>
 </body>
 </html>
