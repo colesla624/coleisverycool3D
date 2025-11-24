@@ -2,32 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Five Games + Platformer</title>
+  <title>3D Game Hub — Mobile First‑Person (5 Games)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, sans-serif; }
     canvas { display:block; }
-    #topbar { position:absolute; top:10px; left:10px; z-index:10; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none; }
+
+    /* Top bar, HUD, menu */
+    #topbar { position:absolute; top:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none; }
     #topbar .small { font-size:12px; opacity:0.85; font-weight:500; }
-    #menu { position:absolute; inset:0; display:grid; place-items:center; z-index:9; }
-    #menuPanel { width:640px; max-width:90vw; background:#111a; backdrop-filter: blur(6px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
+    #hud { position:absolute; bottom:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
+    #hud .line { margin-top:6px; font-weight:600; }
+    #menu { position:absolute; inset:0; display:grid; place-items:center; z-index:11; }
+    #menuPanel { width:680px; max-width:92vw; background:#111a; backdrop-filter: blur(6px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
     #menuPanel h1 { margin:0 0 8px; font-size:28px; }
     #menuGrid { display:grid; grid-template-columns:repeat(2, minmax(200px, 1fr)); gap:12px; margin-top:10px; }
     .menuBtn { padding:14px; background:#222a; border:1px solid #fff2; color:#fff; border-radius:12px; cursor:pointer; text-align:left; }
     .menuBtn:hover { background:#2a2f; }
     .row { display:flex; gap:8px; align-items:center; margin-top:12px; }
     .pill { padding:8px 12px; border-radius:999px; background:#fff1; border:1px solid #fff2; cursor:pointer; }
-    #backBtn { position:absolute; top:10px; right:10px; z-index:10; padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; display:none; cursor:pointer; }
-    #hud { position:absolute; bottom:10px; left:10px; z-index:10; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
-    #hud .line { margin-top:6px; font-weight:600; }
-    #msg { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:10; text-align:center; font-weight:800; font-size:22px; display:none; }
+
+    /* Back button and message */
+    #backBtn { position:absolute; top:10px; right:10px; z-index:12; padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; display:none; cursor:pointer; }
+    #msg { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:12; text-align:center; font-weight:800; font-size:22px; display:none; }
     #msg button { margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer; }
+
+    /* Mobile joysticks and buttons */
+    #controls { position:absolute; bottom:16px; left:16px; right:16px; z-index:12; display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; }
+    .stick { width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); position:relative; pointer-events:auto; touch-action:none; }
+    .knob { position:absolute; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.25); left:calc(50% - 32px); top:calc(50% - 32px); }
+    #rightPanel { display:flex; flex-direction:column; align-items:center; gap:12px; pointer-events:auto; }
+    .btn { pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); color:#fff; display:grid; place-items:center; font-weight:800; }
+
+    /* Prevent browser gestures on mobile */
+    * { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub</div>
-    <div class="small" id="hint">WASD/arrows to move, Space to jump, Mouse to look. Press Esc or Back to return to menu.</div>
+    <div id="title">3D Game Hub — Mobile First‑Person</div>
+    <div class="small" id="hint">Left stick: move. Right stick: look. Jump/Action buttons on the right. Esc/Back to menu.</div>
   </div>
 
   <button id="backBtn">Back to menu</button>
@@ -38,23 +52,23 @@
       <div id="menuGrid">
         <button class="menuBtn" data-game="jungle">
           <div style="font-weight:800">Lava Monkey Jungle</div>
-          <div class="small">Survive monkeys and rising lava. Attack with F. Collect coins & medkits.</div>
+          <div class="small">Survive monkeys, rising lava. Collect coins & medkits. First‑person.</div>
         </button>
         <button class="menuBtn" data-game="platformer">
           <div style="font-weight:800">Sky Platforms (Platformer)</div>
-          <div class="small">Jump across floating platforms to reach the goal. 3D side view.</div>
+          <div class="small">Jump across floating platforms in first‑person to reach the goal.</div>
         </button>
         <button class="menuBtn" data-game="racer">
           <div style="font-weight:800">Desert Ridge Racer</div>
-          <div class="small">Drive a blocky buggy through gates. Physics-lite drift.</div>
+          <div class="small">Drive from the cockpit. Pass gates and finish the course.</div>
         </button>
         <button class="menuBtn" data-game="arena">
           <div style="font-weight:800">Space Drone Arena</div>
-          <div class="small">Blast drones in zero-g. Timed survival score.</div>
+          <div class="small">Shoot drones in zero‑g from a first‑person rig.</div>
         </button>
         <button class="menuBtn" data-game="runner">
           <div style="font-weight:800">Forest Endless Runner</div>
-          <div class="small">Dodge obstacles and collect rings. Speed increases over time.</div>
+          <div class="small">First‑person dodge along lanes. Speed ramps up.</div>
         </button>
       </div>
       <div class="row">
@@ -74,6 +88,18 @@
     <button id="restart">Restart</button>
   </div>
 
+  <!-- Mobile controls shared across all games -->
+  <div id="controls" style="display:none">
+    <div id="leftStick" class="stick"><div class="knob" id="leftKnob"></div></div>
+    <div id="rightPanel">
+      <div id="rightStick" class="stick"><div class="knob" id="rightKnob"></div></div>
+      <div style="display:flex; gap:12px;">
+        <div id="jumpBtn" class="btn">JUMP</div>
+        <div id="actionBtn" class="btn">ACTION</div>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
@@ -84,7 +110,7 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.appendChild(renderer.domElement);
 
-    // Shared UI
+    // Shared UI elements
     const menu = document.getElementById('menu');
     const backBtn = document.getElementById('backBtn');
     const hud = document.getElementById('hud');
@@ -95,7 +121,41 @@
     const restartBtn = document.getElementById('restart');
     const graphicsLow = document.getElementById('graphicsLow');
     const graphicsHigh = document.getElementById('graphicsHigh');
+    const controls = document.getElementById('controls');
+    const jumpBtn = document.getElementById('jumpBtn');
+    const actionBtn = document.getElementById('actionBtn');
 
+    // Joystick setup (shared)
+    function setupStick(stickId, knobId) {
+      const stick = document.getElementById(stickId), knob = document.getElementById(knobId);
+      let vec = { x: 0, y: 0 }, active = false;
+      function setKnob(x, y) { const r = stick.getBoundingClientRect(); knob.style.left = `${x - r.left - 32}px`; knob.style.top = `${y - r.top - 32}px`; }
+      function handle(e, a) {
+        const r = stick.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        let x = e.clientX, y = e.clientY; if (e.touches && e.touches[0]) { x = e.touches[0].clientX; y = e.touches[0].clientY; }
+        const dx = x - cx, dy = y - cy, len = Math.min(Math.hypot(dx, dy), r.width * 0.45);
+        const nx = len ? dx / len : 0, ny = len ? dy / len : 0;
+        active = a;
+        if (a) { setKnob(cx + nx * len, cy + ny * len); vec = { x: nx * (len / (r.width * 0.45)), y: ny * (len / (r.width * 0.45)) }; }
+        else { setKnob(cx, cy); vec = { x: 0, y: 0 }; }
+      }
+      stick.addEventListener('pointerdown', e => { stick.setPointerCapture(e.pointerId); handle(e, true); });
+      stick.addEventListener('pointermove', e => { if (active) handle(e, true); });
+      stick.addEventListener('pointerup', e => { stick.releasePointerCapture(e.pointerId); handle(e, false); });
+      stick.addEventListener('touchstart', e => handle(e, true), { passive: false });
+      stick.addEventListener('touchmove', e => handle(e, true), { passive: false });
+      stick.addEventListener('touchend', e => handle(e, false), { passive: false });
+      return { get: () => vec };
+    }
+    const moveStick = setupStick('leftStick', 'leftKnob');
+    const lookStick = setupStick('rightStick', 'rightKnob');
+
+    // Prevent iOS pinch/zoom gesture
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+    document.addEventListener('gestureend', e => e.preventDefault());
+
+    // Graphics quality
     let quality = 'high';
     graphicsLow.onclick = () => { quality = 'low'; graphicsLow.style.background = '#44aa44'; graphicsHigh.style.background = '#fff1'; };
     graphicsHigh.onclick = () => { quality = 'high'; graphicsHigh.style.background = '#44aa44'; graphicsLow.style.background = '#fff1'; };
@@ -114,6 +174,7 @@
       running = false;
       hud.style.display = 'none';
       backBtn.style.display = 'none';
+      controls.style.display = 'none';
       msg.style.display = 'none';
       menu.style.display = 'grid';
       if (cleanup && cleanup.dispose) cleanup.dispose();
@@ -130,6 +191,7 @@
       running = true;
       hud.style.display = 'block';
       backBtn.style.display = 'inline-block';
+      controls.style.display = 'flex';
       menu.style.display = 'none';
     }
 
@@ -138,11 +200,11 @@
       btn.addEventListener('click', () => {
         const game = btn.dataset.game;
         switch (game) {
-          case 'jungle': startGame(setupJungle); break;
-          case 'platformer': startGame(setupPlatformer); break;
-          case 'racer': startGame(setupRacer); break;
-          case 'arena': startGame(setupArena); break;
-          case 'runner': startGame(setupRunner); break;
+          case 'jungle': startGame(setupJungleFP); break;
+          case 'platformer': startGame(setupPlatformerFP); break;
+          case 'racer': startGame(setupRacerFP); break;
+          case 'arena': startGame(setupArenaFP); break;
+          case 'runner': startGame(setupRunnerFP); break;
         }
       });
     });
@@ -155,22 +217,32 @@
         const sun = new THREE.DirectionalLight(0xffffff, 1.5);
         sun.position.set(20, 40, 10);
         group.add(hemi, sun);
-      } else if (env === 'night') {
-        const hemi = new THREE.HemisphereLight(0xaaccff, 0x111133, 0.8);
-        const moon = new THREE.DirectionalLight(0x88aaff, 0.7);
-        moon.position.set(-30, 50, -10);
-        group.add(hemi, moon);
       } else if (env === 'space') {
-        const amb = new THREE.AmbientLight(0x8888aa, 0.8);
-        const key = new THREE.DirectionalLight(0xffffff, 0.6);
+        const amb = new THREE.AmbientLight(0x8888aa, 0.9);
+        const key = new THREE.DirectionalLight(0xffffff, 0.7);
         key.position.set(15, 25, -10);
         group.add(amb, key);
       }
       return group;
     }
 
-    // GAME 1: Lava Monkey Jungle (compact build)
-    function setupJungle(quality) {
+    // Shared first-person camera update for character at "eye" offset
+    function updateFirstPersonCamera(cam, playerPos, yaw, pitch, eyeHeight=1.1) {
+      cam.position.set(playerPos.x, playerPos.y + eyeHeight, playerPos.z);
+      cam.rotation.set(0, 0, 0);
+      cam.rotateX(pitch);
+      cam.rotateY(yaw);
+    }
+
+    // Shared look input from right stick (yaw/pitch clamp)
+    function applyLook(yawPitch, dt, sensitivity=1.8) {
+      const ls = lookStick.get();
+      yawPitch.yaw += ls.x * sensitivity * dt;
+      yawPitch.pitch = THREE.MathUtils.clamp(yawPitch.pitch + ls.y * sensitivity * dt, -1.2, 1.2);
+    }
+
+    // GAME 1: Jungle (First-Person, Mobile)
+    function setupJungleFP(quality) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       sc.add(makeLights('day'));
@@ -215,13 +287,13 @@
         const e = createMonkey();
         const a = Math.random() * Math.PI * 2, d = 16 + Math.random() * 14;
         e.position.set(Math.cos(a) * d, 0.45, Math.sin(a) * d);
-        e.userData.speed = 6.0;
+        e.userData.speed = 5.9 + Math.random() * 0.8;
         enemies.push(e); sc.add(e);
       }
       let spawnTimer = setInterval(() => { if (run) spawnEnemy(); }, 1000);
 
       // Collectibles
-      const coins = [], medkits = [];
+      const coins = [], medkits = []; let coinsCount = 0;
       function coin() {
         const c = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 20), new THREE.MeshStandardMaterial({ color: 0xFFD700 }));
         c.rotation.x = Math.PI / 2;
@@ -237,20 +309,20 @@
       for (let i = 0; i < (quality === 'high' ? 6 : 3); i++) medkit();
 
       // State
-      let run = true, health = 100, coinsCount = 0, start = performance.now();
+      let run = true, health = 100, start = performance.now();
       const velocity = new THREE.Vector3();
       const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.2, gravity = 18, jumpStrength = 10.8;
       let onGround = true, yaw = 0, pitch = 0;
 
-      // Attack
-      let attacking = false, attackStart = 0; const attackDuration = 200, attackRange = 1.4, attackArcCos = Math.cos(Math.PI / 3);
-      function startAttack() {
-        if (attacking || !run) return;
-        attacking = true; attackStart = performance.now();
-        weapon.rotation.z = -Math.PI * 0.35;
-        // hit
+      hudPrimary.textContent = 'Jungle — Survive';
+      hudSecondary.textContent = 'Health 100 | Coins 0';
+
+      // Action binding
+      function attack() {
+        if (!run) return;
         const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
         const p = player.position.clone();
+        const attackRange = 1.6, attackArcCos = Math.cos(Math.PI / 3);
         for (let i = enemies.length - 1; i >= 0; i--) {
           const e = enemies[i];
           const to = new THREE.Vector3().subVectors(e.position, p);
@@ -258,43 +330,26 @@
           to.normalize(); const dot = to.dot(forward);
           if (dot >= attackArcCos) { sc.remove(e); enemies.splice(i, 1); }
         }
-        setTimeout(() => { attacking = false; weapon.rotation.z = 0; }, attackDuration);
       }
-      window.addEventListener('keydown', e => { if (e.code === 'KeyF') startAttack(); });
+      actionBtn.onclick = attack;
 
-      // HUD
-      hudPrimary.textContent = 'Jungle — Survive';
-      hudSecondary.textContent = 'Health 100 | Coins 0';
-
-      // Camera first-person
-      cam.position.set(0, 1.7, 0);
-      let lastMouse = null;
-      renderer.domElement.onpointerdown = e => { lastMouse = { x: e.clientX, y: e.clientY }; renderer.domElement.setPointerCapture(e.pointerId); };
-      renderer.domElement.onpointerup = e => { lastMouse = null; renderer.domElement.releasePointerCapture(e.pointerId); };
-      renderer.domElement.onpointermove = e => {
-        if (!run || !lastMouse) return;
-        const dx = e.clientX - lastMouse.x, dy = e.clientY - lastMouse.y; lastMouse = { x: e.clientX, y: e.clientY };
-        yaw += dx * 0.0025; pitch = THREE.MathUtils.clamp(pitch + dy * 0.0024, -1.2, 1.2);
-      };
+      // Jump binding
+      jumpBtn.onclick = () => { if (onGround && run) velocity.y = jumpStrength; };
 
       function restart() {
         health = 100; coinsCount = 0; start = performance.now();
         velocity.set(0, 0, 0); player.position.set(0, playerRadius + 0.3, 0);
-        yaw = 0; pitch = 0; lava.position.y = -2.5; hudSecondary.textContent = 'Health 100 | Coins 0';
+        yaw = 0; pitch = 0; lava.position.y = -2.5;
         enemies.forEach(e => sc.remove(e)); enemies.length = 0;
         coins.forEach(c => sc.remove(c)); coins.length = 0;
         medkits.forEach(m => sc.remove(m)); medkits.length = 0;
         for (let i = 0; i < (quality === 'high' ? 14 : 8); i++) coin();
         for (let i = 0; i < (quality === 'high' ? 6 : 3); i++) medkit();
+        hudSecondary.textContent = 'Health 100 | Coins 0';
         run = true; msg.style.display = 'none';
       }
 
-      function dispose() {
-        clearInterval(spawnTimer);
-        renderer.domElement.onpointerdown = null;
-        renderer.domElement.onpointerup = null;
-        renderer.domElement.onpointermove = null;
-      }
+      function dispose() { clearInterval(spawnTimer); }
 
       return {
         scene: sc,
@@ -303,32 +358,32 @@
         dispose,
         update(dt, now) {
           if (!run) return;
-          // Look
-          cam.rotation.set(0, 0, 0); cam.rotateX(pitch); cam.rotateY(yaw);
-          cam.position.set(player.position.x, player.position.y + 1.1, player.position.z);
 
-          // Movement
-          const kForward = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
-          const kBack = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
-          const kLeft = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
-          const kRight = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
-          if (keys.Space && onGround) velocity.y = jumpStrength;
+          // Look input
+          applyLook({ yaw, pitch }, dt);
+          // Reassign updated yaw/pitch back (applyLook uses a new object)
+          const ls = lookStick.get();
+          yaw += ls.x * 1.8 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ls.y * 1.8 * dt, -1.2, 1.2);
 
-          const inputX = (kRight - kLeft);
-          const inputY = (kForward - kBack);
+          // Movement input (left stick)
+          const mv = moveStick.get();
+          let inputX = mv.x, inputY = -mv.y; // stick up is negative y
           const mag = Math.hypot(inputX, inputY);
-          let ix = inputX, iy = inputY;
-          if (mag > 1) { ix /= mag; iy /= mag; }
+          if (mag > 1) { inputX /= mag; inputY /= mag; }
 
+          // Direction from yaw
           const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
           const fwd = new THREE.Vector3(sinY, 0, -cosY);
           const right = new THREE.Vector3(cosY, 0, sinY);
-          const wishdir = new THREE.Vector3().addScaledVector(right, ix).addScaledVector(fwd, iy);
+          const wishdir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
           if (wishdir.lengthSq() > 0) wishdir.normalize();
 
+          // Accelerate
           const accel = onGround ? accelGround : accelAir;
           velocity.addScaledVector(wishdir, accel * dt);
 
+          // Friction when idle
           if (onGround && mag < 0.05) {
             const horiz = new THREE.Vector2(velocity.x, velocity.z);
             const speed = horiz.length();
@@ -340,24 +395,32 @@
             }
           }
 
-          const horiz = new THREE.Vector2(velocity.x, velocity.z);
-          const speed = horiz.length();
-          if (speed > maxSpeed) {
-            horiz.multiplyScalar(maxSpeed / speed);
-            velocity.x = horiz.x; velocity.z = horiz.y;
+          // Speed cap
+          {
+            const horiz = new THREE.Vector2(velocity.x, velocity.z);
+            const speed = horiz.length();
+            if (speed > maxSpeed) {
+              horiz.multiplyScalar(maxSpeed / speed);
+              velocity.x = horiz.x; velocity.z = horiz.y;
+            }
           }
 
+          // Gravity/integration
           velocity.y -= gravity * dt;
           player.position.addScaledVector(velocity, dt);
 
+          // Ground collision
           const groundY = playerRadius + 0.3;
           if (player.position.y < groundY) { player.position.y = groundY; velocity.y = 0; onGround = true; }
           else onGround = false;
 
-          // Lava
+          // Camera
+          updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
+
+          // Lava rise
           lava.position.y += 0.018 * dt;
 
-          // Enemies
+          // Enemies AI + damage
           const bob = Math.sin(now * 0.004) * 0.02;
           for (let i = 0; i < enemies.length; i++) {
             const e = enemies[i];
@@ -386,23 +449,26 @@
             }
           }
 
-          // Lose
+          // Lose conditions
           const feet = player.position.y - groundY;
           const lavaTop = lava.position.y + 0.15;
           if (feet <= lavaTop || health <= 0) {
             run = false; msgText.textContent = 'Game Over — Jungle'; msg.style.display = 'block';
           }
+
+          // HUD time
+          const time = ((performance.now() - start) / 1000).toFixed(1);
+          hudPrimary.textContent = `Jungle — ${time}s`;
         }
       };
     }
 
-    // GAME 2: Sky Platformer (3D side-view platformer)
-    function setupPlatformer(quality) {
+    // GAME 2: Platformer (First-Person)
+    function setupPlatformerFP(quality) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
-      const cam = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 600);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       sc.add(makeLights('day'));
 
-      // Floating islands (platforms)
       const platMat = new THREE.MeshStandardMaterial({ color: 0x6aa86a, roughness: 0.8 });
       const plats = [];
       function platform(w, h, d, x, y, z) {
@@ -410,7 +476,6 @@
         p.position.set(x, y, z);
         sc.add(p); plats.push(p);
       }
-
       const baseY = 0;
       platform(40, 2, 12, 0, baseY, 0);
       platform(12, 2, 12, 28, baseY + 8, -6);
@@ -419,58 +484,51 @@
       platform(14, 2, 12, 86, baseY + 30, -10);
       platform(20, 2, 12, 110, baseY + 34, 6);
 
-      // Goal
       const goal = new THREE.Mesh(new THREE.TorusKnotGeometry(3, 1, 90, 12), new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0x553300, emissiveIntensity: 0.3 }));
-      goal.position.set(120, baseY + 40, 6);
-      sc.add(goal);
+      goal.position.set(120, baseY + 40, 6); sc.add(goal);
 
-      // Player (ball)
-      const playerR = 1.1;
-      const player = new THREE.Mesh(new THREE.SphereGeometry(playerR, 24, 18), new THREE.MeshStandardMaterial({ color: 0x44aaff }));
+      // Player collider (capsule)
+      const playerRadius = 0.6;
+      const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), new THREE.MeshStandardMaterial({ color: 0x44aaff }));
+      player.visible = false; // collider only, FP view
       player.position.set(-16, baseY + 6, 0); sc.add(player);
 
-      // Camera side-follow
-      cam.position.set(player.position.x - 10, player.position.y + 10, player.position.z + 28);
-      cam.lookAt(player.position);
-
-      // Physics-ish
       const vel = new THREE.Vector3(0, 0, 0);
-      const gravity = 18;
-      const moveSpeed = 10;
-      const jumpVel = 12.5;
-      let onGround = false;
-      let won = false, run = true;
+      const gravity = 18, moveSpeed = 10, jumpVel = 12.5;
+      let onGround = false, run = true, won = false;
+      let yaw = 0, pitch = 0;
 
       hudPrimary.textContent = 'Sky Platforms';
       hudSecondary.textContent = 'Reach the glowing goal';
 
-      function restart() {
-        player.position.set(-16, baseY + 6, 0);
-        vel.set(0, 0, 0);
-        won = false; run = true; msg.style.display = 'none';
-      }
+      jumpBtn.onclick = () => { if (onGround && run) vel.y = jumpVel; };
+      actionBtn.onclick = () => {}; // no action needed here
 
-      function dispose() {}
-
-      // Simple collision against box tops
       function collide() {
         onGround = false;
         for (const p of plats) {
           const top = p.position.y + p.geometry.parameters.height / 2;
           const halfW = p.geometry.parameters.width / 2;
           const halfD = p.geometry.parameters.depth / 2;
-          const withinX = (player.position.x > p.position.x - halfW - playerR) && (player.position.x < p.position.x + halfW + playerR);
-          const withinZ = (player.position.z > p.position.z - halfD - playerR) && (player.position.z < p.position.z + halfD + playerR);
-          const nearTop = Math.abs(player.position.y - (top + playerR)) < 0.6 && vel.y <= 0;
+          const withinX = (player.position.x > p.position.x - halfW - playerRadius) && (player.position.x < p.position.x + halfW + playerRadius);
+          const withinZ = (player.position.z > p.position.z - halfD - playerRadius) && (player.position.z < p.position.z + halfD + playerRadius);
+          const nearTop = Math.abs(player.position.y - (top + playerRadius)) < 0.6 && vel.y <= 0;
           if (withinX && withinZ && nearTop) {
-            player.position.y = top + playerR;
+            player.position.y = top + playerRadius;
             vel.y = 0;
             onGround = true;
           }
         }
-        // fall off world
-        if (player.position.y < -30) run = false, msgText.textContent = 'You fell — Platformer', msg.style.display = 'block';
+        if (player.position.y < -30) { run = false; msgText.textContent = 'You fell — Platformer'; msg.style.display = 'block'; }
       }
+
+      function restart() {
+        player.position.set(-16, baseY + 6, 0);
+        vel.set(0, 0, 0);
+        yaw = 0; pitch = 0;
+        won = false; run = true; msg.style.display = 'none';
+      }
+      function dispose() {}
 
       return {
         scene: sc,
@@ -480,34 +538,33 @@
         update(dt) {
           if (!run || won) return;
 
-          // Input: X/Z plane movement, jump
-          const left = keys.KeyA || keys.ArrowLeft;
-          const right = keys.KeyD || keys.ArrowRight;
-          const up = keys.KeyW || keys.ArrowUp;
-          const down = keys.KeyS || keys.ArrowDown;
+          // Look input
+          const ls = lookStick.get();
+          yaw += ls.x * 1.8 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ls.y * 1.8 * dt, -1.2, 1.2);
 
-          const dir = new THREE.Vector3(
-            (right ? 1 : 0) - (left ? 1 : 0),
-            0,
-            (down ? 1 : 0) - (up ? 1 : 0)
-          );
+          // Move input
+          const mv = moveStick.get();
+          let inputX = mv.x, inputY = -mv.y;
+          const mag = Math.hypot(inputX, inputY);
+          if (mag > 1) { inputX /= mag; inputY /= mag; }
+
+          const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
+          const fwd = new THREE.Vector3(sinY, 0, -cosY);
+          const right = new THREE.Vector3(cosY, 0, sinY);
+          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
           if (dir.lengthSq() > 0) dir.normalize();
 
           vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, 8 * dt);
           vel.z = THREE.MathUtils.lerp(vel.z, dir.z * moveSpeed, 8 * dt);
-
-          // Jump
-          if ((keys.Space || keys.KeyZ) && onGround) vel.y = jumpVel;
 
           vel.y -= gravity * dt;
           player.position.addScaledVector(vel, dt);
 
           collide();
 
-          // Camera follow (smoothed)
-          const targetCam = new THREE.Vector3(player.position.x - 10, player.position.y + 10, player.position.z + 28);
-          camera.position.lerp(targetCam, 4 * dt);
-          camera.lookAt(player.position);
+          // Camera FP
+          updateFirstPersonCamera(cam, player.position, yaw, pitch, 1.1);
 
           // Win check
           if (player.position.distanceTo(goal.position) < 5) {
@@ -517,19 +574,17 @@
       };
     }
 
-    // GAME 3: Desert Ridge Racer (simple gates)
-    function setupRacer(quality) {
+    // GAME 3: Racer (First-Person cockpit)
+    function setupRacerFP(quality) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd0b38a);
-      const cam = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const cam = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1200);
       sc.add(makeLights('day'));
 
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshStandardMaterial({ color: 0xb5894a, roughness: 0.8 }));
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), new THREE.MeshStandardMaterial({ color: 0xb5894a, roughness: 0.8 }));
       ground.rotation.x = -Math.PI / 2; sc.add(ground);
 
       const car = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), new THREE.MeshStandardMaterial({ color: 0x3366ff }));
       car.position.set(0, 0.6, 0); sc.add(car);
-
-      cam.position.set(0, 6, -10); cam.lookAt(car.position);
 
       const gates = [];
       function gate(x, z) {
@@ -540,15 +595,23 @@
       for (let i = 0; i < 12; i++) gate(0 + i * 28, -40 + Math.sin(i * 0.8) * 60);
 
       let speed = 0, heading = 0, score = 0, run = true;
+      let yaw = 0, pitch = 0; // cockpit look
 
       hudPrimary.textContent = 'Desert Racer';
       hudSecondary.textContent = 'Gates 0/12';
 
+      // Controls: move stick for throttle/steer, look stick for cockpit look (minor)
+      // Action button unused; Jump unused
+      actionBtn.onclick = () => {};
+      jumpBtn.onclick = () => {};
+
       function restart() {
         car.position.set(0, 0.6, 0);
         speed = 0; heading = 0; score = 0; run = true; msg.style.display = 'none';
+        gates.forEach(g => sc.remove(g)); gates.length = 0;
+        for (let i = 0; i < 12; i++) gate(0 + i * 28, -40 + Math.sin(i * 0.8) * 60);
+        hudSecondary.textContent = 'Gates 0/12';
       }
-
       function dispose() {}
 
       return {
@@ -558,21 +621,32 @@
         dispose,
         update(dt) {
           if (!run) return;
-          const steer = ((keys.KeyA || keys.ArrowLeft) ? 1 : 0) - ((keys.KeyD || keys.ArrowRight) ? 1 : 0);
-          const throttle = (keys.KeyW || keys.ArrowUp) ? 1 : 0;
-          const brake = (keys.KeyS || keys.ArrowDown) ? 1 : 0;
 
-          speed += (throttle * 20 - brake * 30 - speed * 0.8) * dt;
+          // Look in cockpit (subtle tilt)
+          const ls = lookStick.get();
+          yaw += ls.x * 0.8 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ls.y * 0.8 * dt, -0.5, 0.5);
+
+          // Drive inputs
+          const mv = moveStick.get();
+          const steer = mv.x;              // left/right
+          const throttle = Math.max(0, -mv.y); // up on rightStick is negative y; here using left stick forward as throttle
+          const brake = Math.max(0, mv.y);     // down as brake
+
+          speed += (throttle * 22 - brake * 28 - speed * 0.85) * dt;
           heading += steer * 1.8 * dt;
 
           const dir = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
           car.position.addScaledVector(dir, speed * dt);
           car.rotation.y = heading;
 
-          // Camera chase
-          const camTarget = car.position.clone().add(new THREE.Vector3(-Math.sin(heading), 0.4, -Math.cos(heading)).multiplyScalar(10));
-          camera.position.lerp(camTarget, 4 * dt);
-          camera.lookAt(car.position.x, car.position.y + 1, car.position.z);
+          // Camera FP: driver seat (front of car, slight offset)
+          const eye = new THREE.Vector3(0, 0.9, 1.2).applyEuler(new THREE.Euler(0, heading, 0));
+          const eyePos = new THREE.Vector3().copy(car.position).add(eye);
+          cam.position.copy(eyePos);
+          cam.rotation.set(0, heading, 0);
+          cam.rotateX(pitch);
+          cam.rotateY(yaw * 0.2); // minor yaw camera offset
 
           // Gates
           for (let i = gates.length - 1; i >= 0; i--) {
@@ -588,8 +662,8 @@
       };
     }
 
-    // GAME 4: Space Drone Arena (shoot drones)
-    function setupArena(quality) {
+    // GAME 4: Space Drone Arena (First-Person shooter)
+    function setupArenaFP(quality) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x080a12);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       sc.add(makeLights('space'));
@@ -597,10 +671,8 @@
       const arena = new THREE.Mesh(new THREE.CylinderGeometry(80, 80, 2, 40), new THREE.MeshStandardMaterial({ color: 0x1c2233, metalness: 0.2, roughness: 0.7 }));
       arena.position.y = -2; sc.add(arena);
 
-      const player = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshStandardMaterial({ color: 0x66aaff }));
-      player.position.set(0, 1, 0); sc.add(player);
-
-      cam.position.set(0, 8, 12); cam.lookAt(player.position);
+      const rig = new THREE.Object3D(); // FP rig position
+      rig.position.set(0, 1, 0); sc.add(rig);
 
       const drones = [];
       function drone() {
@@ -620,20 +692,22 @@
         b.userData.dir = dir.clone();
         sc.add(b); bullets.push(b);
       }
-      window.addEventListener('keydown', e => { if (e.code === 'KeyF') shoot(); });
+      actionBtn.onclick = shoot;
+      jumpBtn.onclick = () => {}; // no jump (zero-g walk), keep free
 
       let run = true, score = 0;
+      let yaw = 0, pitch = 0;
+
       hudPrimary.textContent = 'Space Arena';
-      hudSecondary.textContent = 'Score 0 | F to shoot';
+      hudSecondary.textContent = 'Score 0 | ACTION to shoot';
 
       function restart() {
         drones.forEach(d => sc.remove(d)); drones.length = 0;
         bullets.forEach(b => sc.remove(b)); bullets.length = 0;
         for (let i = 0; i < (quality === 'high' ? 16 : 8); i++) drone();
-        score = 0; hudSecondary.textContent = 'Score 0 | F to shoot';
-        run = true; msg.style.display = 'none';
+        score = 0; hudSecondary.textContent = 'Score 0 | ACTION to shoot';
+        rig.position.set(0, 1, 0); yaw = 0; pitch = 0; run = true; msg.style.display = 'none';
       }
-
       function dispose() {}
 
       return {
@@ -643,20 +717,31 @@
         dispose,
         update(dt) {
           if (!run) return;
-          // Move player + camera orbit with mouse
-          const left = keys.KeyA || keys.ArrowLeft, right = keys.KeyD || keys.ArrowRight, up = keys.KeyW || keys.ArrowUp, down = keys.KeyS || keys.ArrowDown;
-          const dir = new THREE.Vector3((right ? 1 : 0) - (left ? 1 : 0), 0, (down ? 1 : 0) - (up ? 1 : 0));
+
+          // Look input
+          const ls = lookStick.get();
+          yaw += ls.x * 1.8 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ls.y * 1.8 * dt, -1.2, 1.2);
+
+          // Move input
+          const mv = moveStick.get();
+          let inputX = mv.x, inputY = -mv.y;
+          const mag = Math.hypot(inputX, inputY);
+          if (mag > 1) { inputX /= mag; inputY /= mag; }
+          const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
+          const fwd = new THREE.Vector3(sinY, 0, -cosY);
+          const right = new THREE.Vector3(cosY, 0, sinY);
+          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(fwd, inputY);
           if (dir.lengthSq() > 0) dir.normalize();
-          player.position.addScaledVector(dir, 10 * dt);
 
-          const camOffset = new THREE.Vector3(0, 8, 12);
-          camera.position.lerp(player.position.clone().add(camOffset), 4 * dt);
-          camera.lookAt(player.position);
+          rig.position.addScaledVector(dir, 10 * dt);
 
-          // Drones wander
+          // FP camera
+          updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
+
+          // Drones wander, bounce at arena edge
           for (const d of drones) {
             d.position.addScaledVector(d.userData.vel, dt);
-            // keep in arena
             if (d.position.length() > 78) d.userData.vel.multiplyScalar(-1);
           }
 
@@ -665,13 +750,13 @@
             const b = bullets[i];
             b.position.addScaledVector(b.userData.dir, 40 * dt);
             if (b.position.length() > 120) { sc.remove(b); bullets.splice(i, 1); continue; }
-            // hit drones
+            // hits
             for (let j = drones.length - 1; j >= 0; j--) {
               const d = drones[j];
               if (b.position.distanceTo(d.position) < 1.4) {
                 sc.remove(d); drones.splice(j, 1);
                 sc.remove(b); bullets.splice(i, 1);
-                score++; hudSecondary.textContent = `Score ${score} | F to shoot`;
+                score++; hudSecondary.textContent = `Score ${score} | ACTION to shoot`;
                 break;
               }
             }
@@ -682,8 +767,8 @@
       };
     }
 
-    // GAME 5: Forest Endless Runner
-    function setupRunner(quality) {
+    // GAME 5: Runner (First-Person lanes)
+    function setupRunnerFP(quality) {
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
       sc.add(makeLights('day'));
@@ -691,10 +776,8 @@
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 60), new THREE.MeshStandardMaterial({ color: 0x228B22 }));
       ground.rotation.x = -Math.PI / 2; ground.position.z = -40; sc.add(ground);
 
-      const runner = new THREE.Mesh(new THREE.CapsuleGeometry(0.6, 0.8, 8, 12), new THREE.MeshStandardMaterial({ color: 0x66aaff }));
-      runner.position.set(0, 1, 0); sc.add(runner);
-
-      cam.position.set(0, 4, 8); cam.lookAt(runner.position);
+      const rig = new THREE.Object3D();
+      rig.position.set(0, 1, 0); sc.add(rig);
 
       const obstacles = [];
       function makeObs(z) {
@@ -705,18 +788,21 @@
       for (let i = 0; i < (quality === 'high' ? 30 : 18); i++) makeObs(6 + i * 6);
 
       let laneX = 0, speed = 8, time = 0, run = true, rings = 0;
+      let yaw = 0, pitch = 0;
 
       hudPrimary.textContent = 'Endless Runner';
       hudSecondary.textContent = 'Rings 0';
+
+      jumpBtn.onclick = () => {}; // no jump; runner is lane-based FP
+      actionBtn.onclick = () => {}; // no action
 
       function restart() {
         obstacles.forEach(o => sc.remove(o)); obstacles.length = 0;
         for (let i = 0; i < (quality === 'high' ? 30 : 18); i++) makeObs(6 + i * 6);
         laneX = 0; speed = 8; time = 0; rings = 0; run = true; msg.style.display = 'none';
-        runner.position.set(0, 1, 0);
+        rig.position.set(0, 1, 0);
         hudSecondary.textContent = 'Rings 0';
       }
-
       function dispose() {}
 
       return {
@@ -729,30 +815,33 @@
           time += dt;
           speed = 8 + time * 1.2;
 
-          // Lane switch
-          if (keys.KeyA || keys.ArrowLeft) laneX = -2;
-          if (keys.KeyD || keys.ArrowRight) laneX = 2;
-          if (!(keys.KeyA || keys.ArrowLeft || keys.KeyD || keys.ArrowRight)) laneX = 0;
+          // Look
+          const ls = lookStick.get();
+          yaw += ls.x * 1.5 * dt;
+          pitch = THREE.MathUtils.clamp(pitch + ls.y * 1.0 * dt, -0.4, 0.4);
 
-          runner.position.x = THREE.MathUtils.lerp(runner.position.x, laneX, 6 * dt);
+          // Lane from move stick (left/right)
+          const mv = moveStick.get();
+          if (mv.x < -0.3) laneX = -2;
+          else if (mv.x > 0.3) laneX = 2;
+          else laneX = 0;
 
-          // Move obstacles forward
+          rig.position.x = THREE.MathUtils.lerp(rig.position.x, laneX, 6 * dt);
+
+          // Move obstacles forward (towards player)
           for (const o of obstacles) {
             o.position.z += speed * dt;
-            if (o.position.z > 4) { // passed player
+            if (o.position.z > 4) {
               o.position.z = -180 - Math.random() * 40;
               o.position.x = (Math.random() < 0.5 ? -2 : 2) + (Math.random() - 0.5) * 2;
               rings++; hudSecondary.textContent = `Rings ${rings}`;
             }
-            if (o.position.distanceTo(runner.position) < 1.0) {
-              run = false; msgText.textContent = 'You hit an obstacle — Runner'; msg.style.display = 'block';
-            }
+            const dist = new THREE.Vector3(o.position.x - rig.position.x, 0.6 - rig.position.y, o.position.z - 0).length();
+            if (dist < 1.0) { run = false; msgText.textContent = 'You hit an obstacle — Runner'; msg.style.display = 'block'; }
           }
 
-          // Camera soft follow
-          const target = new THREE.Vector3(runner.position.x, 4, 8);
-          camera.position.lerp(target, 6 * dt);
-          camera.lookAt(runner.position);
+          // Camera FP
+          updateFirstPersonCamera(cam, rig.position, yaw, pitch, 0.9);
         }
       };
     }
