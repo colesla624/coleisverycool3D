@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Third Person, Levels, Local Online, Skins, Leaderboard, Voxel Builder</title>
+  <title>3D Game Hub — Third Person, Varied Longer Levels, Single Server, Skins, Leaderboard, Voxel Builder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
@@ -11,9 +11,10 @@
     #topbar { position:absolute; top:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none; }
     #topbar .small { font-size:12px; opacity:0.85; font-weight:500; }
 
-    #netbar { position:absolute; top:10px; left:50%; transform:translateX(-50%); background:#111a; color:#fff; padding:8px 12px; border-radius:10px; border:1px solid #fff2; z-index:12; display:none; }
-    #netbar input { background:#222; border:1px solid #444; color:#fff; border-radius:8px; padding:6px 8px; margin-left:6px; width:150px; }
-    #netbar .server { width:220px; }
+    #netbar { position:absolute; top:10px; left:50%; transform:translateX(-50%); background:#111a; color:#fff; padding:8px 12px; border-radius:10px; border:1px solid #fff2; z-index:12; display:flex; gap:8px; align-items:center; }
+    #netbar input { background:#222; border:1px solid #444; color:#fff; border-radius:8px; padding:6px 8px; width:160px; }
+    #netbar .server { display:none; }
+    #netbar .label { opacity:0.7; font-size:12px; }
 
     #backBtn { position:absolute; top:10px; right:10px; z-index:12; padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; display:none; cursor:pointer; }
 
@@ -72,15 +73,13 @@
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — Third Person, Levels, Local Online, Skins, Leaderboard, Voxel Builder</div>
+    <div id="title">3D Game Hub — Third Person, Varied Longer Levels, Single Server, Skins, Leaderboard, Voxel Builder</div>
     <div class="small" id="hint">Left: move. Right: look. Jump/Action. Esc returns to menu.</div>
   </div>
 
   <div id="netbar">
-    <label>Player:<input id="playerName" placeholder="Guest" /></label>
-    <label>Server:<input id="serverUrl" class="server" /></label>
-    <button id="connectBtn">Connect</button>
-    <button id="hostBtn">Host server</button>
+    <span class="label">Name:</span><input id="playerName" placeholder="Guest" />
+    <button id="connectBtn">Join server</button>
     <span id="connStatus" style="margin-left:8px; opacity:0.8"></span>
   </div>
 
@@ -90,14 +89,14 @@
     <div id="menuPanel">
       <h1>Pick a game</h1>
       <div id="menuGrid">
-        <button class="menuBtn" data-game="jungle"><div style="font-weight:800">Lava Monkey Jungle</div><div class="small">Survive enemies and lava. Levels & coins.</div></button>
-        <button class="menuBtn" data-game="platformer"><div style="font-weight:800">Sky Platforms (Double Jump)</div><div class="small">Reach the goal. Visible player. Levels.</div></button>
-        <button class="menuBtn" data-game="racer"><div style="font-weight:800">Desert Ridge Racer</div><div class="small">Gate racing. Levels.</div></button>
-        <button class="menuBtn" data-game="arena"><div style="font-weight:800">Space Drone Arena</div><div class="small">Clear drones. Levels.</div></button>
-        <button class="menuBtn" data-game="runner"><div style="font-weight:800">Forest Endless Runner</div><div class="small">Lane dodging. Levels.</div></button>
-        <button class="menuBtn" data-game="maze"><div style="font-weight:800">Crystal Maze</div><div class="small">Find exit. Levels.</div></button>
-        <button class="menuBtn" data-game="range"><div style="font-weight:800">Target Range</div><div class="small">Aim practice. Levels.</div></button>
-        <button class="menuBtn" data-game="voxel"><div style="font-weight:800">Voxel Builder (Minecraft‑like)</div><div class="small">Place/remove blocks. Sandbox.</div></button>
+        <button class="menuBtn" data-game="jungle"><div style="font-weight:800">Lava Monkey Jungle</div><div class="small">Survive enemies and lava. Longer varied levels.</div></button>
+        <button class="menuBtn" data-game="platformer"><div style="font-weight:800">Sky Platforms (Double Jump)</div><div class="small">Reach the goal across extended courses.</div></button>
+        <button class="menuBtn" data-game="racer"><div style="font-weight:800">Desert Ridge Racer</div><div class="small">Drive longer tracks with different shapes.</div></button>
+        <button class="menuBtn" data-game="arena"><div style="font-weight:800">Space Drone Arena</div><div class="small">Clear waves with increasing complexity.</div></button>
+        <button class="menuBtn" data-game="runner"><div style="font-weight:800">Forest Endless Runner</div><div class="small">Longer lanes, varied obstacle patterns.</div></button>
+        <button class="menuBtn" data-game="maze"><div style="font-weight:800">Crystal Maze</div><div class="small">Bigger layouts each level.</div></button>
+        <button class="menuBtn" data-game="range"><div style="font-weight:800">Target Range</div><div class="small">More targets, different positions.</div></button>
+        <button class="menuBtn" data-game="voxel"><div style="font-weight:800">Voxel Builder (Minecraft‑like)</div><div class="small">Larger worlds per level.</div></button>
       </div>
 
       <div class="row">
@@ -242,9 +241,7 @@
 
     const netbar = document.getElementById('netbar');
     const playerNameInput = document.getElementById('playerName');
-    const serverUrlInput = document.getElementById('serverUrl');
     const connectBtn = document.getElementById('connectBtn');
-    const hostBtn = document.getElementById('hostBtn');
     const connStatus = document.getElementById('connStatus');
 
     const codeInput = document.getElementById('codeInput');
@@ -297,12 +294,14 @@
     window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') showMenu(); });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-    // Shared state (LAN default)
-    const defaultLAN = 'ws://' + window.location.hostname + ':8080';
+    // Single server configuration — replace with your server IP/host
+    const SERVER_URL = 'ws://YOUR_SERVER_IP:8080'; // e.g., ws://192.168.1.50:8080 or ws://yourdomain.com:8080
+
+    // Shared state
     const shared = {
       skin: localStorage.getItem('skin') || 'blue',
       name: localStorage.getItem('name') || '',
-      server: localStorage.getItem('server') || defaultLAN,
+      server: SERVER_URL,
       ws: null,
       id: Math.random().toString(36).slice(2),
       peers: new Map(),
@@ -311,8 +310,7 @@
     };
 
     playerNameInput.value = shared.name;
-    serverUrlInput.value = shared.server;
-    netbar.style.display = 'block';
+    netbar.style.display = 'flex';
 
     // Skin color
     function skinToColor(skin) {
@@ -409,18 +407,12 @@
       });
     }
 
-    // Networking (LAN)
+    // Networking — single server
     connectBtn.onclick = () => {
       const name = playerNameInput.value.trim();
-      const server = serverUrlInput.value.trim();
       shared.name = name || 'Guest';
-      shared.server = server || defaultLAN;
       localStorage.setItem('name', shared.name);
-      localStorage.setItem('server', shared.server);
       connectWS();
-    };
-    hostBtn.onclick = () => {
-      alert("To host a local server:\n1) Install Node.js\n2) Run `node server.js`\n3) Others on same Wi‑Fi connect to ws://YOUR_LOCAL_IP:8080");
     };
 
     function connectWS() {
@@ -430,9 +422,7 @@
         shared.ws = ws;
         connStatus.textContent = 'Connecting...';
         ws.onopen = () => { connStatus.textContent = 'Connected'; broadcastState(true); };
-        ws.onmessage = (evt) => {
-          try { handleNetMessage(JSON.parse(evt.data)); } catch {}
-        };
+        ws.onmessage = (evt) => { try { handleNetMessage(JSON.parse(evt.data)); } catch {} };
         ws.onclose = () => { connStatus.textContent = 'Disconnected'; };
         ws.onerror = () => { connStatus.textContent = 'Error'; };
       } catch { connStatus.textContent = 'Error'; }
@@ -477,13 +467,9 @@
     function createPeerMesh(game, skin, owner=false) {
       const color = skinToColor(skin);
       let mesh;
-      if (game === 'racer') {
-        mesh = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), new THREE.MeshStandardMaterial({ color }));
-      } else if (game === 'voxel') {
-        mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1.8, 1), new THREE.MeshStandardMaterial({ color }));
-      } else {
-        mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), new THREE.MeshStandardMaterial({ color }));
-      }
+      if (game === 'racer') mesh = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), new THREE.MeshStandardMaterial({ color }));
+      else if (game === 'voxel') mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1.8, 1), new THREE.MeshStandardMaterial({ color }));
+      else mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), new THREE.MeshStandardMaterial({ color }));
       mesh.userData.isPeer = true;
       if (owner) mesh.add(makeOwnerLabel());
       return mesh;
@@ -540,7 +526,7 @@
       if (scene) { for (const [, peer] of shared.peers) scene.remove(peer.mesh); }
       shared.peers.clear();
       cleanup = null; scene = null; camera = null;
-      netbar.style.display = 'block';
+      netbar.style.display = 'flex';
     }
     function startGame(setup, gameKey, levelIdx) {
       if (cleanup && cleanup.dispose) cleanup.dispose();
@@ -552,7 +538,7 @@
       backBtn.style.display = 'inline-block';
       controls.style.display = 'flex';
       settingsBar.style.display = 'flex';
-      netbar.style.display = 'block';
+      netbar.style.display = 'flex';
       menu.style.display = 'none';
       if (cleanup.applySkin) cleanup.applySkin(shared.skin);
       if (cleanup.applyOwner) cleanup.applyOwner(shared.owner);
@@ -562,11 +548,8 @@
     }
 
     function advanceLevel(gameKey, nextIndex) {
-      if (nextIndex < maxLevels) {
-        startGame(gameSetups[gameKey], gameKey, nextIndex);
-      } else {
-        advanceToNextGame(gameKey);
-      }
+      if (nextIndex < maxLevels) startGame(gameSetups[gameKey], gameKey, nextIndex);
+      else advanceToNextGame(gameKey);
     }
     function advanceToNextGame(current) {
       const idx = gameOrder.indexOf(current);
@@ -643,39 +626,60 @@
       return group;
     }
 
-    // Levels
+    // Varied, longer level configs (each level changes layout/length)
     const jungleLevels = [
-      { trees: 12, coins: 8, kits: 3, lavaSpeed: 0.015, enemyRate: 1.2 },
-      { trees: 16, coins: 10, kits: 3, lavaSpeed: 0.020, enemyRate: 1.0 },
-      { trees: 22, coins: 12, kits: 4, lavaSpeed: 0.024, enemyRate: 0.9 },
-      { trees: 26, coins: 14, kits: 5, lavaSpeed: 0.028, enemyRate: 0.8 },
-      { trees: 30, coins: 16, kits: 6, lavaSpeed: 0.032, enemyRate: 0.7 },
+      { size: 160, trees: 24, coins: 12, kits: 4, lavaSpeed: 0.015, enemyRate: 1.2, seed: 101 },
+      { size: 200, trees: 32, coins: 16, kits: 5, lavaSpeed: 0.020, enemyRate: 1.0, seed: 202 },
+      { size: 240, trees: 40, coins: 20, kits: 6, lavaSpeed: 0.022, enemyRate: 0.9, seed: 303 },
+      { size: 280, trees: 50, coins: 26, kits: 6, lavaSpeed: 0.025, enemyRate: 0.85, seed: 404 },
+      { size: 320, trees: 60, coins: 32, kits: 7, lavaSpeed: 0.028, enemyRate: 0.8, seed: 505 },
     ];
     const platformerLevels = [
-      { moveSpeed: 9, jumpVel: 16, layoutScale: 1.0 },
-      { moveSpeed: 10, jumpVel: 16.5, layoutScale: 1.05 },
-      { moveSpeed: 11, jumpVel: 17, layoutScale: 1.1 },
-      { moveSpeed: 12, jumpVel: 17.2, layoutScale: 1.15 },
-      { moveSpeed: 13, jumpVel: 17.5, layoutScale: 1.2 },
+      { len: 6, segment: 24, heightStep: 8, layoutVar: 0.8, moveSpeed: 9, jumpVel: 16, seed: 11 },
+      { len: 8, segment: 26, heightStep: 9, layoutVar: 1.0, moveSpeed: 10, jumpVel: 16.5, seed: 22 },
+      { len: 10, segment: 28, heightStep: 10, layoutVar: 1.2, moveSpeed: 11, jumpVel: 17, seed: 33 },
+      { len: 12, segment: 30, heightStep: 11, layoutVar: 1.4, moveSpeed: 12, jumpVel: 17.2, seed: 44 },
+      { len: 14, segment: 32, heightStep: 12, layoutVar: 1.6, moveSpeed: 13, jumpVel: 17.5, seed: 55 },
     ];
     const racerLevels = [
-      { gates: 10, speedMul: 1.0 }, { gates: 12, speedMul: 1.05 }, { gates: 14, speedMul: 1.1 }, { gates: 16, speedMul: 1.15 }, { gates: 18, speedMul: 1.2 }
+      { gates: 18, amp: 40, freq: 0.7, turn: 1.8, seed: 77 },
+      { gates: 22, amp: 55, freq: 0.8, turn: 2.0, seed: 88 },
+      { gates: 26, amp: 70, freq: 0.9, turn: 2.2, seed: 99 },
+      { gates: 30, amp: 85, freq: 1.0, turn: 2.4, seed: 111 },
+      { gates: 34, amp: 100, freq: 1.1, turn: 2.6, seed: 123 },
     ];
     const arenaLevels = [
-      { drones: 8 }, { drones: 12 }, { drones: 16 }, { drones: 20 }, { drones: 24 }
+      { drones: 12, waveSpeed: 4, seed: 9 }, { drones: 16, waveSpeed: 4.5, seed: 19 }, { drones: 20, waveSpeed: 5, seed: 29 }, { drones: 26, waveSpeed: 5.5, seed: 39 }, { drones: 32, waveSpeed: 6, seed: 49 }
     ];
     const runnerLevels = [
-      { obstacles: 16, accel: 1.0 }, { obstacles: 20, accel: 1.1 }, { obstacles: 24, accel: 1.2 }, { obstacles: 28, accel: 1.3 }, { obstacles: 32, accel: 1.4 }
+      { length: 280, obstacles: 28, accel: 1.05, seed: 13 },
+      { length: 340, obstacles: 36, accel: 1.10, seed: 23 },
+      { length: 420, obstacles: 44, accel: 1.15, seed: 33 },
+      { length: 520, obstacles: 56, accel: 1.20, seed: 43 },
+      { length: 640, obstacles: 68, accel: 1.25, seed: 53 },
     ];
     const mazeLevels = [
-      { walls: 12 }, { walls: 16 }, { walls: 20 }, { walls: 24 }, { walls: 28 }
+      { cells: 9, seed: 6 }, { cells: 11, seed: 12 }, { cells: 13, seed: 18 }, { cells: 15, seed: 24 }, { cells: 17, seed: 30 }
     ];
     const rangeLevels = [
-      { targets: 8, respawn: 1.2 }, { targets: 10, respawn: 1.0 }, { targets: 12, respawn: 0.9 }, { targets: 14, respawn: 0.8 }, { targets: 16, respawn: 0.7 }
+      { targets: 12, respawn: 1.0, spread: 70, seed: 71 }, { targets: 16, respawn: 0.9, spread: 80, seed: 81 }, { targets: 20, respawn: 0.85, spread: 90, seed: 91 }, { targets: 24, respawn: 0.8, spread: 100, seed: 101 }, { targets: 28, respawn: 0.75, spread: 110, seed: 111 }
     ];
     const voxelLevels = [
-      { size: 16, startBlocks: 60 }, { size: 18, startBlocks: 80 }, { size: 20, startBlocks: 100 }, { size: 22, startBlocks: 120 }, { size: 24, startBlocks: 140 }
+      { size: 24, startBlocks: 100, goalDelta: 20, seed: 201 },
+      { size: 28, startBlocks: 140, goalDelta: 24, seed: 202 },
+      { size: 32, startBlocks: 180, goalDelta: 28, seed: 203 },
+      { size: 36, startBlocks: 220, goalDelta: 32, seed: 204 },
+      { size: 40, startBlocks: 260, goalDelta: 36, seed: 205 }
     ];
+
+    // PRNG for repeatable layout variation per level
+    function makeRand(seed) {
+      let s = seed >>> 0;
+      return () => {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return (s & 0xffffffff) / 0x100000000;
+      };
+    }
 
     // Game registry
     const gameSetups = {
@@ -689,13 +693,14 @@
       voxel: setupVoxelTP
     };
 
-    // GAME 1: Jungle
+    // GAME 1: Jungle — larger maps per level, varied placement
     function setupJungleTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = jungleLevels[levelIndex] || jungleLevels[0];
+      const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
       const lights = makeLights('day'); sc.add(lights);
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 }));
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(lvl.size, lvl.size), new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 }));
       ground.rotation.x = -Math.PI / 2; sc.add(ground);
 
       function addTree(x, z) {
@@ -705,7 +710,10 @@
         foliage.position.set(x, 2.6, z);
         sc.add(trunk, foliage);
       }
-      for (let i = 0; i < lvl.trees; i++) { const a = Math.random() * Math.PI * 2, d = 12 + Math.random() * 55; addTree(Math.cos(a) * d, Math.sin(a) * d); }
+      for (let i = 0; i < lvl.trees; i++) {
+        const a = rand() * Math.PI * 2, d = 18 + rand() * (lvl.size * 0.45);
+        addTree(Math.cos(a) * d, Math.sin(a) * d);
+      }
 
       const playerRadius = 0.5;
       const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
@@ -716,7 +724,7 @@
       const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), new THREE.MeshStandardMaterial({ color: 0x885000 }));
       weapon.position.set(0.45, 0.35, 0.0); player.add(weapon);
 
-      const lava = new THREE.Mesh(new THREE.CylinderGeometry(80, 80, 0.3, 48, 1, true),
+      const lava = new THREE.Mesh(new THREE.CylinderGeometry(lvl.size*0.6, lvl.size*0.6, 0.3, 64, 1, true),
         new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.95 }));
       lava.position.y = -2.5; sc.add(lava);
 
@@ -732,25 +740,34 @@
       }
       function spawnEnemy() {
         const e = createMonkey();
-        const a = Math.random() * Math.PI * 2, d = 16 + Math.random() * 14;
+        const a = rand() * Math.PI * 2, d = 16 + rand() * 22 + levelIndex * 3;
         e.position.set(Math.cos(a) * d, 0.45, Math.sin(a) * d);
-        e.userData.speed = 5.9 + Math.random() * 0.8;
+        e.userData.speed = 5.8 + rand() * 1.2 + levelIndex * 0.2;
         enemies.push(e); sc.add(e);
       }
       let run = true;
       let spawnTimer = setInterval(() => { if (run) spawnEnemy(); }, 1000 * lvl.enemyRate);
 
       const coins = [], medkits = []; let coinCount = 0;
-      function coin() { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 24), new THREE.MeshStandardMaterial({ color: 0xFFD700 }));
-        c.rotation.x = Math.PI / 2; c.position.set((Math.random() - 0.5) * 110, 0.15, (Math.random() - 0.5) * 110); coins.push(c); sc.add(c); }
-      function medkit() { const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: 0xFF0000 }));
-        m.position.set((Math.random() - 0.5) * 110, 0.15, (Math.random() - 0.5) * 110); medkits.push(m); sc.add(m); }
+      function coin() {
+        const c = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 24), new THREE.MeshStandardMaterial({ color: 0xFFD700 }));
+        c.rotation.x = Math.PI / 2;
+        const a = rand() * Math.PI * 2, r = 30 + rand() * (lvl.size * 0.35);
+        c.position.set(Math.cos(a)*r, 0.15, Math.sin(a)*r);
+        coins.push(c); sc.add(c);
+      }
+      function medkit() {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: 0xFF0000 }));
+        const a = rand() * Math.PI * 2, r = 30 + rand() * (lvl.size * 0.35);
+        m.position.set(Math.cos(a)*r, 0.15, Math.sin(a)*r);
+        medkits.push(m); sc.add(m);
+      }
       for (let i = 0; i < lvl.coins; i++) coin();
       for (let i = 0; i < lvl.kits; i++) medkit();
 
       let health = 100;
       const velocity = new THREE.Vector3();
-      const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.2, gravity = 18, jumpStrength = 14.5;
+      const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.4 + levelIndex * 0.2, gravity = 18, jumpStrength = 14.5;
       let onGround = true;
       let yaw = 0, pitch = 0;
 
@@ -777,8 +794,8 @@
         }
         setTimeout(() => { attacking = false; weapon.rotation.z = 0; }, attackDuration);
       }
-      actionBtn.onclick = startAttack; // allow action anytime
-      jumpBtn.onclick = () => { if (onGround) velocity.y = jumpStrength; }; // allow jump while moving
+      actionBtn.onclick = startAttack;
+      jumpBtn.onclick = () => { if (onGround) velocity.y = jumpStrength; };
       window.addEventListener('keydown', e => { if (e.code === 'Space') { if (onGround) velocity.y = jumpStrength; } });
 
       function applyMapVariant(variant) {
@@ -829,7 +846,7 @@
           if (!run) return;
           const { lx, ly } = getLookDelta(1.8);
           yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
-          updateThirdPersonCamera(cam, player.position, yaw, pitch, 7.0, 2.6);
+          updateThirdPersonCamera(cam, player.position, yaw, pitch, 7.4, 2.6);
 
           const mv = moveStick.get();
           const { inputX, inputY } = getMoveInput(keys, mv);
@@ -903,29 +920,37 @@
       };
     }
 
-    // GAME 2: Platformer
+    // GAME 2: Platformer — procedural longer course per level
     function setupPlatformerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = platformerLevels[levelIndex] || platformerLevels[0];
+      const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
       const lights = makeLights('day'); sc.add(lights);
 
       const platMat = new THREE.MeshStandardMaterial({ color: 0x6aa86a, roughness: 0.8 });
       const plats = [];
       function platform(w, h, d, x, y, z) {
         const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), platMat);
-        p.position.set(x * lvl.layoutScale, y * lvl.layoutScale, z * lvl.layoutScale); sc.add(p); plats.push(p);
+        p.position.set(x, y, z); sc.add(p); plats.push(p);
       }
       const baseY = 0;
-      platform(40, 2, 12, 0, baseY, 0);
-      platform(12, 2, 12, 28, baseY + 8, -6);
-      platform(16, 2, 12, 48, baseY + 16, 8);
-      platform(10, 2, 10, 66, baseY + 24, 0);
-      platform(14, 2, 12, 86, baseY + 30, -10);
-      platform(20, 2, 12, 110, baseY + 34, 6);
+      let x = 0, y = baseY + 2, z = 0;
+      for (let i = 0; i < lvl.len; i++) {
+        const w = lvl.segment + rand()*8;
+        const h = 2;
+        const d = 12 + rand()*6;
+        platform(w, h, d, x, y, z);
+        x += w * 1.2;
+        y += (rand() < 0.5 ? 1 : -1) * lvl.heightStep * (0.6 + rand()*lvl.layoutVar);
+        z += (rand() - 0.5) * 12;
+      }
 
-      const goal = new THREE.Mesh(new THREE.TorusKnotGeometry(3, 1, 90, 12), new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0x553300, emissiveIntensity: 0.3 }));
-      goal.position.set(120 * lvl.layoutScale, baseY + 40 * lvl.layoutScale, 6 * lvl.layoutScale); sc.add(goal);
+      const goal = new THREE.Mesh(
+        new THREE.TorusKnotGeometry(3, 1, 120, 16),
+        new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0x553300, emissiveIntensity: 0.3 })
+      );
+      goal.position.set(x + 40, y + 10, z + 6); sc.add(goal);
 
       const playerRadius = 0.6;
       const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
@@ -968,9 +993,10 @@
         if (onGround) { vel.y = jumpVel; jumpsLeft = 1; onGround = false; }
         else if (jumpsLeft > 0) { vel.y = jumpVel * 0.95; jumpsLeft = 0; }
       }
-      jumpBtn.onclick = tryJump; // allow jump while moving
+      jumpBtn.onclick = tryJump;
       window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
-      actionBtn.onclick = () => {}; // no action needed here, but kept consistent
+
+      actionBtn.onclick = () => {}; // reserved for future actions
 
       function collide() {
         onGround = false;
@@ -986,7 +1012,7 @@
             vel.y = 0; onGround = true; jumpsLeft = 2;
           }
         }
-        if (player.position.y < -30) {
+        if (player.position.y < -60) {
           run = false;
           msgText.textContent = `You fell — Platformer (Lvl ${levelIndex+1})`;
           msg.style.display = 'block';
@@ -1003,7 +1029,7 @@
         update(dt) {
           if (!run || won) return;
           const { lx, ly } = getLookDelta(1.8); yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
-          updateThirdPersonCamera(cam, player.position, yaw, pitch, 7.0, 2.6);
+          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.0, 2.6);
 
           const mv = moveStick.get();
           const { inputX, inputY } = getMoveInput(keys, mv);
@@ -1018,9 +1044,9 @@
           player.position.addScaledVector(vel, dt);
           collide();
 
-          if (player.position.distanceTo(goal.position) < 5) {
+          if (player.position.distanceTo(goal.position) < 6) {
             won = true;
-            addScore('platformer', shared.name || 'Guest', 1000 - levelIndex * 50);
+            addScore('platformer', shared.name || 'Guest', 1200 - levelIndex * 60);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
@@ -1034,13 +1060,14 @@
       };
     }
 
-    // GAME 3: Racer (bug fix: smoother physics)
+    // GAME 3: Racer — longer, shaped tracks per level
     function setupRacerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = racerLevels[levelIndex] || racerLevels[0];
+      const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd0b38a);
-      const cam = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1200);
+      const cam = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1600);
       const lights = makeLights('day'); sc.add(lights);
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), new THREE.MeshStandardMaterial({ color: 0xb5894a, roughness: 0.8 }));
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.MeshStandardMaterial({ color: 0xb5894a, roughness: 0.8 }));
       ground.rotation.x = -Math.PI / 2; sc.add(ground);
 
       const carMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
@@ -1053,7 +1080,12 @@
         const g = new THREE.Mesh(new THREE.TorusGeometry(4, 0.3, 12, 24), new THREE.MeshStandardMaterial({ color: 0xffee88 }));
         g.position.set(x, 2.5, z); sc.add(g); gates.push(g);
       }
-      for (let i = 0; i < lvl.gates; i++) gate(0 + i * 28, -40 + Math.sin(i * 0.8) * 60);
+      // Generate track path
+      for (let i = 0; i < lvl.gates; i++) {
+        const gx = i * 36;
+        const gz = Math.sin(i * lvl.freq) * lvl.amp + Math.sin(i * 0.35) * (lvl.amp * 0.25) * (rand() - 0.5);
+        gate(gx, gz);
+      }
 
       let speed = 0, heading = 0, score = 0, run = true, yaw = 0, pitch = 0;
 
@@ -1083,7 +1115,11 @@
         car.position.set(0, 0.6, 0);
         speed = 0; heading = 0; score = 0; run = true; msg.style.display = 'none';
         gates.forEach(g => sc.remove(g)); gates.length = 0;
-        for (let i = 0; i < lvl.gates; i++) gate(0 + i * 28, -40 + Math.sin(i * 0.8) * 60);
+        for (let i = 0; i < lvl.gates; i++) {
+          const gx = i * 36;
+          const gz = Math.sin(i * lvl.freq) * lvl.amp + Math.sin(i * 0.35) * (lvl.amp * 0.25) * (rand() - 0.5);
+          gate(gx, gz);
+        }
         hudSecondary.textContent = `Gates 0/${lvl.gates}`;
       }
 
@@ -1101,18 +1137,17 @@
           const throttle = Math.max(0, -mv.y);
           const brake = Math.max(0, mv.y);
 
-          // Simplified, stable physics
           speed += (throttle * 30 - brake * 40) * dt;
-          speed *= 0.98; // friction
-          speed = Math.max(0, Math.min(speed, 40));
+          speed *= 0.985; // friction
+          speed = Math.max(0, Math.min(speed, 42));
 
-          heading += steer * 2.0 * dt;
+          heading += steer * lvl.turn * dt;
 
           const dir = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
           car.position.addScaledVector(dir, speed * dt);
           car.rotation.y = heading;
 
-          updateThirdPersonCamera(cam, car.position, heading, pitch, 9.0, 3.2);
+          updateThirdPersonCamera(cam, car.position, heading, pitch, 11.0, 3.4);
 
           for (let i = gates.length - 1; i >= 0; i--) {
             const g = gates[i];
@@ -1133,13 +1168,14 @@
       };
     }
 
-    // GAME 4: Arena
+    // GAME 4: Arena — more drones per level, faster waves
     function setupArenaTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = arenaLevels[levelIndex] || arenaLevels[0];
+      const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x080a12);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       const lights = makeLights('space'); sc.add(lights);
-      const arena = new THREE.Mesh(new THREE.CylinderGeometry(80, 80, 2, 40), new THREE.MeshStandardMaterial({ color: 0x1c2233, metalness: 0.2, roughness: 0.7 }));
+      const arena = new THREE.Mesh(new THREE.CylinderGeometry(100, 100, 2, 48), new THREE.MeshStandardMaterial({ color: 0x1c2233, metalness: 0.2, roughness: 0.7 }));
       arena.position.y = -2; sc.add(arena);
 
       const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
@@ -1150,15 +1186,15 @@
       const drones = [];
       function drone() {
         const d = new THREE.Mesh(new THREE.TetrahedronGeometry(1.2), new THREE.MeshStandardMaterial({ color: 0xff6666 }));
-        const a = Math.random() * Math.PI * 2, r = 40;
+        const a = rand() * Math.PI * 2, r = 60 + rand()*10;
         d.position.set(Math.cos(a) * r, 1.2, Math.sin(a) * r);
-        d.userData.vel = new THREE.Vector3((Math.random() - 0.5) * 4, 0, (Math.random() - 0.5) * 4);
+        d.userData.vel = new THREE.Vector3((rand() - 0.5) * lvl.waveSpeed, 0, (rand() - 0.5) * lvl.waveSpeed);
         sc.add(d); drones.push(d);
       }
       for (let i = 0; i < lvl.drones; i++) drone();
 
       const bullets = [];
-      const bulletSpeed = 40;
+      const bulletSpeed = 42;
       function shoot() {
         const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
         const dir = new THREE.Vector3().subVectors(rig.position, cam.position);
@@ -1167,8 +1203,7 @@
         b.userData.dir = dir.clone();
         sc.add(b); bullets.push(b);
       }
-      actionBtn.onclick = shoot; // allow action anytime
-      jumpBtn.onclick = () => {}; // no jump mechanic here, but kept consistent
+      actionBtn.onclick = shoot;
 
       let run = true, score = 0, yaw = 0, pitch = 0;
 
@@ -1197,24 +1232,24 @@
           if (!run) return;
           const { lx, ly } = getLookDelta(1.8);
           yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 9.0, 3.0);
 
           const mv = moveStick.get();
           const { inputX, inputY } = getMoveInput(keys, mv);
           const { forward, right } = getCameraBasisXZ(cam, rig.position);
           const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
           if (dir.lengthSq() > 0) dir.normalize();
-          rig.position.addScaledVector(dir, 10 * dt);
+          rig.position.addScaledVector(dir, 11 * dt);
 
           for (const d of drones) {
             d.position.addScaledVector(d.userData.vel, dt);
-            if (d.position.length() > 78) d.userData.vel.multiplyScalar(-1);
+            if (d.position.length() > 95) d.userData.vel.multiplyScalar(-1);
           }
 
           for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
             b.position.addScaledVector(b.userData.dir, bulletSpeed * dt);
-            if (b.position.length() > 120) { sc.remove(b); bullets.splice(i, 1); continue; }
+            if (b.position.length() > 160) { sc.remove(b); bullets.splice(i, 1); continue; }
             for (let j = drones.length - 1; j >= 0; j--) {
               const d = drones[j];
               if (b.position.distanceTo(d.position) < 1.4) {
@@ -1239,15 +1274,16 @@
       };
     }
 
-    // GAME 5: Runner
+    // GAME 5: Runner — longer lanes and varied patterns per level
     function setupRunnerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = runnerLevels[levelIndex] || runnerLevels[0];
+      const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       const lights = makeLights('day'); sc.add(lights);
 
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 60), new THREE.MeshStandardMaterial({ color: 0x228B22 }));
-      ground.rotation.x = -Math.PI / 2; ground.position.z = -40; sc.add(ground);
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(lvl.length, 60), new THREE.MeshStandardMaterial({ color: 0x228B22 }));
+      ground.rotation.x = -Math.PI / 2; ground.position.z = -lvl.length/6; sc.add(ground);
 
       const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
@@ -1257,10 +1293,11 @@
       const obstacles = [];
       function makeObs(z) {
         const o = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshStandardMaterial({ color: 0x884444 }));
-        o.position.set((Math.random() < 0.5 ? -2 : 2) + (Math.random() - 0.5) * 2, 0.6, -z);
+        const lane = rand() < 0.33 ? -2 : (rand() < 0.5 ? 0 : 2);
+        o.position.set(lane + (rand() - 0.5) * 1.0, 0.6, -z);
         sc.add(o); obstacles.push(o);
       }
-      for (let i = 0; i < lvl.obstacles; i++) makeObs(6 + i * 6);
+      for (let i = 0; i < lvl.obstacles; i++) makeObs(6 + i * (lvl.length / lvl.obstacles));
 
       let laneX = 0, speed = 8, time = 0, run = true, rings = 0, yaw = 0, pitch = 0;
 
@@ -1290,7 +1327,7 @@
         scene: sc, camera: cam,
         restart() {
           obstacles.forEach(o => sc.remove(o)); obstacles.length = 0;
-          for (let i = 0; i < lvl.obstacles; i++) makeObs(6 + i * 6);
+          for (let i = 0; i < lvl.obstacles; i++) makeObs(6 + i * (lvl.length / lvl.obstacles));
           laneX = 0; speed = 8; time = 0; rings = 0; run = true; msg.style.display = 'none';
           rig.position.set(0, 1, 0);
           hudSecondary.textContent = 'Rings 0';
@@ -1302,7 +1339,7 @@
         update(dt) {
           if (!run) return;
           time += dt;
-          speed = 8 + time * (1.2 * lvl.accel);
+          speed = 8 + time * (lvl.accel);
 
           const { lx, ly } = getLookDelta(1.5);
           yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.4, 0.4);
@@ -1317,8 +1354,9 @@
           for (const o of obstacles) {
             o.position.z += speed * dt;
             if (o.position.z > 4) {
-              o.position.z = -180 - Math.random() * 40;
-              o.position.x = (Math.random() < 0.5 ? -2 : 2) + (Math.random() - 0.5) * 2;
+              o.position.z = -lvl.length - rand() * 60;
+              const lane = rand() < 0.5 ? -2 : 2;
+              o.position.x = lane + (rand() - 0.5) * 1.0;
               rings++; hudSecondary.textContent = `Rings ${rings}`;
             }
             const dist = new THREE.Vector3(o.position.x - rig.position.x, 0, o.position.z).length();
@@ -1330,7 +1368,7 @@
             }
           }
 
-          if (rings >= 10 + levelIndex * 5) {
+          if (rings >= Math.round(lvl.obstacles * 0.6)) {
             run = false;
             addScore('runner', shared.name || 'Guest', rings);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
@@ -1346,14 +1384,18 @@
       };
     }
 
-    // GAME 6: Maze
+    // GAME 6: Maze — bigger cell grids per level
     function setupMazeTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = mazeLevels[levelIndex] || mazeLevels[0];
+      const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x101424);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       const lights = makeLights('maze'); sc.add(lights);
 
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), new THREE.MeshStandardMaterial({ color: 0x222a44, roughness: 0.9 }));
+      const cellSize = 10, cells = lvl.cells;
+      const half = (cells * cellSize) / 2;
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(cells*cellSize+20, cells*cellSize+20), new THREE.MeshStandardMaterial({ color: 0x222a44, roughness: 0.9 }));
       floor.rotation.x = -Math.PI / 2; sc.add(floor);
 
       const walls = [];
@@ -1361,19 +1403,20 @@
         const w = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), new THREE.MeshStandardMaterial({ color: 0x3a64a6, emissive: 0x0a1530, emissiveIntensity: 0.2 }));
         w.position.set(x, y, z); sc.add(w); walls.push(w);
       }
-      for (let k = 0; k < lvl.walls; k++) {
-        const wx = -70 + Math.floor(Math.random() * 8) * 20;
-        const wz = -70 + Math.floor(Math.random() * 8) * 20;
-        if (Math.random() < 0.5) wall(wx, 1.5, wz, 20, 3, 2);
-        else wall(wx, 1.5, wz, 2, 3, 20);
+      // Randomized wall grid (not perfect maze, but varied)
+      for (let i = 0; i < cells; i++) {
+        for (let j = 0; j < cells; j++) {
+          if (rand() < 0.35) wall(-half + i*cellSize, 1.5, -half + j*cellSize, cellSize-2, 3, 2);
+          if (rand() < 0.35) wall(-half + i*cellSize, 1.5, -half + j*cellSize, 2, 3, cellSize-2);
+        }
       }
 
       const exit = new THREE.Mesh(new THREE.TorusGeometry(3, 0.3, 12, 32), new THREE.MeshStandardMaterial({ color: 0x88ffcc }));
-      exit.position.set(60, 2.5, 60); sc.add(exit);
+      exit.position.set(half - 10, 2.5, half - 10); sc.add(exit);
 
       const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-      rig.position.set(-60, 0.9, -60); sc.add(rig);
+      rig.position.set(-half + 10, 0.9, -half + 10); sc.add(rig);
       if (ownerFlag) rig.add(makeOwnerLabel());
 
       let yaw = 0, pitch = 0, run = true;
@@ -1386,7 +1429,7 @@
       function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
       function applyOwner(flag) { const existing = rig.children.find(ch => ch.isSprite); if (flag && !existing) rig.add(makeOwnerLabel()); if (!flag && existing) rig.remove(existing); }
 
-      function restart() { rig.position.set(-60, 0.9, -60); yaw = 0; pitch = 0; run = true; msg.style.display = 'none'; }
+      function restart() { rig.position.set(-half + 10, 0.9, -half + 10); yaw = 0; pitch = 0; run = true; msg.style.display = 'none'; }
 
       return {
         scene: sc, camera: cam, restart, dispose() {},
@@ -1413,7 +1456,7 @@
 
           if (rig.position.distanceTo(exit.position) < 5) {
             run = false;
-            addScore('maze', shared.name || 'Guest', 1000 - levelIndex * 50);
+            addScore('maze', shared.name || 'Guest', 1200 - levelIndex * 60);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
@@ -1424,14 +1467,15 @@
       };
     }
 
-    // GAME 7: Range
+    // GAME 7: Range — more targets and wider spread per level
     function setupRangeTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = rangeLevels[levelIndex] || rangeLevels[0];
+      const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x223344);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 800);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
       const lights = makeLights('day'); sc.add(lights);
 
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: 0x335577 }));
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(lvl.spread*2, lvl.spread*2), new THREE.MeshStandardMaterial({ color: 0x335577 }));
       floor.rotation.x = -Math.PI / 2; sc.add(floor);
 
       const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
@@ -1442,13 +1486,13 @@
       const targets = [];
       function spawnTarget() {
         const t = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.25, 10, 20), new THREE.MeshStandardMaterial({ color: 0xffcc55, emissive: 0x553300, emissiveIntensity: 0.2 }));
-        t.position.set((Math.random() - 0.5) * 60, 2 + Math.random() * 6, -20 - Math.random() * 30);
+        t.position.set((rand() - 0.5) * lvl.spread, 2 + rand() * 6, -20 - rand() * lvl.spread);
         sc.add(t); targets.push(t);
       }
       for (let i = 0; i < lvl.targets; i++) spawnTarget();
 
       const bullets = [];
-      const bulletSpeed = 40;
+      const bulletSpeed = 42;
       function shoot() {
         const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
         const dir = new THREE.Vector3().subVectors(rig.position, cam.position);
@@ -1457,8 +1501,7 @@
         b.userData.dir = dir.clone();
         sc.add(b); bullets.push(b);
       }
-      actionBtn.onclick = shoot; // allow action anytime
-      jumpBtn.onclick = () => {}; // no jump mechanic
+      actionBtn.onclick = shoot;
 
       let yaw = 0, pitch = 0, run = true, score = 0;
 
@@ -1497,20 +1540,20 @@
           for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
             b.position.addScaledVector(b.userData.dir, bulletSpeed * dt);
-            if (b.position.length() > 160) { sc.remove(b); bullets.splice(i, 1); continue; }
+            if (b.position.length() > 200) { sc.remove(b); bullets.splice(i, 1); continue; }
             for (let j = targets.length - 1; j >= 0; j--) {
               const t = targets[j];
               if (b.position.distanceTo(t.position) < 1.2) {
                 sc.remove(t); targets.splice(j, 1);
                 sc.remove(b); bullets.splice(i, 1);
                 score++; hudSecondary.textContent = `Score ${score} | ACTION to shoot`;
-                spawnTarget();
+                setTimeout(spawnTarget, lvl.respawn * 1000);
                 break;
               }
             }
           }
 
-          if (score >= 6 + levelIndex * 2) {
+          if (score >= Math.round(lvl.targets * 0.7)) {
             run = false;
             addScore('range', shared.name || 'Guest', score);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
@@ -1523,11 +1566,12 @@
       };
     }
 
-    // GAME 8: Voxel Builder
+    // GAME 8: Voxel Builder — larger worlds per level
     function setupVoxelTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = voxelLevels[levelIndex] || voxelLevels[0];
+      const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1600);
       const lights = makeLights('day'); sc.add(lights);
 
       const size = lvl.size;
@@ -1550,7 +1594,7 @@
         mesh.position.set(x, y, z); sc.add(mesh); blocks.set(key(x,y,z), mesh);
       }
       for (let i = 0; i < lvl.startBlocks; i++) {
-        const x = Math.floor((Math.random()-0.5)*size), z = Math.floor((Math.random()-0.5)*size), y = 0.5;
+        const x = Math.floor((rand()-0.5)*size), z = Math.floor((rand()-0.5)*size), y = 0.5;
         addBlock(x, y, z, 0x88b36a);
       }
 
@@ -1586,10 +1630,10 @@
       });
 
       let yaw = 0, pitch = 0;
-      let speed = 6;
+      let speed = 6.5;
 
       hudPrimary.textContent = `Voxel Builder — Level ${levelIndex+1}`;
-      hudSecondary.textContent = `Palette #${paletteIndex+1} (Q/E to cycle)`;
+      hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E to cycle)`;
 
       function applyMapVariant(v) { sc.background = (v === 'night') ? new THREE.Color(0x10202a) : new THREE.Color(0x87ceeb); }
       applyMapVariant('day');
@@ -1600,7 +1644,7 @@
         for (const [,mesh] of blocks) sc.remove(mesh);
         blocks.clear();
         for (let i = 0; i < lvl.startBlocks; i++) {
-          const x = Math.floor((Math.random()-0.5)*size), z = Math.floor((Math.random()-0.5)*size), y = 0.5;
+          const x = Math.floor((rand()-0.5)*size), z = Math.floor((rand()-0.5)*size), y = 0.5;
           addBlock(x, y, z, 0x88b36a);
         }
         player.position.set(0,1,0); yaw=0; pitch=0; msg.style.display='none';
@@ -1614,7 +1658,7 @@
         update(dt) {
           const { lx, ly } = getLookDelta(1.6);
           yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.7, 0.7);
-          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.0, 3.0);
+          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.5, 3.0);
 
           const mv = moveStick.get();
           const { inputX, inputY } = getMoveInput(keys, mv);
@@ -1625,7 +1669,7 @@
 
           hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
 
-          if (blocks.size >= lvl.startBlocks + 10) {
+          if (blocks.size >= lvl.startBlocks + lvl.goalDelta) {
             addScore('voxel', shared.name || 'Guest', blocks.size);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
@@ -1659,10 +1703,13 @@
     backBtn.onclick = () => showMenu();
     restartBtn.onclick = () => { if (cleanup && cleanup.restart) cleanup.restart(); };
 
+    // Auto-connect to single server on load (optional; still lets player set name before)
+    connectWS();
+
     // Start on menu
     showMenu();
 
-    // Tip: Host with server.js on your LAN. Default server uses your local hostname. Enter code “ownercole” to unlock the OWNER cosmetic.
+    // Tip: Replace SERVER_URL with your actual host/IP running server.js. Enter code “ownercole” to unlock the OWNER cosmetic.
   </script>
 </body>
 </html>
