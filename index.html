@@ -5,21 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
 <title>3D Mobile Platformer</title>
 <style>
-  html, body { margin:0; height:100%; background:#101318; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+  html, body { margin:0; height:100%; background:#0c1326; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
   #game { position:fixed; inset:0; }
+
   #hud { position: fixed; left: 0; right: 0; top: 0; display: flex; gap: 8px; justify-content: space-between; padding: 10px; pointer-events: none; color:#e6e6e6; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
   .panel { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 12px; }
   #msg { position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; color:#fff; background: rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.15); border-radius: 10px; padding:8px 12px; pointer-events:none; }
+
   #controls { position: fixed; inset: 0; pointer-events: none; }
-  .stick-wrap { position: absolute; width: 140px; height: 140px; pointer-events: auto; touch-action: none; }
+  .stick-wrap { position: absolute; width: 160px; height: 160px; pointer-events: auto; touch-action: none; }
   .stick-base, .stick-thumb { position: absolute; border-radius: 50%; }
-  .stick-base { width: 140px; height: 140px; background: rgba(255,255,255,0.08); }
-  .stick-thumb { width: 70px; height: 70px; left: 35px; top: 35px; background: rgba(255,255,255,0.2); }
-  .btn { position: absolute; right: 20px; bottom: 120px; width: 90px; height: 90px; border-radius: 50%; pointer-events: auto; touch-action: manipulation;
-    background: radial-gradient(circle at 30% 30%, #fff 0%, #f6b73c 35%, #e36c1b 60%, #ad3a0a 100%); box-shadow: 0 10px 25px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.5); }
+  .stick-base { width: 160px; height: 160px; background: rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.18); backdrop-filter: blur(4px); }
+  .stick-thumb { width: 80px; height: 80px; left: 40px; top: 40px; background: rgba(255,255,255,0.22); border:2px solid rgba(255,255,255,0.3); }
+  .btn { position: absolute; right: 24px; bottom: 120px; width: 100px; height: 100px; border-radius: 50%; pointer-events: auto; touch-action: manipulation;
+    background: radial-gradient(circle at 30% 30%, #fff 0%, #f6b73c 35%, #e36c1b 60%, #ad3a0a 100%);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 10px rgba(255,255,255,0.4); border: 2px solid rgba(255,255,255,0.5); }
   .btn:active { transform: scale(0.96); }
-  #menu { position: fixed; left: 50%; transform: translateX(-50%); bottom: 70px; display: flex; gap: 8px; pointer-events: auto; }
-  #menu select, #menu button { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.35); color:#e6e6e6; }
+
+  #menu { position: fixed; left: 50%; transform: translateX(-50%); bottom: 70px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: auto; }
+  #menu select, #menu button, #menu input {
+    padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.35); color:#e6e6e6; backdrop-filter: blur(3px);
+  }
+
   #pauseOverlay { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); color:#fff; font-size: 20px; font-weight:700; text-align:center; }
   #pauseOverlay .inner { background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.2); padding: 14px 18px; border-radius: 10px; }
 
@@ -54,7 +61,7 @@
 
 <div id="controls">
   <!-- Movement joystick -->
-  <div class="stick-wrap" id="moveStick" style="left:20px; bottom:20px;">
+  <div class="stick-wrap" id="moveStick" style="left:24px; bottom:24px;">
     <div class="stick-base"></div>
     <div class="stick-thumb" id="moveThumb"></div>
   </div>
@@ -73,6 +80,9 @@
   <button id="pauseBtn">Pause</button>
   <button id="toggleViewBtn">Toggle View</button>
   <button id="openMenuBtn">Main Menu</button>
+  <!-- Code input for owner cosmetic -->
+  <input id="codeInput" placeholder="Enter code" />
+  <button id="codeApplyBtn">Apply</button>
 </div>
 
 <div id="pauseOverlay"><div class="inner">Paused<br/><small>(Tap or press P to resume)</small></div></div>
@@ -115,7 +125,7 @@
         </div>
         <div class="row">
           <label>Camera sensitivity
-            <input type="range" id="camSens" min="1.0" max="6.0" step="0.1" value="3.0"/>
+            <input type="range" id="camSens" min="1.0" max="6.0" step="0.1" value="3.5"/>
           </label>
         </div>
       </div>
@@ -134,36 +144,83 @@
   renderer.shadowMap.enabled = true;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0f1220);
-  scene.fog = new THREE.Fog(0x0f1220, 40, 120);
+  scene.background = new THREE.Color(0x0c1326);
+  scene.fog = new THREE.Fog(0x0c1326, 50, 140);
 
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, 6, 10);
 
-  // Lighting
-  const hemi = new THREE.HemisphereLight(0x88aaff, 0x111122, 0.9);
+  // Lighting (richer scene)
+  const hemi = new THREE.HemisphereLight(0x9bd4ff, 0x12131a, 0.9);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
-  sun.position.set(8, 12, 6);
+  const sun = new THREE.DirectionalLight(0xfff1e4, 1.0);
+  sun.position.set(12, 16, 10);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -40;
+  sun.shadow.camera.right = 40;
+  sun.shadow.camera.top = 40;
+  sun.shadow.camera.bottom = -40;
   scene.add(sun);
 
+  // Ground plane and distant props for visual richness
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x182235, roughness: 0.95, metalness: 0.0 });
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 64), groundMat);
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x283b5e, roughness: 0.8 });
+  for (let i=0;i<12;i++){
+    const h = 2 + Math.random()*4;
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,h,24), pillarMat);
+    const r = 45 + Math.random()*20, a = Math.random()*Math.PI*2;
+    p.position.set(Math.cos(a)*r, h/2, Math.sin(a)*r);
+    p.castShadow = true; p.receiveShadow = true;
+    scene.add(p);
+  }
+
   // Materials
-  const matPlatform = new THREE.MeshStandardMaterial({ color: 0x2b5c4b, roughness: 0.8, metalness: 0.1 });
-  const matPlatformAlt = new THREE.MeshStandardMaterial({ color: 0x3a2b5c, roughness: 0.85, metalness: 0.1 });
-  const matStar = new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0xffc107, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.6 });
-  const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.8, roughness: 0.4, metalness: 0.4 });
+  const matPlatform = new THREE.MeshStandardMaterial({ color: 0x2b5c4b, roughness: 0.78, metalness: 0.12 });
+  const matPlatformAlt = new THREE.MeshStandardMaterial({ color: 0x3a2b5c, roughness: 0.82, metalness: 0.12 });
+  const matStar = new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0xffa000, emissiveIntensity: 1.0, roughness: 0.2, metalness: 0.6 });
+  const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.9, roughness: 0.4, metalness: 0.4 });
 
   // Player capsule + customization
   const playerRadius = 0.5;
   const playerHeight = 1.2;
   let playerColor = 0xf0f3f8;
-  const matPlayer = new THREE.MeshStandardMaterial({ color: playerColor, roughness: 0.3, metalness: 0.2, emissive: 0x111111, emissiveIntensity: 0.25 });
+  const matPlayer = new THREE.MeshStandardMaterial({ color: playerColor, roughness: 0.35, metalness: 0.22, emissive: 0x141414, emissiveIntensity: 0.28 });
 
   const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, playerHeight, 8, 16), matPlayer);
   player.castShadow = true;
   scene.add(player);
+
+  // "OWNER" cosmetic label (sprite above head)
+  let ownerSprite = null;
+  function makeOwnerSprite() {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 128;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.font = 'bold 64px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ff2b2b';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    ctx.strokeText('OWNER', c.width/2, c.height/2);
+    ctx.fillText('OWNER', c.width/2, c.height/2);
+    const tex = new THREE.CanvasTexture(c);
+    tex.needsUpdate = true;
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(2.8, 1.4, 1);
+    scene.add(sprite);
+    return sprite;
+  }
+
+  let ownerUnlocked = false;
 
   // Accessories
   const hat = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xff6f61, roughness: 0.5 }));
@@ -172,7 +229,7 @@
   scene.add(hat);
 
   const trailGeom = new THREE.TorusGeometry(0.25, 0.05, 8, 24);
-  const trailMat = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x88aaff, emissiveIntensity: 0.6, roughness: 0.2, metalness: 0.2 });
+  const trailMat = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x88aaff, emissiveIntensity: 0.7, roughness: 0.2, metalness: 0.2 });
   const trail = new THREE.Mesh(trailGeom, trailMat);
   trail.visible = false;
   scene.add(trail);
@@ -182,14 +239,12 @@
   let camYaw = 0;
   let camPitch = 0.25;
   const pitchMin = -0.3, pitchMax = 0.85;
-  let camSensitivity = 3.0;
-  const orbitRadius = 7.5;
+  let camSensitivity = 3.5;
+  const orbitRadius = 8.5;
 
-  // Level data (more maps)
+  // Level data (expanded with more maps)
   const LEVELS = [
-    // Original 3
-    {
-      name: "Beginnings",
+    { name: "Beginnings",
       platforms: [
         {x:0,y:0,z:0,w:20,d:20,alt:false},
         {x:8,y:2,z:-6,w:6,d:6,alt:true},
@@ -201,8 +256,7 @@
       goal: [24,9.5,-26],
       spawn: [0,2.5,5]
     },
-    {
-      name: "Sky bridge",
+    { name: "Sky bridge",
       platforms: [
         {x:0,y:0,z:0,w:20,d:20,alt:false},
         {x:0,y:6,z:-10,w:8,d:4,alt:true},
@@ -214,8 +268,7 @@
       goal: [-8,19.2,-40],
       spawn: [0,2.5,5]
     },
-    {
-      name: "Zigzag canyon",
+    { name: "Zigzag canyon",
       platforms: [
         {x:0,y:0,z:0,w:20,d:20,alt:false},
         {x:6,y:2,z:-6,w:8,d:4,alt:true},
@@ -228,9 +281,7 @@
       goal: [0,11.5,-30],
       spawn: [0,2.5,5]
     },
-    // New maps
-    {
-      name: "Crystal steps",
+    { name: "Crystal steps",
       platforms: [
         {x:0,y:0,z:0,w:22,d:22,alt:false},
         {x:4,y:2,z:-6,w:4,d:4,alt:true},
@@ -242,8 +293,7 @@
       goal: [18,9.5,-26],
       spawn: [0,2.5,6]
     },
-    {
-      name: "Rolling plains",
+    { name: "Rolling plains",
       platforms: [
         {x:0,y:0,z:0,w:26,d:26,alt:false},
         {x:-10,y:2,z:-10,w:8,d:6,alt:true},
@@ -254,8 +304,7 @@
       goal: [0,5.5,-26],
       spawn: [0,2.5,8]
     },
-    {
-      name: "Twin towers",
+    { name: "Twin towers",
       platforms: [
         {x:0,y:0,z:0,w:22,d:22,alt:false},
         {x:-4,y:4,z:-8,w:4,d:4,alt:true},
@@ -266,6 +315,30 @@
       ],
       stars: [[-4,5,-8],[6,5,-10],[-4,9,-12],[6,9,-14],[1,13,-20]],
       goal: [1,13.2,-20],
+      spawn: [0,2.5,6]
+    },
+    { name: "Nebula run",
+      platforms: [
+        {x:0,y:0,z:0,w:24,d:24,alt:false},
+        {x:6,y:3,z:-8,w:6,d:4,alt:true},
+        {x:12,y:6,z:-16,w:6,d:4,alt:false},
+        {x:18,y:9,z:-24,w:6,d:4,alt:true},
+        {x:26,y:12,z:-30,w:10,d:6,alt:false}
+      ],
+      stars: [[6,4,-8],[12,7,-16],[18,10,-24],[24,12.5,-28],[26,13,-30]],
+      goal: [28,13.5,-32],
+      spawn: [0,2.5,6]
+    },
+    { name: "Aurora ridge",
+      platforms: [
+        {x:0,y:0,z:0,w:24,d:24,alt:false},
+        {x:-6,y:3,z:-8,w:6,d:4,alt:true},
+        {x:-12,y:6,z:-16,w:6,d:4,alt:false},
+        {x:-18,y:9,z:-24,w:6,d:4,alt:true},
+        {x:-26,y:12,z:-30,w:10,d:6,alt:false}
+      ],
+      stars: [[-6,4,-8],[-12,7,-16],[-18,10,-24],[-24,12.5,-28],[-26,13,-30]],
+      goal: [-28,13.5,-32],
       spawn: [0,2.5,6]
     }
   ];
@@ -291,8 +364,10 @@
   const pauseBtn = document.getElementById('pauseBtn');
   const toggleViewBtn = document.getElementById('toggleViewBtn');
   const openMenuBtn = document.getElementById('openMenuBtn');
+  const codeInput = document.getElementById('codeInput');
+  const codeApplyBtn = document.getElementById('codeApplyBtn');
 
-  // Main menu overlay elements
+  // Main menu overlay
   const mainMenu = document.getElementById('mainMenu');
   const closeMenuBtn = document.getElementById('closeMenuBtn');
   const tabs = Array.from(document.querySelectorAll('.tab'));
@@ -343,14 +418,20 @@
     });
   });
 
-  hatToggle.addEventListener('change', () => {
-    hat.visible = hatToggle.checked;
-  });
-  trailToggle.addEventListener('change', () => {
-    trail.visible = trailToggle.checked;
-  });
-  camSensInput.addEventListener('input', () => {
-    camSensitivity = parseFloat(camSensInput.value);
+  hatToggle.addEventListener('change', () => { hat.visible = hatToggle.checked; });
+  trailToggle.addEventListener('change', () => { trail.visible = trailToggle.checked; });
+  camSensInput.addEventListener('input', () => { camSensitivity = parseFloat(camSensInput.value); });
+
+  // Owner code
+  codeApplyBtn.addEventListener('click', () => {
+    if (codeInput.value.trim().toLowerCase() === 'owner222') {
+      ownerUnlocked = true;
+      if (!ownerSprite) ownerSprite = makeOwnerSprite();
+      msgEl.textContent = 'Owner cosmetic unlocked!';
+    } else {
+      msgEl.textContent = 'Invalid code.';
+    }
+    codeInput.value = '';
   });
 
   // Game mode state
@@ -405,27 +486,34 @@
     if (e.code === 'Space') keys.jump = false;
   });
 
-  // Camera look via pointer drag, with deadzones for controls
+  // Camera look via pointer drag, with larger deadzones near controls
+  const moveStickEl = document.getElementById('moveStick');
+  const jumpBtnEl = document.getElementById('jumpBtn');
+
+  function inExpandedRect(e, rect, pad=50) {
+    return e.clientX >= rect.left - pad && e.clientX <= rect.right + pad &&
+           e.clientY >= rect.top - pad && e.clientY <= rect.bottom + pad;
+  }
+
   let lastMouse = null;
   window.addEventListener('pointerdown', (e) => { lastMouse = { x: e.clientX, y: e.clientY }; });
   window.addEventListener('pointerup', () => { lastMouse = null; });
   window.addEventListener('pointermove', (e) => {
     if (!lastMouse) return;
 
-    const moveRect = document.getElementById('moveStick').getBoundingClientRect();
-    const jumpRect = document.getElementById('jumpBtn').getBoundingClientRect();
-    const overMove = e.clientX >= moveRect.left && e.clientX <= moveRect.right && e.clientY >= moveRect.top && e.clientY <= moveRect.bottom;
-    const overJump = e.clientX >= jumpRect.left && e.clientX <= jumpRect.right && e.clientY >= jumpRect.top && e.clientY <= jumpRect.bottom;
+    const moveRect = moveStickEl.getBoundingClientRect();
+    const jumpRect = jumpBtnEl.getBoundingClientRect();
+    const overMove = inExpandedRect(e, moveRect, 60); // bigger deadzone
+    const overJump = inExpandedRect(e, jumpRect, 60); // bigger deadzone
 
     if (overMove || overJump) {
-      // Camera deadzone when interacting near controls
       lastMouse = { x: e.clientX, y: e.clientY };
-      return;
+      return; // camera deadzone when interacting near controls
     }
 
     const dx = (e.clientX - lastMouse.x) / window.innerWidth;
     const dy = (e.clientY - lastMouse.y) / window.innerHeight;
-    const jitterDeadzone = 0.01;
+    const jitterDeadzone = 0.02; // slightly larger jitter filter
 
     if (Math.abs(dx) > jitterDeadzone) camYaw -= dx * camSensitivity;
     if (Math.abs(dy) > jitterDeadzone) {
@@ -437,14 +525,14 @@
     lastMouse = { x: e.clientX, y: e.clientY };
   });
 
-  // Virtual joystick setup (movement only)
+  // Virtual joystick setup (movement only, larger radius)
   function setupStick(stickId, thumbId, cb) {
     const stick = document.getElementById(stickId);
     const thumb = document.getElementById(thumbId);
     let active = false;
     const rect = () => stick.getBoundingClientRect();
     function setThumb(x, y) {
-      const r = 70;
+      const r = 80; // larger stick radius
       const len = Math.hypot(x, y);
       const k = len > r ? r / len : 1;
       const tx = x * k, ty = y * k;
@@ -492,24 +580,39 @@
   // Open/close main menu
   openMenuBtn.addEventListener('click', () => { mainMenu.style.display = 'block'; });
   closeMenuBtn.addEventListener('click', () => { mainMenu.style.display = 'none'; });
+  doubleJumpToggle.addEventListener('change', (e) => { doubleJumpEnabled = e.target.checked; });
+
+  // Owner code via Enter key in input
+  codeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') codeApplyBtn.click();
+  });
 
   // Geometry helpers
   function makePlatform(x, y, z, w, d, alt = false) {
-    const geo = new THREE.BoxGeometry(w, 0.5, d);
+    const geo = new THREE.BoxGeometry(w, 0.6, d);
     const mesh = new THREE.Mesh(geo, alt ? matPlatformAlt : matPlatform);
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    // subtle bevel look by scaling edges visually (decor rim)
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(w+0.2, 0.05, d+0.2), new THREE.MeshStandardMaterial({ color: 0x1b2a45, roughness: 0.9 }));
+    rim.position.set(0, 0.325, 0);
+    mesh.add(rim);
     scene.add(mesh);
     platforms.push(mesh);
     return mesh;
   }
 
   function makeStar(x, y, z) {
-    const s = new THREE.Mesh(new THREE.IcosahedronGeometry(0.35, 0), matStar);
+    const s = new THREE.Mesh(new THREE.IcosahedronGeometry(0.38, 0), matStar);
     s.position.set(x, y, z);
     s.castShadow = true;
     scene.add(s);
+    // glow-ish point light near star
+    const pl = new THREE.PointLight(0xffa000, 0.5, 6);
+    pl.position.copy(s.position).add(new THREE.Vector3(0,0.2,0));
+    scene.add(pl);
+    s.userData.light = pl;
     stars.push(s);
     return s;
   }
@@ -536,7 +639,7 @@
 
   function clearLevel() {
     platforms.forEach(m => scene.remove(m));
-    stars.forEach(s => scene.remove(s));
+    stars.forEach(s => { scene.remove(s); if (s.userData.light) scene.remove(s.userData.light); });
     platforms = []; stars = [];
     if (goal) { scene.remove(goal); goal = null; }
   }
@@ -548,7 +651,7 @@
 
     lvl.platforms.forEach(p => makePlatform(p.x, p.y, p.z, p.w, p.d, p.alt));
     lvl.stars.forEach(([x,y,z]) => makeStar(x, y, z));
-    goal = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.25, 16, 64), matGoal);
+    goal = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.28, 16, 64), matGoal);
     goal.position.set(lvl.goal[0], lvl.goal[1], lvl.goal[2]);
     goal.castShadow = true;
     scene.add(goal);
@@ -564,7 +667,7 @@
 
   function applyMode(mode) {
     gameMode = mode;
-    if (gameMode === 'time') timeLeft = 60.0;
+    if (gameMode === 'time') timeLeft = 70.0; // slightly longer for bigger maps
     if (gameMode === 'survival') lives = 3;
     updateHUD();
   }
@@ -572,7 +675,6 @@
   levelSelect.addEventListener('change', (e) => loadLevel(parseInt(e.target.value, 10)));
   modeSelect.addEventListener('change', (e) => applyMode(e.target.value));
   restartBtn.addEventListener('click', () => loadLevel(currentLevel));
-  doubleJumpToggle.addEventListener('change', (e) => { doubleJumpEnabled = e.target.checked; });
 
   // Respawn
   function respawn(penalize = true) {
@@ -592,13 +694,13 @@
     updateHUD();
   }
 
-  // Decorative dust particles
+  // Ambient particles
   const dustGeo = new THREE.SphereGeometry(0.03, 8, 8);
   const dustMat = new THREE.MeshBasicMaterial({ color: 0x88aaff, transparent: true, opacity: 0.25 });
   const dusts = [];
-  for (let i=0;i<80;i++){
+  for (let i=0;i<120;i++){
     const d = new THREE.Mesh(dustGeo, dustMat);
-    d.position.set((Math.random()-0.5)*60, 2+Math.random()*12, (Math.random()-0.5)*100);
+    d.position.set((Math.random()-0.5)*90, 2+Math.random()*14, (Math.random()-0.5)*140);
     scene.add(d); dusts.push(d);
   }
 
@@ -616,10 +718,14 @@
 
     const dt = Math.min(0.033, clock.getDelta());
 
-    // Accessories follow player
+    // Accessories & owner label follow player
     hat.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 0.4, player.position.z);
     trail.position.set(player.position.x, player.position.y + 0.2, player.position.z);
     trail.rotation.y += dt * 2.0;
+
+    if (ownerUnlocked && ownerSprite) {
+      ownerSprite.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 1.8, player.position.z);
+    }
 
     // Time attack
     if (gameMode === 'time') {
@@ -650,7 +756,7 @@
       .addScaledVector(right, input.x);
 
     // Movement params
-    const accelMag = onGround ? 16 : 16 * airControl;
+    const accelMag = onGround ? 17 : 17 * airControl;
     acceleration.set(moveVec.x * accelMag, 0, moveVec.z * accelMag);
     acceleration.add(gravity);
     velocity.addScaledVector(acceleration, dt);
@@ -664,12 +770,12 @@
     // Jump handling: stronger jump + double jump
     if (keys.jump) {
       if (onGround) {
-        velocity.y = 14.0;            // stronger first jump
+        velocity.y = 14.5;            // stronger first jump
         onGround = false;
         canDoubleJump = true;         // allow a double jump after leaving ground
         keys.jump = false;
       } else if (doubleJumpEnabled && canDoubleJump) {
-        velocity.y = 11.5;            // second jump slightly weaker
+        velocity.y = 11.8;            // second jump slightly weaker
         canDoubleJump = false;        // consume double jump
         msgEl.textContent = 'Double jump!';
         keys.jump = false;
@@ -712,6 +818,7 @@
       const d = s.position.distanceTo(player.position);
       if (d < playerRadius + 0.6) {
         s.visible = false;
+        if (s.userData.light) s.userData.light.visible = false;
         score += 1;
         msgEl.textContent = score === stars.length ? 'All stars collected! Head to the goal.' : 'Star collected!';
         updateHUD();
@@ -729,7 +836,7 @@
         if (score === stars.length) {
           msgEl.textContent = 'Level complete! Loading next...';
           const next = (currentLevel + 1) % LEVELS.length;
-          setTimeout(() => { loadLevel(next); }, 800);
+          setTimeout(() => { loadLevel(next); }, 900);
         } else {
           msgEl.textContent = 'Collect all stars first!';
         }
@@ -747,9 +854,9 @@
       const h = Math.cos(camPitch) * orbitRadius;
       const camX = player.position.x + Math.sin(camYaw) * h;
       const camZ = player.position.z + Math.cos(camYaw) * h;
-      const target = new THREE.Vector3(camX, player.position.y + y + 1.5, camZ);
+      const target = new THREE.Vector3(camX, player.position.y + y + 1.6, camZ);
       camera.position.copy(target);
-      camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 0.8, player.position.z));
+      camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 0.9, player.position.z));
     } else {
       const head = new THREE.Vector3(player.position.x, player.position.y + playerHeight * 0.5 + 0.5, player.position.z);
       camera.position.copy(head);
