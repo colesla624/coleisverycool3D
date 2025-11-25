@@ -2,45 +2,68 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — 18 Games</title>
+  <title>3D Game Hub — Offline (8 games, mobile controls, triple jump platformer)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
-    html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui;}
-    canvas{display:block;}
-    #topbar{position:absolute;top:10px;left:10px;z-index:12;color:#fff;font-weight:700;text-shadow:0 1px 2px #000;}
-    #backBtn{position:absolute;top:10px;right:10px;z-index:12;padding:10px 14px;border-radius:12px;border:1px solid #fff2;background:#111a;color:#fff;display:none;cursor:pointer;}
-    #menu{position:absolute;inset:0;display:grid;place-items:center;z-index:11;}
-    #menuPanel{width:1100px;max-width:96vw;background:#111a;backdrop-filter:blur(8px);border:1px solid #fff2;border-radius:16px;padding:20px;color:#fff;}
-    #menuGrid{display:grid;grid-template-columns:repeat(3,minmax(260px,1fr));gap:10px;margin-top:10px;}
-    .menuBtn{padding:12px;background:#222a;border:1px solid #fff2;color:#fff;border-radius:12px;cursor:pointer;text-align:left;}
-    .menuBtn:hover{background:#2a2f;}
-    .row{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;}
-    .pill{padding:8px 12px;border-radius:999px;background:#fff1;border:1px solid #fff2;cursor:pointer;}
-    .levelBtn{padding:8px 12px;border-radius:999px;background:#222a;border:1px solid #fff2;color:#fff;cursor:pointer;}
-    #hud{position:absolute;bottom:10px;left:10px;z-index:12;color:#fff;font-weight:700;text-shadow:0 1px 2px #000;display:none;}
-    #settingsBar{position:absolute;top:56px;right:10px;z-index:12;display:none;gap:8px;}
-    .settingsBtn{padding:10px 14px;border-radius:12px;border:1px solid #fff2;background:#111a;color:#fff;cursor:pointer;}
-    #skins,#shop,#leaderboard{position:absolute;left:50%;transform:translateX(-50%);background:#1e1e1e;color:#fff;padding:20px;border-radius:12px;display:none;z-index:13;border:1px solid #fff2;}
-    #skins{top:16%;width:460px;}
-    #shop{top:18%;width:380px;}
-    #leaderboard{top:22%;width:520px;}
-    #skins .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-    .swatch{height:40px;border-radius:10px;border:1px solid #fff3;cursor:pointer;}
-    #leaderboard table{width:100%;border-collapse:collapse;}
-    #leaderboard th,#leaderboard td{border-bottom:1px solid #444;padding:6px 8px;text-align:left;}
-    #msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;z-index:12;text-align:center;font-weight:800;font-size:22px;display:none;}
-    #msg button{margin-top:12px;background:#ff6a00;border:none;color:#fff;font-weight:800;padding:10px 16px;border-radius:10px;cursor:pointer;}
-    #controls{position:absolute;bottom:16px;left:16px;right:16px;z-index:12;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;}
-    .stick{width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.2);position:relative;pointer-events:auto;touch-action:none;}
-    .knob{position:absolute;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.25);left:calc(50% - 32px);top:calc(50% - 32px);}
-    #rightPanel{display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:auto;}
-    .btn{pointer-events:auto;touch-action:none;width:84px;height:84px;border-radius:16px;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.2);color:#fff;display:grid;place-items:center;font-weight:800;}
-    *{-webkit-tap-highlight-color:transparent;}
+    html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
+    canvas { display:block; }
+
+    #topbar { position:absolute; top:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none; }
+    #topbar .small { font-size:12px; opacity:0.85; font-weight:500; }
+
+    #backBtn { position:absolute; top:10px; right:10px; z-index:12; padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; display:none; cursor:pointer; }
+
+    #menu { position:absolute; inset:0; display:grid; place-items:center; z-index:11; }
+    #menuPanel { width:1020px; max-width:95vw; background:#111a; backdrop-filter: blur(8px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
+    #menuPanel h1 { margin:0 0 8px; font-size:28px; }
+    #menuGrid { display:grid; grid-template-columns:repeat(2, minmax(320px, 1fr)); gap:12px; margin-top:10px; }
+    .menuBtn { padding:14px; background:#222a; border:1px solid #fff2; color:#fff; border-radius:12px; cursor:pointer; text-align:left; }
+    .menuBtn:hover { background:#2a2f; }
+    .row { display:flex; gap:8px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+    .pill { padding:8px 12px; border-radius:999px; background:#fff1; border:1px solid #fff2; cursor:pointer; }
+    .levelBtn { padding:8px 12px; border-radius:999px; background:#222a; border:1px solid #fff2; color:#fff; cursor:pointer; }
+
+    #hud { position:absolute; bottom:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
+    #hud .line { margin-top:6px; font-weight:600; }
+
+    #settingsBar { position:absolute; top:56px; right:10px; z-index:12; display:none; gap:8px; }
+    .settingsBtn { padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; cursor:pointer; }
+
+    #skins { position:absolute; top:18%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; width:440px; border:1px solid #fff2; }
+    #skins h2 { margin:0 0 10px; }
+    #skins .grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+    .swatch { height:40px; border-radius:10px; border:1px solid #fff3; cursor:pointer; }
+    #skins .row { display:flex; gap:8px; align-items:center; margin-top:12px; }
+    #closeSkins { margin-top:12px; width:100%; padding:8px; border:none; border-radius:8px; background:#6a6a6a; color:#fff; cursor:pointer; }
+
+    #shop { position:absolute; top:20%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; width:380px; border:1px solid #fff2; }
+    #shop h2 { margin:0 0 10px; }
+    #shop .row { margin:8px 0; display:flex; justify-content:space-between; align-items:center; }
+    #shop .row button { padding:6px 10px; border:none; border-radius:8px; background:#444; color:#fff; cursor:pointer; }
+    #closeShop { margin-top:12px; width:100%; padding:8px; border:none; border-radius:8px; background:#6a6a6a; color:#fff; cursor:pointer; }
+
+    #leaderboard { position:absolute; top:28%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; width:480px; border:1px solid #fff2; }
+    #leaderboard h2 { margin:0 0 10px; }
+    #leaderboard table { width:100%; border-collapse:collapse; }
+    #leaderboard th, #leaderboard td { border-bottom:1px solid #444; padding:6px 8px; text-align:left; }
+    #leaderboard .controls { margin-top:12px; display:flex; gap:8px; }
+    #closeLeaderboard { padding:8px; border:none; border-radius:8px; background:#6a6a6a; color:#fff; cursor:pointer; }
+
+    #msg { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:12; text-align:center; font-weight:800; font-size:22px; display:none; }
+    #msg button { margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer; }
+
+    #controls { position:absolute; bottom:16px; left:16px; right:16px; z-index:12; display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; }
+    .stick { width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); position:relative; pointer-events:auto; touch-action:none; }
+    .knob { position:absolute; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.25); left:calc(50% - 32px); top:calc(50% - 32px); }
+    #rightPanel { display:flex; flex-direction:column; align-items:center; gap:12px; pointer-events:auto; }
+    .btn { pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); color:#fff; display:grid; place-items:center; font-weight:800; }
+
+    * { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — 18 Games</div>
+    <div id="title">3D Game Hub — Offline (8 games, mobile controls, triple jump platformer)</div>
     <div class="small" id="hint">Left: move. Right: look. Jump/Action. Esc returns to menu.</div>
   </div>
 
@@ -50,24 +73,14 @@
     <div id="menuPanel">
       <h1>Pick a game</h1>
       <div id="menuGrid">
-        <button class="menuBtn" data-game="jungle">Jungle</button>
-        <button class="menuBtn" data-game="platformer">Sky Platforms</button>
-        <button class="menuBtn" data-game="racer">Racer</button>
-        <button class="menuBtn" data-game="arena">Arena</button>
-        <button class="menuBtn" data-game="runner">Runner</button>
-        <button class="menuBtn" data-game="maze">Maze</button>
-        <button class="menuBtn" data-game="range">Range</button>
-        <button class="menuBtn" data-game="voxel">Voxel</button>
-        <button class="menuBtn" data-game="icecavern">Ice Cavern</button>
-        <button class="menuBtn" data-game="volcano">Volcano Dash</button>
-        <button class="menuBtn" data-game="asteroids">Asteroid Field</button>
-        <button class="menuBtn" data-game="underwater">Underwater</button>
-        <button class="menuBtn" data-game="haunted">Haunted Mansion</button>
-        <button class="menuBtn" data-game="factory">Robot Factory</button>
-        <button class="menuBtn" data-game="glider">Sky Glider</button>
-        <button class="menuBtn" data-game="sandstorm">Sandstorm Survival</button>
-        <button class="menuBtn" data-game="crystal">Crystal Collector</button>
-        <button class="menuBtn" data-game="tower">Tower Climb</button>
+        <button class="menuBtn" data-game="jungle"><div style="font-weight:800">Lava Monkey Jungle</div><div class="small">Survive enemies and lava. Longer varied levels.</div></button>
+        <button class="menuBtn" data-game="platformer"><div style="font-weight:800">Sky Platforms (Triple Jump)</div><div class="small">Reach the goal across extended courses.</div></button>
+        <button class="menuBtn" data-game="racer"><div style="font-weight:800">Desert Ridge Racer</div><div class="small">Drive longer tracks with different shapes.</div></button>
+        <button class="menuBtn" data-game="arena"><div style="font-weight:800">Space Drone Arena</div><div class="small">Clear waves with increasing complexity.</div></button>
+        <button class="menuBtn" data-game="runner"><div style="font-weight:800">Forest Endless Runner</div><div class="small">Longer lanes, varied obstacle patterns.</div></button>
+        <button class="menuBtn" data-game="maze"><div style="font-weight:800">Crystal Maze</div><div class="small">Bigger layouts each level.</div></button>
+        <button class="menuBtn" data-game="range"><div style="font-weight:800">Target Range</div><div class="small">More targets, different positions.</div></button>
+        <button class="menuBtn" data-game="voxel"><div style="font-weight:800">Voxel Builder (Minecraft‑like)</div><div class="small">Larger worlds per level.</div></button>
       </div>
 
       <div class="row">
@@ -76,13 +89,6 @@
         <div class="pill" id="skinsBtn">Player skins</div>
         <div class="pill" id="leaderboardBtn">Leaderboard</div>
         <div class="pill" id="exitBtn">Exit</div>
-      </div>
-
-      <!-- OWNER CODE BOX (replaces prompt) -->
-      <div class="row">
-        <input id="ownerInput" placeholder="Enter owner code" style="padding:6px;border-radius:8px;border:1px solid #fff2;background:#222;color:#fff;">
-        <button id="ownerBtn" class="pill">Unlock Owner</button>
-        <span id="ownerBadge" style="font-weight:700; color:#ff3b3b; display:none;">OWNER MODE ENABLED</span>
       </div>
 
       <div class="row" id="levelBar">
@@ -98,7 +104,7 @@
 
   <div id="hud">
     <div id="hudPrimary">—</div>
-    <div class="line" id="hudSecondary">—</div>
+    <div class="line" id="hudSecondary"></div>
   </div>
 
   <div id="settingsBar" style="display:none">
@@ -141,17 +147,7 @@
           <option value="runner">Runner</option>
           <option value="maze">Maze</option>
           <option value="range">Range</option>
-          <option value="voxel">Voxel</option>
-          <option value="icecavern">Ice Cavern</option>
-          <option value="volcano">Volcano Dash</option>
-          <option value="asteroids">Asteroids</option>
-          <option value="underwater">Underwater</option>
-          <option value="haunted">Haunted</option>
-          <option value="factory">Factory</option>
-          <option value="glider">Glider</option>
-          <option value="sandstorm">Sandstorm</option>
-          <option value="crystal">Crystal Collector</option>
-          <option value="tower">Tower Climb</option>
+          <option value="voxel">Voxel Builder</option>
         </select>
       </label>
     </div>
@@ -159,8 +155,10 @@
       <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Date</th></tr></thead>
       <tbody></tbody>
     </table>
-    <button id="closeLeaderboard">Close</button>
-    <button id="resetLeaderboard">Reset</button>
+    <div class="controls">
+      <button id="closeLeaderboard">Close</button>
+      <button id="resetLeaderboard">Reset</button>
+    </div>
   </div>
 
   <div id="msg">
@@ -217,9 +215,11 @@
     const closeLeaderboardBtn = document.getElementById('closeLeaderboard');
     const resetLeaderboardBtn = document.getElementById('resetLeaderboard');
     const exitBtn = document.getElementById('exitBtn');
-    const ownerBadge = document.getElementById('ownerBadge');
-    const ownerInput = document.getElementById('ownerInput');
-    const ownerBtn = document.getElementById('ownerBtn');
+
+    // Prevent iOS pinch/zoom
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+    document.addEventListener('gestureend', e => e.preventDefault());
 
     // Joysticks
     function setupStick(stickId, knobId) {
@@ -252,27 +252,9 @@
     graphicsHigh.onclick = () => { quality = 'high'; graphicsHigh.style.background = '#44aa44'; graphicsLow.style.background = '#fff1'; };
     graphicsHigh.click();
 
-    // Owner unlock via input (no prompt)
-    const OWNER_CODE = "12345";
-    let ownerUnlocked = false;
-    if (localStorage.getItem("ownerUnlocked") === "true") {
-      ownerUnlocked = true; ownerBadge.style.display = 'inline';
-    }
-    ownerBtn.onclick = () => {
-      const val = ownerInput.value.trim();
-      if (val === OWNER_CODE) {
-        ownerUnlocked = true; localStorage.setItem("ownerUnlocked","true");
-        ownerBadge.style.display = 'inline';
-        if (cleanup && cleanup.applyOwner) cleanup.applyOwner(true);
-      }
-    };
-
     // Hub state
     let scene = null, camera = null, cleanup = null, running = false, selectedLevel = 0;
-    const gameOrder = [
-      'jungle','platformer','racer','arena','runner','maze','range','voxel',
-      'icecavern','volcano','asteroids','underwater','haunted','factory','glider','sandstorm','crystal','tower'
-    ];
+    const gameOrder = ['jungle', 'platformer', 'racer', 'arena', 'runner', 'maze', 'range', 'voxel'];
     const maxLevels = 5;
 
     let keys = {};
@@ -296,7 +278,7 @@
       skin: localStorage.getItem('skin') || 'blue',
       name: localStorage.getItem('name') || '',
       currentGame: null,
-      owner: ownerUnlocked
+      owner: false
     };
 
     // Owner label cosmetic
@@ -316,9 +298,6 @@
     }
 
     // Skins
-    const skinsBtn = document.getElementById('skinsBtn');
-    const skinsEl = document.getElementById('skins');
-    const closeSkinsBtn = document.getElementById('closeSkins');
     skinsBtn.onclick = () => { skinsEl.style.display = 'block'; };
     closeSkinsBtn.onclick = () => { skinsEl.style.display = 'none'; };
     skinsEl.addEventListener('click', (e) => {
@@ -342,6 +321,10 @@
     });
 
     // Leaderboard (localStorage)
+    leaderboardBtn.onclick = () => { leaderboardEl.style.display = 'block'; refreshLeaderboard(lbGame.value); };
+    closeLeaderboardBtn.onclick = () => { leaderboardEl.style.display = 'none'; };
+    lbGame.onchange = () => refreshLeaderboard(lbGame.value);
+    resetLeaderboardBtn.onclick = () => { localStorage.removeItem('leaderboard'); refreshLeaderboard(lbGame.value); };
     function getLB() { const raw = localStorage.getItem('leaderboard'); return raw ? JSON.parse(raw) : {}; }
     function setLB(data) { localStorage.setItem('leaderboard', JSON.stringify(data)); }
     function addScore(game, name, score) {
@@ -361,15 +344,8 @@
         lbTable.appendChild(tr);
       });
     }
-    leaderboardBtn.onclick = () => { leaderboardEl.style.display = 'block'; refreshLeaderboard(lbGame.value); };
-    closeLeaderboardBtn.onclick = () => { leaderboardEl.style.display = 'none'; };
-    lbGame.onchange = () => refreshLeaderboard(lbGame.value);
-    resetLeaderboardBtn.onclick = () => { localStorage.removeItem('leaderboard'); refreshLeaderboard(lbGame.value); };
 
     // Shop
-    const shopBtn = document.getElementById('shopBtn');
-    const shopEl = document.getElementById('shop');
-    const closeShopBtn = document.getElementById('closeShop');
     shopBtn.onclick = () => { shopEl.style.display = 'block'; };
     closeShopBtn.onclick = () => { shopEl.style.display = 'none'; };
     shopEl.addEventListener('click', (e) => {
@@ -427,38 +403,20 @@
         const amb = new THREE.AmbientLight(0x6666ff, 0.6);
         const key = new THREE.PointLight(0x88aaff, 1.0, 200); key.position.set(0, 20, 0);
         group.add(amb, key);
-      } else if (env === 'ice') {
-        const hemi = new THREE.HemisphereLight(0xccffff, 0x113355, 1.0);
-        const sun = new THREE.DirectionalLight(0xddeeff, 1.2); sun.position.set(10, 30, -10);
-        group.add(hemi, sun);
-      } else if (env === 'volcano') {
-        const amb = new THREE.AmbientLight(0x442200, 0.6);
-        const key = new THREE.DirectionalLight(0xffaa00, 1.2); key.position.set(10, 30, 10);
-        group.add(amb, key);
-      } else if (env === 'underwater') {
-        const amb = new THREE.AmbientLight(0x224466, 0.9);
-        const key = new THREE.DirectionalLight(0xaadfff, 0.8); key.position.set(-10, 20, 10);
-        group.add(amb, key);
-      } else if (env === 'haunted') {
-        const amb = new THREE.AmbientLight(0x333344, 0.7);
-        const key = new THREE.DirectionalLight(0xffffff, 0.5); key.position.set(0, 20, 0);
-        group.add(amb, key);
-      } else if (env === 'factory') {
-        const amb = new THREE.AmbientLight(0x666666, 0.8);
-        const key = new THREE.DirectionalLight(0xffffff, 1.0); key.position.set(15, 25, 15);
-        group.add(amb, key);
-      } else if (env === 'sand') {
-        const amb = new THREE.AmbientLight(0xffe0a0, 0.8);
-        const sun = new THREE.DirectionalLight(0xffdd99, 1.0); sun.position.set(30, 50, -20);
-        group.add(amb, sun);
       }
       return group;
     }
 
-    // PRNG
-    function makeRand(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return (s & 0xffffffff) / 0x100000000; }; }
+    // PRNG for repeatable layout per level
+    function makeRand(seed) {
+      let s = seed >>> 0;
+      return () => {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return (s & 0xffffffff) / 0x100000000;
+      };
+    }
 
-    // Level configs
+    // Longer level configs
     const jungleLevels = [
       { size: 160, trees: 24, coins: 12, kits: 4, lavaSpeed: 0.015, enemyRate: 1.2, seed: 101 },
       { size: 200, trees: 32, coins: 16, kits: 5, lavaSpeed: 0.020, enemyRate: 1.0, seed: 202 },
@@ -490,399 +448,22 @@
       { length: 640, obstacles: 68, accel: 1.25, seed: 53 },
       { length: 760, obstacles: 80, accel: 1.30, seed: 63 },
     ];
-    const mazeLevels = [ { cells: 11, seed: 12 }, { cells: 13, seed: 18 }, { cells: 15, seed: 24 }, { cells: 17, seed: 30 }, { cells: 19, seed: 36 } ];
-    const rangeLevels = [ { targets: 16, respawn: 0.9, spread: 80, seed: 81 }, { targets: 20, respawn: 0.85, spread: 90, seed: 91 }, { targets: 24, respawn: 0.8, spread: 100, seed: 101 }, { targets: 28, respawn: 0.75, spread: 110, seed: 111 }, { targets: 32, respawn: 0.7, spread: 120, seed: 121 } ];
-    const voxelLevels = [ { size: 28, startBlocks: 140, goalDelta: 24, seed: 202 }, { size: 32, startBlocks: 180, goalDelta: 28, seed: 203 }, { size: 36, startBlocks: 220, goalDelta: 32, seed: 204 }, { size: 40, startBlocks: 260, goalDelta: 36, seed: 205 }, { size: 44, startBlocks: 300, goalDelta: 40, seed: 206 } ];
-    const simpleLevels = (seedBase) => Array.from({length:5}, (_,i)=>({seed: seedBase+i, count: 24+ i*6}));
+    const mazeLevels = [
+      { cells: 11, seed: 12 }, { cells: 13, seed: 18 }, { cells: 15, seed: 24 }, { cells: 17, seed: 30 }, { cells: 19, seed: 36 }
+    ];
+    const rangeLevels = [
+      { targets: 16, respawn: 0.9, spread: 80, seed: 81 }, { targets: 20, respawn: 0.85, spread: 90, seed: 91 }, { targets: 24, respawn: 0.8, spread: 100, seed: 101 }, { targets: 28, respawn: 0.75, spread: 110, seed: 111 }, { targets: 32, respawn: 0.7, spread: 120, seed: 121 }
+    ];
+    const voxelLevels = [
+      { size: 28, startBlocks: 140, goalDelta: 24, seed: 202 },
+      { size: 32, startBlocks: 180, goalDelta: 28, seed: 203 },
+      { size: 36, startBlocks: 220, goalDelta: 32, seed: 204 },
+      { size: 40, startBlocks: 260, goalDelta: 36, seed: 205 },
+      { size: 44, startBlocks: 300, goalDelta: 40, seed: 206 }
+    ];
 
-    // Registry
-    const gameSetups = {};
-
-    // ————— Game 1 — Jungle —————
-    function setupJungleTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = jungleLevels[levelIndex] || jungleLevels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
-      const lights = makeLights('day'); sc.add(lights);
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(lvl.size, lvl.size), new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 }));
-      ground.rotation.x = -Math.PI / 2; sc.add(ground);
-      function addTree(x, z) { const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 2.2, 10), new THREE.MeshStandardMaterial({ color: 0x8B4513 })); trunk.position.set(x, 1.1, z); const foliage = new THREE.Mesh(new THREE.SphereGeometry(1.3, 18, 18), new THREE.MeshStandardMaterial({ color: 0x006400 })); foliage.position.set(x, 2.6, z); sc.add(trunk, foliage); }
-      for (let i = 0; i < lvl.trees; i++) { const a = rand() * Math.PI * 2, d = 18 + rand() * (lvl.size * 0.45); addTree(Math.cos(a) * d, Math.sin(a) * d); }
-      const playerRadius = 0.5; const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16), playerMat); player.position.set(0, playerRadius + 0.3, 0); sc.add(player); if (ownerFlag) player.add(makeOwnerLabel());
-      const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), new THREE.MeshStandardMaterial({ color: 0x885000 })); weapon.position.set(0.45, 0.35, 0.0); player.add(weapon);
-      const lava = new THREE.Mesh(new THREE.CylinderGeometry(lvl.size*0.6, lvl.size*0.6, 0.3, 64, 1, true), new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.95 })); lava.position.y = -2.5; sc.add(lava);
-      const enemies = []; function createMonkey(){const g=new THREE.Group(); const m=new THREE.MeshStandardMaterial({color:0x7a4b2a}); const body=new THREE.Mesh(new THREE.SphereGeometry(0.45,16,16),m); const head=new THREE.Mesh(new THREE.SphereGeometry(0.28,16,16),m); head.position.set(0,0.52,0.02); const earL=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,8),m); earL.position.set(-0.22,0.58,0.02); const earR=earL.clone(); earR.position.x=0.22; g.add(body,head,earL,earR); return g;}
-      function spawnEnemy(){const e=createMonkey(); const a=rand()*Math.PI*2, d=16+rand()*22+levelIndex*3; e.position.set(Math.cos(a)*d,0.45,Math.sin(a)*d); e.userData.speed=5.8+rand()*1.2+levelIndex*0.2; enemies.push(e); sc.add(e);}
-      let run = true; let spawnTimer = setInterval(() => { if (run) spawnEnemy(); }, 1000 * lvl.enemyRate);
-      const coins = [], medkits = []; let coinCount = 0;
-      function coin(){const c=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.1,24), new THREE.MeshStandardMaterial({color:0xFFD700})); c.rotation.x=Math.PI/2; const a=rand()*Math.PI*2, r=30+rand()*(lvl.size*0.35); c.position.set(Math.cos(a)*r,0.15,Math.sin(a)*r); coins.push(c); sc.add(c);}
-      function medkit(){const m=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.3,0.5), new THREE.MeshStandardMaterial({color:0xFF0000})); const a=rand()*Math.PI*2, r=30+rand()*(lvl.size*0.35); m.position.set(Math.cos(a)*r,0.15,Math.sin(a)*r); medkits.push(m); sc.add(m);}
-      for (let i=0;i<lvl.coins;i++) coin(); for (let i=0;i<lvl.kits;i++) medkit();
-      let health=100; const velocity=new THREE.Vector3(); const accelGround=16, accelAir=6, friction=12, maxSpeed=7.4+levelIndex*0.2, gravity=18, jumpStrength=14.5; let onGround=true; let yaw=0, pitch=0;
-      hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`; hudSecondary.textContent = 'Health 100 | Coins 0';
-      let attacking=false; const attackDuration=200; let attackRange=1.4; const attackArcCos=Math.cos(Math.PI/3);
-      function startAttack(){ if(attacking) return; attacking=true; weapon.rotation.z=-Math.PI*0.35; const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)); const p=player.position.clone();
-        for(let i=enemies.length-1;i>=0;i--){const e=enemies[i]; const to=new THREE.Vector3().subVectors(e.position,p); const dist=to.length(); if(dist>attackRange) continue; to.normalize(); const dot=to.dot(forward); if(dot>=attackArcCos){ sc.remove(e); enemies.splice(i,1);} }
-        setTimeout(()=>{attacking=false; weapon.rotation.z=0;}, attackDuration);
-      }
-      actionBtn.onclick = startAttack;
-      jumpBtn.onclick = () => { if (onGround) velocity.y = jumpStrength; };
-      window.addEventListener('keydown', e => { if (e.code === 'Space') { if (onGround) velocity.y = jumpStrength; } });
-      function applyMapVariant(variant){ const hemi=lights.children.find(l=>l.isHemisphereLight); const sun=lights.children.find(l=>l.isDirectionalLight);
-        if(variant==='night'){ sc.background=new THREE.Color(0x0a1020); if(hemi) hemi.color.set(0xaaccff); if(sun){sun.color.set(0x88aaff); sun.intensity=0.8;} ground.material.color.set(0x1c3a1c);}
-        else{ sc.background=new THREE.Color(0x87ceeb); if(hemi) hemi.color.set(0xffffff); if(sun){sun.color.set(0xffffff); sun.intensity=1.5;} ground.material.color.set(0x228B22);}
-      }
-      applyMapVariant('day');
-      function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const existing=player.children.find(ch=>ch.isSprite); if(flag && !existing) player.add(makeOwnerLabel()); if(!flag && existing) player.remove(existing); }
-      function restart(){ health=100; coinCount=0; velocity.set(0,0,0); player.position.set(0, playerRadius+0.3, 0); yaw=0; pitch=0; lava.position.y=-2.5; enemies.forEach(e=>sc.remove(e)); enemies.length=0; coins.forEach(c=>sc.remove(c)); coins.length=0; medkits.forEach(m=>sc.remove(m)); medkits.length=0; for(let i=0;i<lvl.coins;i++) coin(); for(let i=0;i<lvl.kits;i++) medkit(); run=true; msg.style.display='none'; hudSecondary.textContent='Health 100 | Coins 0'; }
-      function dispose(){ clearInterval(spawnTimer); }
-      return {
-        scene: sc, camera: cam, restart, dispose,
-        getCurrency: () => coinCount, setCurrency: v => { coinCount = v; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`; },
-        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => { attackRange=1.8; weapon.scale.set(1.1,1.3,1.1); },
-        update(dt, now){
-          if(!run) return;
-          const {lx,ly} = getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.8,0.8);
-          updateThirdPersonCamera(cam, player.position, yaw, pitch, 7.4, 2.6);
-          const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv); const {forward, right} = getCameraBasisXZ(cam, player.position);
-          const wishdir = new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(wishdir.lengthSq()>0) wishdir.normalize();
-          const accel = onGround ? accelGround : accelAir; velocity.addScaledVector(wishdir, accel*dt);
-          if(onGround && Math.hypot(inputX,inputY)<0.05){ const horiz=new THREE.Vector2(velocity.x, velocity.z); const speed=horiz.length(); const drop=friction*dt; const newSpeed=Math.max(speed-drop,0); if(speed>0){ horiz.multiplyScalar(newSpeed/speed); velocity.x=horiz.x; velocity.z=horiz.y; } }
-          const horiz=new THREE.Vector2(velocity.x, velocity.z); const speed=horiz.length(); if(speed>maxSpeed){ horiz.multiplyScalar(maxSpeed/speed); velocity.x=horiz.x; velocity.z=horiz.y; }
-          velocity.y -= gravity * dt; player.position.addScaledVector(velocity, dt); const groundY=playerRadius+0.3; if(player.position.y < groundY){ player.position.y=groundY; velocity.y=0; onGround=true; } else onGround=false;
-          lava.position.y += lvl.lavaSpeed * dt;
-          const bob = Math.sin(now * 0.004) * 0.02; for(const e of enemies){ e.position.y = 0.45 + bob; const toP = new THREE.Vector3().subVectors(player.position, e.position); const d = toP.length(); if(d>0.0001) toP.normalize(); e.position.addScaledVector(toP, e.userData.speed * dt); if(d < 0.85){ health -= 18 * dt; if(health < 0) health = 0; } }
-          for(let i=coins.length-1;i>=0;i--){ const c=coins[i]; if(c.position.distanceTo(player.position)<0.8){ coinCount += 1; hudSecondary.textContent=`Health ${Math.round(health)} | Coins ${coinCount}`; sc.remove(c); coins.splice(i,1);} }
-          for(let i=medkits.length-1;i>=0;i--){ const m=medkits[i]; if(m.position.distanceTo(player.position)<0.9){ health=Math.min(100, health+25); hudSecondary.textContent=`Health ${Math.round(health)} | Coins ${coinCount}`; sc.remove(m); medkits.splice(i,1);} }
-          const feet = player.position.y - groundY; const lavaTop = lava.position.y + 0.15;
-          if(feet <= lavaTop || health <= 0){ run=false; msgText.textContent = `Game Over — Jungle (Lvl ${levelIndex+1})`; msg.style.display='block'; addScore('jungle', shared.name||'Player', Math.round(coinCount)); }
-          if(coinCount >= lvl.coins){ run=false; addScore('jungle', shared.name||'Player', coinCount); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-          hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
-        }
-      };
-    }
-
-    // ————— Game 2 — Platformer (solid floor) —————
-    function setupPlatformerTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = platformerLevels[levelIndex] || platformerLevels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-      const lights = makeLights('day'); sc.add(lights);
-      // Solid floor under platforms
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000,2000), new THREE.MeshStandardMaterial({ color: 0x333333 }));
-      floor.rotation.x = -Math.PI/2; floor.position.y = 0; sc.add(floor);
-      const platMat = new THREE.MeshStandardMaterial({ color: 0x6aa86a, roughness: 0.8 });
-      const plats = []; function platform(w,h,d,x,y,z){ const p=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), platMat); p.position.set(x,y,z); sc.add(p); plats.push(p); }
-      let x=0,y=4,z=0; for(let i=0;i<lvl.len;i++){ const w=lvl.segment+rand()*8; const d=12+rand()*6; platform(w,2,d,x,y,z); x+=w*1.2; y+=(rand()<0.5?1:-1)*lvl.heightStep*(0.6+rand()*lvl.layoutVar); z+=(rand()-0.5)*12; }
-      const goal=new THREE.Mesh(new THREE.TorusKnotGeometry(3,1,120,16), new THREE.MeshStandardMaterial({ color: 0xffd54f })); goal.position.set(x+40,y+10,z+6); sc.add(goal);
-      const playerRadius = 0.6; const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), playerMat);
-      const firstPlat = plats[0];
-      const topY = firstPlat.position.y + (firstPlat.geometry.parameters.height || 2) / 2;
-      player.position.set(firstPlat.position.x, topY + playerRadius, firstPlat.position.z);
-      sc.add(player); if (ownerFlag) player.add(makeOwnerLabel());
-      const vel = new THREE.Vector3(0,0,0); const gravity=18, moveSpeed=lvl.moveSpeed, jumpVel=lvl.jumpVel;
-      let onGround=false, run=true, won=false, yaw=0, pitch=0, jumpsLeft=3;
-      hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`; hudSecondary.textContent = 'Reach the goal (Triple jump)';
-      function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const s=player.children.find(ch=>ch.isSprite); if(flag && !s) player.add(makeOwnerLabel()); if(!flag && s) player.remove(s); }
-      function tryJump(){ if(!run) return; if(onGround){ vel.y=jumpVel; jumpsLeft=2; onGround=false; } else if(jumpsLeft>0){ vel.y=jumpVel*0.95; jumpsLeft--; } }
-      jumpBtn.onclick = tryJump; window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
-      actionBtn.onclick = () => {};
-      function collide(){ onGround=false;
-        for(const p of plats){ const top=p.position.y + ((p.geometry.parameters.height || 2)/2); const halfW=p.geometry.parameters.width/2; const halfD=p.geometry.parameters.depth/2;
-          const withinX=(player.position.x>p.position.x-halfW-playerRadius)&&(player.position.x<p.position.x+halfW+playerRadius);
-          const withinZ=(player.position.z>p.position.z-halfD-playerRadius)&&(player.position.z<p.position.z+halfD+playerRadius);
-          const nearTop=Math.abs(player.position.y-(top+playerRadius))<0.6 && vel.y<=0;
-          if(withinX && withinZ && nearTop){ player.position.y=top+playerRadius; vel.y=0; onGround=true; jumpsLeft=3; }
-        }
-        if(player.position.y < 0){ run=false; msgText.textContent=`You fell — Platformer (Lvl ${levelIndex+1})`; msg.style.display='block'; addScore('platformer', shared.name||'Player', Math.max(1, 100 - levelIndex*10)); }
-      }
-      function restart(){ const fp=plats[0]; const ty=fp.position.y + (fp.geometry.parameters.height || 2)/2; player.position.set(fp.position.x, ty + playerRadius, fp.position.z); vel.set(0,0,0); yaw=0; pitch=0; won=false; run=true; msg.style.display='none'; jumpsLeft=3; }
-      return {
-        scene: sc, camera: cam, restart, dispose(){},
-        getCurrency: () => 0, setCurrency: () => {}, applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt){
-          if(!run || won) return;
-          const {lx,ly} = getLookDelta(1.8); yaw += lx*dt; pitch = THREE.MathUtils.clamp(pitch + ly*dt, -0.8, 0.8);
-          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.0, 2.6);
-          const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv); const { forward, right } = getCameraBasisXZ(cam, player.position);
-          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY); if (dir.lengthSq()>0) dir.normalize();
-          vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, (onGround ? 10 : 6) * dt);
-          vel.z = THREE.MathUtils.lerp(vel.z, dir.z * moveSpeed, (onGround ? 10 : 6) * dt);
-          vel.y -= gravity * dt;
-          player.position.addScaledVector(vel, dt); collide();
-          if(player.position.distanceTo(goal.position) < 6){ won=true; addScore('platformer', shared.name||'Player', 1200 - levelIndex*60);
-            msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-          hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
-          hudSecondary.textContent = onGround ? 'On platform (Triple jump ready)' : (jumpsLeft>0 ? `Air (${jumpsLeft} left)` : 'Air');
-        }
-      };
-    }
-
-    // ————— Game 3 — Racer —————
-    function setupRacerTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = racerLevels[levelIndex] || racerLevels[0]; const rand=makeRand(lvl.seed);
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0xd0b38a);
-      const cam=new THREE.PerspectiveCamera(80, window.innerWidth/window.innerHeight, 0.1, 1600);
-      const lights=makeLights('day'); sc.add(lights);
-      const ground=new THREE.Mesh(new THREE.PlaneGeometry(1400,1400), new THREE.MeshStandardMaterial({ color:0xb5894a, roughness:0.8 })); ground.rotation.x=-Math.PI/2; sc.add(ground);
-      const carMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const car=new THREE.Mesh(new THREE.BoxGeometry(2.6,1.2,5), carMat); car.position.set(0,0.6,0); sc.add(car); if(ownerFlag) car.add(makeOwnerLabel());
-      const gates=[]; function gate(x,z){ const g=new THREE.Mesh(new THREE.TorusGeometry(4,0.3,12,24), new THREE.MeshStandardMaterial({ color:0xffee88 })); g.position.set(x,2.5,z); sc.add(g); gates.push(g); }
-      for(let i=0;i<lvl.gates;i++){ const gx=i*36; const gz=Math.sin(i*lvl.freq)*lvl.amp + Math.sin(i*0.35)*(lvl.amp*0.25)*(rand()-0.5); gate(gx,gz); }
-      let speed=0, heading=0, score=0, run=true, yaw=0, pitch=0;
-      function applySkin(newSkin){ carMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const s=car.children.find(ch=>ch.isSprite); if(flag && !s) car.add(makeOwnerLabel()); if(!flag && s) car.remove(s); }
-      hudPrimary.textContent=`Desert Racer — Level ${levelIndex+1}`; hudSecondary.textContent=`Gates 0/${lvl.gates}`;
-      function restart(){ car.position.set(0,0.6,0); speed=0; heading=0; score=0; run=true; msg.style.display='none'; gates.forEach(g=>sc.remove(g)); gates.length=0; for(let i=0;i<lvl.gates;i++){ const gx=i*36; const gz=Math.sin(i*lvl.freq)*lvl.amp + Math.sin(i*0.35)*(lvl.amp*0.25)*(Math.random()-0.5); gate(gx,gz); } hudSecondary.textContent=`Gates 0/${lvl.gates}`; }
-      return {
-        scene: sc, camera: cam, restart, dispose(){},
-        getCurrency: () => score, setCurrency: v => { score=v; hudSecondary.textContent=`Gates ${score}/${lvl.gates}`; },
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(0.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.5,0.5);
-          const mv=moveStick.get(); const steer=mv.x; const throttle=Math.max(0,-mv.y); const brake=Math.max(0,mv.y);
-          speed += (throttle*30 - brake*40)*dt; speed *= 0.985; speed = Math.max(0, Math.min(speed, 42)); heading += steer * (racerLevels[levelIndex]?.turn || 2.0) * dt;
-          const dir=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading)); car.position.addScaledVector(dir, speed*dt); car.rotation.y=heading;
-          updateThirdPersonCamera(cam, car.position, heading, pitch, 11.0, 3.4);
-          for(let i=gates.length-1;i>=0;i--){ const g=gates[i]; if(car.position.distanceTo(g.position)<4){ score++; sc.remove(g); gates.splice(i,1); hudSecondary.textContent=`Gates ${score}/${lvl.gates}`; } }
-          if(gates.length===0){ run=false; addScore('racer', shared.name||'Player', Math.round(speed*10)); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-          hudPrimary.textContent=`Speed ${speed.toFixed(1)}`;
-        }
-      };
-    }
-
-    // ————— Game 4 — Space Arena —————
-    function setupArenaTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = arenaLevels[levelIndex] || arenaLevels[0]; const rand=makeRand(lvl.seed);
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x080a12);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-      const lights=makeLights('space'); sc.add(lights);
-      const arena=new THREE.Mesh(new THREE.CylinderGeometry(100,100,2,48), new THREE.MeshStandardMaterial({ color:0x1c2233, metalness:0.2, roughness:0.7 })); arena.position.y=-2; sc.add(arena);
-      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat); rig.position.set(0,1,0); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
-      const drones=[]; function drone(){ const d=new THREE.Mesh(new THREE.TetrahedronGeometry(1.2), new THREE.MeshStandardMaterial({ color:0xff6666 })); const a=rand()*Math.PI*2, r=60+rand()*10; d.position.set(Math.cos(a)*r,1.2,Math.sin(a)*r); d.userData.vel=new THREE.Vector3((rand()-0.5)*lvl.waveSpeed,0,(rand()-0.5)*lvl.waveSpeed); sc.add(d); drones.push(d); }
-      for(let i=0;i<lvl.drones;i++) drone();
-      const bullets=[]; const bulletSpeed=42; function shoot(){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.18,10,10), new THREE.MeshStandardMaterial({ color:0xffffaa, emissive:0x444400 })); const dir=new THREE.Vector3().subVectors(rig.position, cam.position); dir.y=0; if(dir.lengthSq()<1e-6) dir.set(0,0,-1); dir.normalize(); b.position.copy(cam.position); b.userData.dir=dir.clone(); sc.add(b); bullets.push(b); }
-      actionBtn.onclick = shoot;
-      let run=true, score=0, yaw=0, pitch=0;
-      hudPrimary.textContent=`Space Arena — Level ${levelIndex+1}`; hudSecondary.textContent='Score 0 | ACTION to shoot';
-      function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const s=rig.children.find(ch=>ch.isSprite); if(flag && !s) rig.add(makeOwnerLabel()); if(!flag && s) rig.remove(s); }
-      function restart(){ drones.forEach(d=>sc.remove(d)); drones.length=0; bullets.forEach(b=>sc.remove(b)); bullets.length=0; for(let i=0;i<lvl.drones;i++) drone(); score=0; hudSecondary.textContent='Score 0 | ACTION to shoot'; rig.position.set(0,1,0); yaw=0; pitch=0; run=true; msg.style.display='none'; }
-      return {
-        scene: sc, camera: cam, restart, dispose(){},
-        getCurrency: () => score, setCurrency: v => { score=v; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; },
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.8,0.8);
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 9.0, 3.0);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys, mv); const {forward,right}=getCameraBasisXZ(cam, rig.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize(); rig.position.addScaledVector(dir, 11*dt);
-          for(const d of drones){ d.position.addScaledVector(d.userData.vel, dt); if(d.position.length()>95) d.userData.vel.multiplyScalar(-1); }
-          for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.position.addScaledVector(b.userData.dir, bulletSpeed*dt); if(b.position.length()>160){ sc.remove(b); bullets.splice(i,1); continue; }
-            for(let j=drones.length-1;j>=0;j--){ const d=drones[j]; if(b.position.distanceTo(d.position)<1.4){ sc.remove(d); drones.splice(j,1); sc.remove(b); bullets.splice(i,1); score++; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; break; } } }
-          if(drones.length===0){ run=false; addScore('arena', shared.name||'Player', score); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 5 — Runner —————
-    function setupRunnerTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = runnerLevels[levelIndex] || runnerLevels[0]; const rand=makeRand(lvl.seed);
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x87ceeb);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-      const lights=makeLights('day'); sc.add(lights);
-      const ground=new THREE.Mesh(new THREE.PlaneGeometry(lvl.length, 60), new THREE.MeshStandardMaterial({ color:0x228B22 })); ground.rotation.x=-Math.PI/2; ground.position.z=-lvl.length/6; sc.add(ground);
-      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat); rig.position.set(0,1,0); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
-      const obstacles=[]; function makeObs(z){ const o=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.2,1.2), new THREE.MeshStandardMaterial({ color:0x884444 })); const lane=rand()<0.33?-2:(rand()<0.5?0:2); o.position.set(lane+(rand()-0.5)*1.0,0.6,-z); sc.add(o); obstacles.push(o); }
-      for(let i=0;i<lvl.obstacles;i++) makeObs(6 + i*(lvl.length/lvl.obstacles));
-      let laneX=0, speed=8, time=0, run=true, rings=0, yaw=0, pitch=0;
-      function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const s=rig.children.find(ch=>ch.isSprite); if(flag && !s) rig.add(makeOwnerLabel()); if(!flag && s) rig.remove(s); }
-      hudPrimary.textContent=`Endless Runner — Level ${levelIndex+1}`; hudSecondary.textContent='Rings 0';
-      return {
-        scene: sc, camera: cam,
-        restart(){ obstacles.forEach(o=>sc.remove(o)); obstacles.length=0; for(let i=0;i<lvl.obstacles;i++) makeObs(6 + i*(lvl.length/lvl.obstacles)); laneX=0; speed=8; time=0; rings=0; run=true; msg.style.display='none'; rig.position.set(0,1,0); hudSecondary.textContent='Rings 0'; },
-        dispose(){}, getCurrency:()=>rings, setCurrency:v=>{ rings=v; hudSecondary.textContent=`Rings ${rings}`; },
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt){
-          if(!run) return;
-          time += dt; speed = 8 + time * (runnerLevels[levelIndex]?.accel || 1.15);
-          const {lx,ly} = getLookDelta(1.5); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.4,0.4);
-          const mv=moveStick.get(); if(mv.x < -0.3) laneX=-2; else if(mv.x > 0.3) laneX=2; else laneX=0;
-          rig.position.x = THREE.MathUtils.lerp(rig.position.x, laneX, 6*dt);
-          for(const o of obstacles){
-            o.position.z += speed * dt;
-            if(o.position.z > 4){ o.position.z = -lvl.length - Math.random()*60; const lane=Math.random()<0.5?-2:2; o.position.x = lane + (Math.random()-0.5)*1.0; rings++; hudSecondary.textContent=`Rings ${rings}`; }
-            const dist = new THREE.Vector3(o.position.x - rig.position.x, 0, o.position.z).length(); if(dist < 1.0){ run=false; msgText.textContent=`Hit obstacle — Runner (Lvl ${levelIndex+1})`; msg.style.display='block'; addScore('runner', shared.name||'Player', rings); }
-          }
-          if(rings >= Math.round(lvl.obstacles * 0.6)){ run=false; addScore('runner', shared.name||'Player', rings); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0); hudPrimary.textContent=`Speed ${speed.toFixed(1)}`;
-        }
-      };
-    }
-
-    // ————— Game 6 — Maze —————
-    function setupMazeTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = mazeLevels[levelIndex] || mazeLevels[0]; const rand=makeRand(lvl.seed);
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x101424);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-      const lights=makeLights('maze'); sc.add(lights);
-      const cellSize=10, cells=lvl.cells; const half=(cells*cellSize)/2;
-      const floor=new THREE.Mesh(new THREE.PlaneGeometry(cells*cellSize+20, cells*cellSize+20), new THREE.MeshStandardMaterial({ color:0x222a44, roughness:0.9 })); floor.rotation.x=-Math.PI/2; sc.add(floor);
-      const walls=[]; function wall(x,y,z,sx,sy,sz){ const w=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz), new THREE.MeshStandardMaterial({ color:0x3a64a6, emissive:0x0a1530, emissiveIntensity:0.2 })); w.position.set(x,y,z); sc.add(w); walls.push(w); }
-      for(let i=0;i<cells;i++){ for(let j=0;j<cells;j++){ if(rand()<0.35) wall(-half+i*cellSize, 1.5, -half+j*cellSize, cellSize-2, 3, 2); if(rand()<0.35) wall(-half+i*cellSize, 1.5, -half+j*cellSize, 2, 3, cellSize-2); } }
-      const exit=new THREE.Mesh(new THREE.TorusGeometry(3,0.3,12,32), new THREE.MeshStandardMaterial({ color:0x88ffcc })); exit.position.set(half-10, 2.5, half-10); sc.add(exit);
-      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat); rig.position.set(-half+10,0.9,-half+10); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
-      let yaw=0, pitch=0, run=true;
-      hudPrimary.textContent=`Crystal Maze — Level ${levelIndex+1}`; hudSecondary.textContent='Find the exit ring';
-      function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const s=rig.children.find(ch=>ch.isSprite); if(flag && !s) rig.add(makeOwnerLabel()); if(!flag && s) rig.remove(s); }
-      function restart(){ rig.position.set(-half+10,0.9,-half+10); yaw=0; pitch=0; run=true; msg.style.display='none'; }
-      return {
-        scene: sc, camera: cam, restart, dispose(){}, getCurrency:()=>0, setCurrency:()=>{},
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt){
-          if(!run) return;
-          const {lx,ly} = getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.4,0.4);
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys, mv); const {forward,right}=getCameraBasisXZ(cam, rig.position);
-          const next=rig.position.clone().addScaledVector(right, inputX*8*dt).addScaledVector(forward, inputY*8*dt);
-          let blocked=false; for(const w of walls){ const dx=Math.abs(next.x - w.position.x) - w.geometry.parameters.width/2 - 0.5; const dz=Math.abs(next.z - w.position.z) - w.geometry.parameters.depth/2 - 0.5; if(dx<0 && dz<0){ blocked=true; break; } }
-          if(!blocked) rig.position.copy(next);
-          if(rig.position.distanceTo(exit.position) < 5){ run=false; addScore('maze', shared.name||'Player', 1200 - levelIndex*60); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 7 — Range —————
-    function setupRangeTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = rangeLevels[levelIndex] || rangeLevels[0]; const rand=makeRand(lvl.seed);
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x223344);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1200);
-      const lights=makeLights('day'); sc.add(lights);
-      const floor=new THREE.Mesh(new THREE.PlaneGeometry(lvl.spread*2, lvl.spread*2), new THREE.MeshStandardMaterial({ color:0x335577 })); floor.rotation.x=-Math.PI/2; sc.add(floor);
-      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat); rig.position.set(0,1,40); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
-      const targets=[]; function spawnTarget(){ const t=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.25,10,20), new THREE.MeshStandardMaterial({ color:0xffcc55, emissive:0x553300, emissiveIntensity:0.2 })); t.position.set((rand()-0.5)*lvl.spread, 2+rand()*6, -20-rand()*lvl.spread); sc.add(t); targets.push(t); }
-      for(let i=0;i<lvl.targets;i++) spawnTarget();
-      const bullets=[]; const bulletSpeed=42; function shoot(){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.18,10,10), new THREE.MeshStandardMaterial({ color:0xffffaa, emissive:0x444400 })); const dir=new THREE.Vector3().subVectors(rig.position, cam.position); dir.y=0; if(dir.lengthSq()<1e-6) dir.set(0,0,-1); dir.normalize(); b.position.copy(cam.position); b.userData.dir=dir.clone(); sc.add(b); bullets.push(b); }
-      actionBtn.onclick = shoot;
-      let yaw=0,pitch=0,run=true,score=0;
-      hudPrimary.textContent=`Target Range — Level ${levelIndex+1}`; hudSecondary.textContent='Score 0 | ACTION to shoot';
-      function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const s=rig.children.find(ch=>ch.isSprite); if(flag && !s) rig.add(makeOwnerLabel()); if(!flag && s) rig.remove(s); }
-      function restart(){ bullets.forEach(b=>sc.remove(b)); bullets.length=0; targets.forEach(t=>sc.remove(t)); targets.length=0; for(let i=0;i<lvl.targets;i++) spawnTarget(); rig.position.set(0,1,40); yaw=0; pitch=0; score=0; hudSecondary.textContent='Score 0 | ACTION to shoot'; run=true; msg.style.display='none'; }
-      return {
-        scene: sc, camera: cam, restart, dispose(){}, getCurrency:()=>score, setCurrency:v=>{ score=v; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; },
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.8,0.8); updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
-          const mv=moveStick.get(); rig.position.x += mv.x * 6 * dt; rig.position.z += -mv.y * 6 * dt;
-          for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.position.addScaledVector(b.userData.dir, bulletSpeed*dt); if(b.position.length()>200){ sc.remove(b); bullets.splice(i,1); continue; }
-            for(let j=targets.length-1;j>=0;j--){ const t=targets[j]; if(b.position.distanceTo(t.position)<1.2){ sc.remove(t); targets.splice(j,1); sc.remove(b); bullets.splice(i,1); score++; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; setTimeout(spawnTarget, (rangeLevels[levelIndex]?.respawn || 0.8)*1000); break; } } }
-          if(score >= Math.round(lvl.targets * 0.7)){ run=false; addScore('range', shared.name||'Player', score); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 8 — Voxel —————
-    function setupVoxelTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = voxelLevels[levelIndex] || voxelLevels[0]; const rand=makeRand(lvl.seed);
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x87ceeb);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
-      const lights=makeLights('day'); sc.add(lights);
-      const size=lvl.size; const blockSize=1;
-      const ground=new THREE.Mesh(new THREE.PlaneGeometry(size*blockSize, size*blockSize), new THREE.MeshStandardMaterial({ color:0x88b36a })); ground.rotation.x=-Math.PI/2; sc.add(ground);
-      const playerMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const player=new THREE.Mesh(new THREE.BoxGeometry(1,1.8,1), playerMat); player.position.set(0,1,0); sc.add(player); if(ownerFlag) player.add(makeOwnerLabel());
-      const palettes=[0x8B4513,0xaaaaaa,0x228B22,0x3366ff,0xffd84d]; let paletteIndex=0;
-      const blocks=new Map(); function key(x,y,z){return `${x},${y},${z}`;}
-      function addBlock(x,y,z,color=null){ const mesh=new THREE.Mesh(new THREE.BoxGeometry(blockSize,blockSize,blockSize), new THREE.MeshStandardMaterial({ color: color ?? palettes[paletteIndex] })); mesh.position.set(x,y,z); sc.add(mesh); blocks.set(key(x,y,z), mesh); }
-      for(let i=0;i<lvl.startBlocks;i++){ const x=Math.floor((rand()-0.5)*size), z=Math.floor((rand()-0.5)*size), y=0.5; addBlock(x,y,z,0x88b36a); }
-      function rayFromCamera(){ const dir=new THREE.Vector3().subVectors(player.position, cam.position).normalize(); const origin=cam.position.clone(); return { origin, dir }; }
-      function findNearestGridHit(maxDist=8){ const {origin,dir}=rayFromCamera(); let best=null, bestDist=Infinity; for(const [,mesh] of blocks){ const to=new THREE.Vector3().subVectors(mesh.position, origin); const proj=to.dot(dir); if(proj>0 && proj<maxDist){ const closest=origin.clone().addScaledVector(dir, proj); const d=closest.distanceTo(mesh.position); if(d<0.9 && proj<bestDist){ best=mesh; bestDist=proj; } } } return best; }
-      actionBtn.onclick = () => { const hit=findNearestGridHit(8); const pos=hit?hit.position.clone().add(new THREE.Vector3(0,blockSize,0)):player.position.clone().add(new THREE.Vector3(0,0,-2)).round(); const snap=new THREE.Vector3(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)); const k=key(snap.x,snap.y,snap.z); if(!blocks.has(k)) addBlock(snap.x,snap.y,snap.z); };
-      jumpBtn.onclick = () => { const hit=findNearestGridHit(8); if(hit){ blocks.delete(key(hit.position.x, hit.position.y, hit.position.z)); sc.remove(hit); } };
-      window.addEventListener('keydown', e => { if(e.code==='KeyQ'){ paletteIndex=(paletteIndex+1)%palettes.length; } if(e.code==='KeyE'){ paletteIndex=(paletteIndex+palettes.length-1)%palettes.length; } });
-      let yaw=0,pitch=0; let speed=6.5;
-      hudPrimary.textContent=`Voxel Builder — Level ${levelIndex+1}`; hudSecondary.textContent=`Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
-      function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const s=player.children.find(ch=>ch.isSprite); if(flag && !s) player.add(makeOwnerLabel()); if(!flag && s) player.remove(s); }
-      function restart(){ for(const [,mesh] of blocks) sc.remove(mesh); blocks.clear(); for(let i=0;i<lvl.startBlocks;i++){ const x=Math.floor((rand()-0.5)*size), z=Math.floor((rand()-0.5)*size), y=0.5; addBlock(x,y,z,0x88b36a); } player.position.set(0,1,0); yaw=0; pitch=0; msg.style.display='none'; }
-      return {
-        scene: sc, camera: cam, restart, dispose(){}, getCurrency:()=>blocks.size, setCurrency:()=>{},
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt){
-          const {lx,ly}=getLookDelta(1.6); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.7,0.7);
-          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.5, 3.0);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys, mv); const {forward,right}=getCameraBasisXZ(cam, player.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize(); player.position.addScaledVector(dir, speed*dt);
-          hudSecondary.textContent=`Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
-          if(blocks.size >= lvl.startBlocks + lvl.goalDelta){ addScore('voxel', shared.name||'Player', blocks.size); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 9 — Ice Cavern (solid floor) —————
-    function makePlayerCapsule(color=0x4da3ff, owner=false){
-      const mat = new THREE.MeshStandardMaterial({ color });
-      const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), mat);
-      mesh.position.set(0, 1, 0);
-      if (owner) mesh.add(makeOwnerLabel());
-      return { mesh, mat };
-    }
-
-    function setupIceCavernTP(quality, skin, levelIndex, ownerFlag) {
-      const levels = simpleLevels(701); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x102033);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1500);
-      sc.add(makeLights('ice'));
-      // Solid floor under cavern
-      const floorBase = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshStandardMaterial({ color: 0x224466 }));
-      floorBase.rotation.x = -Math.PI/2; floorBase.position.y = -2; sc.add(floorBase);
-      const platMat = new THREE.MeshStandardMaterial({ color: 0xaad7ff, roughness: 0.2, metalness: 0.4 });
-      const plats = []; let x=0,y=4,z=0; for(let i=0;i<lvl.count;i++){ const w=20+rand()*16, d=10+rand()*8; const p=new THREE.Mesh(new THREE.BoxGeometry(w,2,d), platMat); p.position.set(x,y,z); sc.add(p); plats.push(p); x+=w*1.2; y+=(rand()<0.5?1:-1)*(8+rand()*6); z+=(rand()-0.5)*14; }
-      const goal = new THREE.Mesh(new THREE.TorusKnotGeometry(2.5,0.8,120,16), new THREE.MeshStandardMaterial({ color: 0x88ffee })); goal.position.set(x+40,y+10,z); sc.add(goal);
-      const { mesh: player, mat: playerMat } = makePlayerCapsule(skinToColor(skin), ownerFlag); sc.add(player);
-      let vel = new THREE.Vector3(0,0,0), yaw=0, pitch=0, onGround=false, run=true, jumpsLeft=2;
-      hudPrimary.textContent=`Ice Cavern — Level ${levelIndex+1}`; hudSecondary.textContent='Slippery floor, double jump';
-      function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const s=player.children.find(ch=>ch.isSprite); if(flag && !s) player.add(makeOwnerLabel()); if(!flag && s) player.remove(s); }
-      function tryJump(){ if(!run) return; if(onGround){ vel.y=18; jumpsLeft=1; onGround=false; } else if(jumpsLeft>0){ vel.y=17; jumpsLeft--; } }
-      jumpBtn.onclick=tryJump; window.addEventListener('keydown', e=>{ if(e.code==='Space') tryJump(); });
-      function collide(){ onGround=false;
-        for(const p of plats){ const top=p.position.y+1; const halfW=p.geometry.parameters.width/2; const halfD=p.geometry.parameters.depth/2;
-          const withinX=(player.position.x>p.position.x-halfW-0.5)&&(player.position.x<p.position.x+halfW+0.5);
-          const withinZ=(player.position.z>p.position.z-halfD-0.5)&&(player.position.z<p.position.z+halfD+0.5);
-          const nearTop=Math.abs(player.position.y-(top+0.5))<0.6 && vel.y<=0;
-          if(withinX && withinZ && nearTop){ player.position.y=top+0.5; vel.y=0; onGround=true; jumpsLeft=2; }
-        }
-        if(player.position.y<-60){ run=false; msgText.textContent=`You fell — Ice Cavern`; msg.style.display='block'; addScore('icecavern', shared.name||'Player', 1); }
-      }
-      return {
-        scene: sc, camera: cam, restart(){ player.position.set(0,1,0); vel.set(0,0,0); yaw=0; pitch=0; onGround=false; run=true; msg.style.display='none'; },
-        dispose(){}, getCurrency:()=>0, setCurrency:()=>{},
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.6); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.6,0.6); updateThirdPersonCamera(cam, player.position, yaw, pitch, 8, 2.6);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys,mv); const {forward,right}=getCameraBasisXZ(cam, player.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize();
-          vel.x = THREE.MathUtils.lerp(vel.x, dir.x * 13, (onGround?3:2)*dt);
-          vel.z = THREE.MathUtils.lerp(vel.z, dir.z * 13, (onGround?3:2)*dt);
-          vel.y -= 18 * dt; player.position.addScaledVector(vel, dt); collide();
-          if(player.position.distanceTo(goal.position)<5){ run=false; addScore('icecavern', shared.name||'Player', 10); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-          hudSecondary.textContent = onGround ? 'On ice (double jump ready)' : (jumpsLeft>0 ? 'Air (double jump)' : 'Air');
-        }
-      };
-    }
-
-    // Register games 1–9 (remaining in chunk 2)
-    Object.assign(gameSetups, {
+    // Game registry
+    const gameSetups = {
       jungle: setupJungleTP,
       platformer: setupPlatformerTP,
       racer: setupRacerTP,
@@ -890,526 +471,1016 @@
       runner: setupRunnerTP,
       maze: setupMazeTP,
       range: setupRangeTP,
-      voxel: setupVoxelTP,
-      icecavern: setupIceCavernTP
-    });
+      voxel: setupVoxelTP
+    };
 
-    // Bind menu buttons (startGame comes in chunk 2)
+    // ————— GAME IMPLEMENTATIONS (offline) —————
+
+    // Jungle
+    function setupJungleTP(quality, skin, levelIndex, ownerFlag) {
+      const lvl = jungleLevels[levelIndex] || jungleLevels[0];
+      const rand = makeRand(lvl.seed);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
+      const lights = makeLights('day'); sc.add(lights);
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(lvl.size, lvl.size), new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 }));
+      ground.rotation.x = -Math.PI / 2; sc.add(ground);
+      function addTree(x, z) {
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 2.2, 10), new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
+        trunk.position.set(x, 1.1, z);
+        const foliage = new THREE.Mesh(new THREE.SphereGeometry(1.3, 18, 18), new THREE.MeshStandardMaterial({ color: 0x006400 }));
+        foliage.position.set(x, 2.6, z);
+        sc.add(trunk, foliage);
+      }
+      for (let i = 0; i < lvl.trees; i++) { const a = rand() * Math.PI * 2, d = 18 + rand() * (lvl.size * 0.45); addTree(Math.cos(a) * d, Math.sin(a) * d); }
+      const playerRadius = 0.5;
+      const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16), playerMat);
+      player.position.set(0, playerRadius + 0.3, 0); sc.add(player); if (ownerFlag) player.add(makeOwnerLabel());
+      const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), new THREE.MeshStandardMaterial({ color: 0x885000 }));
+      weapon.position.set(0.45, 0.35, 0.0); player.add(weapon);
+      const lava = new THREE.Mesh(new THREE.CylinderGeometry(lvl.size*0.6, lvl.size*0.6, 0.3, 64, 1, true),
+        new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.95 }));
+      lava.position.y = -2.5; sc.add(lava);
+
+      const enemies = [];
+      function createMonkey() {
+        const g = new THREE.Group();
+        const m = new THREE.MeshStandardMaterial({ color: 0x7a4b2a });
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), m);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), m); head.position.set(0, 0.52, 0.02);
+        const earL = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), m); earL.position.set(-0.22, 0.58, 0.02);
+        const earR = earL.clone(); earR.position.x = 0.22;
+        g.add(body, head, earL, earR); return g;
+      }
+      function spawnEnemy() {
+        const e = createMonkey();
+        const a = rand() * Math.PI * 2, d = 16 + rand() * 22 + levelIndex * 3;
+        e.position.set(Math.cos(a) * d, 0.45, Math.sin(a) * d);
+        e.userData.speed = 5.8 + rand() * 1.2 + levelIndex * 0.2;
+        enemies.push(e); sc.add(e);
+      }
+      let run = true;
+      let spawnTimer = setInterval(() => { if (run) spawnEnemy(); }, 1000 * lvl.enemyRate);
+
+      const coins = [], medkits = []; let coinCount = 0;
+      function coin() {
+        const c = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 24), new THREE.MeshStandardMaterial({ color: 0xFFD700 }));
+        c.rotation.x = Math.PI / 2;
+        const a = rand() * Math.PI * 2, r = 30 + rand() * (lvl.size * 0.35);
+        c.position.set(Math.cos(a)*r, 0.15, Math.sin(a)*r);
+        coins.push(c); sc.add(c);
+      }
+      function medkit() {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: 0xFF0000 }));
+        const a = rand() * Math.PI * 2, r = 30 + rand() * (lvl.size * 0.35);
+        m.position.set(Math.cos(a)*r, 0.15, Math.sin(a)*r);
+        medkits.push(m); sc.add(m);
+      }
+      for (let i = 0; i < lvl.coins; i++) coin();
+      for (let i = 0; i < lvl.kits; i++) medkit();
+
+      let health = 100;
+      const velocity = new THREE.Vector3();
+      const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.4 + levelIndex * 0.2, gravity = 18, jumpStrength = 14.5;
+      let onGround = true;
+      let yaw = 0, pitch = 0;
+
+      hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`;
+      hudSecondary.textContent = 'Health 100 | Coins 0';
+
+      let attacking = false, attackStart = 0;
+      const attackDuration = 200;
+      let attackRange = 1.4;
+      const attackArcCos = Math.cos(Math.PI / 3);
+
+      function startAttack() {
+        if (attacking) return;
+        attacking = true; attackStart = performance.now();
+        weapon.rotation.z = -Math.PI * 0.35;
+        const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+        const p = player.position.clone();
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          const to = new THREE.Vector3().subVectors(e.position, p);
+          const dist = to.length(); if (dist > attackRange) continue;
+          to.normalize(); const dot = to.dot(forward);
+          if (dot >= attackArcCos) { sc.remove(e); enemies.splice(i, 1); }
+        }
+        setTimeout(() => { attacking = false; weapon.rotation.z = 0; }, attackDuration);
+      }
+      actionBtn.onclick = startAttack;
+      jumpBtn.onclick = () => { if (onGround) velocity.y = jumpStrength; };
+      window.addEventListener('keydown', e => { if (e.code === 'Space') { if (onGround) velocity.y = jumpStrength; } });
+
+      function applyMapVariant(variant) {
+        const hemi = lights.children.find(l => l.isHemisphereLight);
+        const sun = lights.children.find(l => l.isDirectionalLight);
+        if (variant === 'night') {
+          sc.background = new THREE.Color(0x0a1020);
+          if (hemi) hemi.color.set(0xaaccff);
+          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
+          ground.material.color.set(0x1c3a1c);
+        } else {
+          sc.background = new THREE.Color(0x87ceeb);
+          if (hemi) hemi.color.set(0xffffff);
+          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
+          ground.material.color.set(0x228B22);
+        }
+      }
+      applyMapVariant('day');
+
+      function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag) {
+        const existing = player.children.find(ch => ch.isSprite);
+        if (flag && !existing) player.add(makeOwnerLabel());
+        if (!flag && existing) player.remove(existing);
+      }
+
+      function restart() {
+        health = 100; coinCount = 0;
+        velocity.set(0, 0, 0); player.position.set(0, playerRadius + 0.3, 0);
+        yaw = 0; pitch = 0; lava.position.y = -2.5;
+        enemies.forEach(e => sc.remove(e)); enemies.length = 0;
+        coins.forEach(c => sc.remove(c)); coins.length = 0;
+        medkits.forEach(m => sc.remove(m)); medkits.length = 0;
+        for (let i = 0; i < lvl.coins; i++) coin();
+        for (let i = 0; i < lvl.kits; i++) medkit();
+        run = true; msg.style.display = 'none';
+        hudSecondary.textContent = 'Health 100 | Coins 0';
+      }
+      function dispose() { clearInterval(spawnTimer); }
+
+      return {
+        scene: sc, camera: cam, restart, dispose,
+        getCurrency: () => coinCount, setCurrency: v => { coinCount = v; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`; },
+        applyMapVariant, applySkin, applyOwner,
+        applyWeaponUpgrade: () => { attackRange = 1.8; weapon.scale.set(1.1, 1.3, 1.1); },
+        update(dt, now) {
+          if (!run) return;
+          const { lx, ly } = getLookDelta(1.8);
+          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
+          updateThirdPersonCamera(cam, player.position, yaw, pitch, 7.4, 2.6);
+
+          const mv = moveStick.get();
+          const { inputX, inputY } = getMoveInput(keys, mv);
+          const { forward, right } = getCameraBasisXZ(cam, player.position);
+          const wishdir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
+          if (wishdir.lengthSq() > 0) wishdir.normalize();
+          const accel = onGround ? accelGround : accelAir;
+          velocity.addScaledVector(wishdir, accel * dt);
+
+          if (onGround && Math.hypot(inputX, inputY) < 0.05) {
+            const horiz = new THREE.Vector2(velocity.x, velocity.z);
+            const speed = horiz.length();
+            const drop = friction * dt;
+            const newSpeed = Math.max(speed - drop, 0);
+            if (speed > 0) { horiz.multiplyScalar(newSpeed / speed); velocity.x = horiz.x; velocity.z = horiz.y; }
+          }
+
+          const horiz = new THREE.Vector2(velocity.x, velocity.z);
+          const speed = horiz.length(); if (speed > maxSpeed) { horiz.multiplyScalar(maxSpeed / speed); velocity.x = horiz.x; velocity.z = horiz.y; }
+
+          velocity.y -= gravity * dt;
+          player.position.addScaledVector(velocity, dt);
+
+          const groundY = playerRadius + 0.3;
+          if (player.position.y < groundY) { player.position.y = groundY; velocity.y = 0; onGround = true; } else onGround = false;
+
+          if (!attacking) { weapon.rotation.x = Math.sin(now * 0.004) * 0.08; weapon.rotation.z = 0; }
+          else { const t = Math.min((performance.now() - attackStart) / attackDuration, 1); weapon.rotation.x = -0.2; weapon.rotation.z = -Math.PI * 0.35 + Math.sin(t * Math.PI) * 0.5; }
+
+          lava.position.y += lvl.lavaSpeed * dt;
+
+          const bob = Math.sin(now * 0.004) * 0.02;
+          for (let i = 0; i < enemies.length; i++) {
+            const e = enemies[i];
+            e.position.y = 0.45 + bob;
+            const toP = new THREE.Vector3().subVectors(player.position, e.position);
+            const d = toP.length(); if (d > 0.0001) toP.normalize();
+            e.position.addScaledVector(toP, e.userData.speed * dt);
+            if (d < 0.85) { health -= 18 * dt; if (health < 0) health = 0; }
+          }
+
+          for (let i = coins.length - 1; i >= 0; i--) {
+            const c = coins[i];
+            if (c.position.distanceTo(player.position) < 0.8) { coinCount += 1; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`; sc.remove(c); coins.splice(i, 1); }
+          }
+          for (let i = medkits.length - 1; i >= 0; i--) {
+            const m = medkits[i];
+            if (m.position.distanceTo(player.position) < 0.9) { health = Math.min(100, health + 25); hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`; sc.remove(m); medkits.splice(i, 1); }
+          }
+
+          const feet = player.position.y - groundY;
+          const lavaTop = lava.position.y + 0.15;
+          if (feet <= lavaTop || health <= 0) {
+            run = false; msgText.textContent = `Game Over — Jungle (Lvl ${levelIndex+1})`; msg.style.display = 'block';
+            addScore('jungle', shared.name || 'Player', Math.round(coinCount));
+          }
+
+          if (coinCount >= lvl.coins) {
+            run = false;
+            addScore('jungle', shared.name || 'Player', coinCount);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+
+          hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`;
+          hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
+        }
+      };
+    }
+
+    // Platformer (TRIPLE JUMP + mobile-friendly jumping while moving)
+    function setupPlatformerTP(quality, skin, levelIndex, ownerFlag) {
+      const lvl = platformerLevels[levelIndex] || platformerLevels[0];
+      const rand = makeRand(lvl.seed);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+      const lights = makeLights('day'); sc.add(lights);
+
+      const platMat = new THREE.MeshStandardMaterial({ color: 0x6aa86a, roughness: 0.8 });
+      const plats = [];
+      function platform(w, h, d, x, y, z) {
+        const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), platMat);
+        p.position.set(x, y, z); sc.add(p); plats.push(p);
+      }
+      let x = 0, y = 4, z = 0;
+      for (let i = 0; i < lvl.len; i++) {
+        const w = lvl.segment + rand()*8; const h = 2; const d = 12 + rand()*6;
+        platform(w, h, d, x, y, z);
+        x += w * 1.2;
+        y += (rand() < 0.5 ? 1 : -1) * lvl.heightStep * (0.6 + rand()*lvl.layoutVar);
+        z += (rand() - 0.5) * 12;
+      }
+      const goal = new THREE.Mesh(new THREE.TorusKnotGeometry(3, 1, 120, 16), new THREE.MeshStandardMaterial({ color: 0xffd54f }));
+      goal.position.set(x + 40, y + 10, z + 6); sc.add(goal);
+
+      const playerRadius = 0.6;
+      const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), playerMat);
+      player.position.set(-16, 6, 0); sc.add(player);
+      if (ownerFlag) player.add(makeOwnerLabel());
+
+      const vel = new THREE.Vector3(0, 0, 0);
+      const gravity = 18, moveSpeed = lvl.moveSpeed, jumpVel = lvl.jumpVel;
+      let onGround = false, run = true, won = false, yaw = 0, pitch = 0, jumpsLeft = 3; // triple jump
+
+      hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
+      hudSecondary.textContent = 'Reach the goal (Triple jump)';
+
+      function applyMapVariant(variant) {
+        const hemi = lights.children.find(l => l.isHemisphereLight);
+        const sun = lights.children.find(l => l.isDirectionalLight);
+        if (variant === 'night') {
+          sc.background = new THREE.Color(0x0a2030);
+          if (hemi) hemi.color.set(0xaaccff);
+          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
+          platMat.color.set(0x355a35);
+        } else {
+          sc.background = new THREE.Color(0x87b3ff);
+          if (hemi) hemi.color.set(0xffffff);
+          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
+          platMat.color.set(0x6aa86a);
+        }
+      }
+      applyMapVariant('day');
+      function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag) {
+        const existing = player.children.find(ch => ch.isSprite);
+        if (flag && !existing) player.add(makeOwnerLabel());
+        if (!flag && existing) player.remove(existing);
+      }
+
+      // Mobile-friendly jump while moving: button and space key both call tryJump
+      function tryJump() {
+        if (!run) return;
+        if (onGround) { vel.y = jumpVel; jumpsLeft = 2; onGround = false; } // first jump uses 1, leaves 2 more
+        else if (jumpsLeft > 0) { vel.y = jumpVel * 0.95; jumpsLeft--; }     // mid-air jumps decrement
+      }
+      jumpBtn.onclick = tryJump;
+      window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
+
+      actionBtn.onclick = () => {};
+
+      function collide() {
+        onGround = false;
+        for (const p of plats) {
+          const top = p.position.y + p.geometry.parameters.height / 2;
+          const halfW = p.geometry.parameters.width / 2;
+          const halfD = p.geometry.parameters.depth / 2;
+          const withinX = (player.position.x > p.position.x - halfW - playerRadius) && (player.position.x < p.position.x + halfW + playerRadius);
+          const withinZ = (player.position.z > p.position.z - halfD - playerRadius) && (player.position.z < p.position.z + halfD + playerRadius);
+          const nearTop = Math.abs(player.position.y - (top + playerRadius)) < 0.6 && vel.y <= 0;
+          if (withinX && withinZ && nearTop) {
+            player.position.y = top + playerRadius;
+            vel.y = 0; onGround = true; jumpsLeft = 3; // reset to triple jump on landing
+          }
+        }
+        if (player.position.y < -60) {
+          run = false;
+          msgText.textContent = `You fell — Platformer (Lvl ${levelIndex+1})`;
+          msg.style.display = 'block';
+          addScore('platformer', shared.name || 'Player', Math.max(1, 100 - levelIndex * 10));
+        }
+      }
+
+      function restart() { player.position.set(-16, 6, 0); vel.set(0, 0, 0); yaw = 0; pitch = 0; won = false; run = true; msg.style.display = 'none'; jumpsLeft = 3; }
+
+      return {
+        scene: sc, camera: cam, restart, dispose() {},
+        getCurrency: () => 0, setCurrency: () => {}, applyMapVariant, applySkin, applyOwner,
+        applyWeaponUpgrade: () => {}, update(dt) {
+          if (!run || won) return;
+          const { lx, ly } = getLookDelta(1.8); yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
+          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.0, 2.6);
+
+          // Movement remains responsive in air (mobile-friendly)
+          const mv = moveStick.get();
+          const { inputX, inputY } = getMoveInput(keys, mv);
+          const { forward, right } = getCameraBasisXZ(cam, player.position);
+          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
+          if (dir.lengthSq() > 0) dir.normalize();
+
+          // Strong control in air for mobile play
+          const control = onGround ? 1.0 : 0.9;
+          vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, (onGround ? 10 : 6) * control * dt);
+          vel.z = THREE.MathUtils.lerp(vel.z, dir.z * moveSpeed, (onGround ? 10 : 6) * control * dt);
+          vel.y -= gravity * dt;
+
+          player.position.addScaledVector(vel, dt);
+          collide();
+
+          if (player.position.distanceTo(goal.position) < 6) {
+            won = true;
+            addScore('platformer', shared.name || 'Player', 1200 - levelIndex * 60);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+
+          hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
+          hudSecondary.textContent = onGround ? 'On platform (Triple jump ready)' : (jumpsLeft > 0 ? `Air (${jumpsLeft} jumps left)` : 'Air');
+        }
+      };
+    }
+
+    // Racer
+    function setupRacerTP(quality, skin, levelIndex, ownerFlag) {
+      const lvl = racerLevels[levelIndex] || racerLevels[0];
+      const rand = makeRand(lvl.seed);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd0b38a);
+      const cam = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1600);
+      const lights = makeLights('day'); sc.add(lights);
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.MeshStandardMaterial({ color: 0xb5894a, roughness: 0.8 }));
+      ground.rotation.x = -Math.PI / 2; sc.add(ground);
+
+      const carMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const car = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), carMat);
+      car.position.set(0, 0.6, 0); sc.add(car);
+      if (ownerFlag) car.add(makeOwnerLabel());
+
+      const gates = [];
+      function gate(x, z) {
+        const g = new THREE.Mesh(new THREE.TorusGeometry(4, 0.3, 12, 24), new THREE.MeshStandardMaterial({ color: 0xffee88 }));
+        g.position.set(x, 2.5, z); sc.add(g); gates.push(g);
+      }
+      for (let i = 0; i < lvl.gates; i++) {
+        const gx = i * 36;
+        const gz = Math.sin(i * lvl.freq) * lvl.amp + Math.sin(i * 0.35) * (lvl.amp * 0.25) * (rand() - 0.5);
+        gate(gx, gz);
+      }
+
+      let speed = 0, heading = 0, score = 0, run = true, yaw = 0, pitch = 0;
+
+      function applyMapVariant(variant) {
+        const hemi = lights.children.find(l => l.isHemisphereLight);
+        const sun = lights.children.find(l => l.isDirectionalLight);
+        if (variant === 'night') {
+          sc.background = new THREE.Color(0x302018);
+          if (hemi) hemi.color.set(0xaaccff);
+          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
+          ground.material.color.set(0x8b6a3a);
+        } else {
+          sc.background = new THREE.Color(0xd0b38a);
+          if (hemi) hemi.color.set(0xffffff);
+          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
+          ground.material.color.set(0xb5894a);
+        }
+      }
+      applyMapVariant('day');
+      function applySkin(newSkin) { carMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag) { const existing = car.children.find(ch => ch.isSprite); if (flag && !existing) car.add(makeOwnerLabel()); if (!flag && existing) car.remove(existing); }
+
+      hudPrimary.textContent = `Desert Racer — Level ${levelIndex+1}`;
+      hudSecondary.textContent = `Gates 0/${lvl.gates}`;
+
+      function restart() {
+        car.position.set(0, 0.6, 0);
+        speed = 0; heading = 0; score = 0; run = true; msg.style.display = 'none';
+        gates.forEach(g => sc.remove(g)); gates.length = 0;
+        for (let i = 0; i < lvl.gates; i++) {
+          const gx = i * 36;
+          const gz = Math.sin(i * lvl.freq) * lvl.amp + Math.sin(i * 0.35) * (lvl.amp * 0.25) * (rand() - 0.5);
+          gate(gx, gz);
+        }
+        hudSecondary.textContent = `Gates 0/${lvl.gates}`;
+      }
+
+      return {
+        scene: sc, camera: cam, restart, dispose() {},
+        getCurrency: () => score, setCurrency: v => { score = v; hudSecondary.textContent = `Gates ${score}/${lvl.gates}`; },
+        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        update(dt) {
+          if (!run) return;
+          const { lx, ly } = getLookDelta(0.8); yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.5, 0.5);
+
+          const mv = moveStick.get();
+          const steer = mv.x;
+          const throttle = Math.max(0, -mv.y);
+          const brake = Math.max(0, mv.y);
+
+          speed += (throttle * 30 - brake * 40) * dt;
+          speed *= 0.985; // friction
+          speed = Math.max(0, Math.min(speed, 42));
+
+          heading += steer * lvl.turn * dt;
+
+          const dir = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
+          car.position.addScaledVector(dir, speed * dt);
+          car.rotation.y = heading;
+
+          updateThirdPersonCamera(cam, car.position, heading, pitch, 11.0, 3.4);
+
+          for (let i = gates.length - 1; i >= 0; i--) {
+            const g = gates[i];
+            if (car.position.distanceTo(g.position) < 4) { score++; sc.remove(g); gates.splice(i, 1); hudSecondary.textContent = `Gates ${score}/${lvl.gates}`; }
+          }
+
+          if (gates.length === 0) {
+            run = false;
+            addScore('racer', shared.name || 'Player', Math.round(speed*10));
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+          hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
+        }
+      };
+    }
+
+    // Arena
+    function setupArenaTP(quality, skin, levelIndex, ownerFlag) {
+      const lvl = arenaLevels[levelIndex] || arenaLevels[0];
+      const rand = makeRand(lvl.seed);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x080a12);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const lights = makeLights('space'); sc.add(lights);
+      const arena = new THREE.Mesh(new THREE.CylinderGeometry(100, 100, 2, 48), new THREE.MeshStandardMaterial({ color: 0x1c2233, metalness: 0.2, roughness: 0.7 }));
+      arena.position.y = -2; sc.add(arena);
+
+      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rig.position.set(0, 1, 0); sc.add(rig);
+      if (ownerFlag) rig.add(makeOwnerLabel());
+
+      const drones = [];
+      function drone() {
+        const d = new THREE.Mesh(new THREE.TetrahedronGeometry(1.2), new THREE.MeshStandardMaterial({ color: 0xff6666 }));
+        const a = rand() * Math.PI * 2, r = 60 + rand()*10;
+        d.position.set(Math.cos(a) * r, 1.2, Math.sin(a) * r);
+        d.userData.vel = new THREE.Vector3((rand() - 0.5) * lvl.waveSpeed, 0, (rand() - 0.5) * lvl.waveSpeed);
+        sc.add(d); drones.push(d);
+      }
+      for (let i = 0; i < lvl.drones; i++) drone();
+
+      const bullets = [];
+      const bulletSpeed = 42;
+      function shoot() {
+        const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
+        const dir = new THREE.Vector3().subVectors(rig.position, cam.position);
+        dir.y = 0; if (dir.lengthSq() < 1e-6) dir.set(0,0,-1); dir.normalize();
+        b.position.copy(cam.position);
+        b.userData.dir = dir.clone();
+        sc.add(b); bullets.push(b);
+      }
+      actionBtn.onclick = shoot;
+
+      let run = true, score = 0, yaw = 0, pitch = 0;
+
+      hudPrimary.textContent = `Space Arena — Level ${levelIndex+1}`;
+      hudSecondary.textContent = 'Score 0 | ACTION to shoot';
+
+      function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x04060c) : new THREE.Color(0x080a12); }
+      applyMapVariant('day');
+      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag) { const existing = rig.children.find(ch => ch.isSprite); if (flag && !existing) rig.add(makeOwnerLabel()); if (!flag && existing) rig.remove(existing); }
+
+      function restart() {
+        drones.forEach(d => sc.remove(d)); drones.length = 0;
+        bullets.forEach(b => sc.remove(b)); bullets.length = 0;
+        for (let i = 0; i < lvl.drones; i++) drone();
+        score = 0; hudSecondary.textContent = 'Score 0 | ACTION to shoot';
+        rig.position.set(0, 1, 0); yaw = 0; pitch = 0; run = true; msg.style.display = 'none';
+      }
+
+      return {
+        scene: sc, camera: cam, restart, dispose() {},
+        getCurrency: () => score, setCurrency: v => { score = v; hudSecondary.textContent = `Score ${score} | ACTION to shoot`; },
+        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        update(dt) {
+          if (!run) return;
+          const { lx, ly } = getLookDelta(1.8);
+          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 9.0, 3.0);
+
+          const mv = moveStick.get();
+          const { inputX, inputY } = getMoveInput(keys, mv);
+          const { forward, right } = getCameraBasisXZ(cam, rig.position);
+          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
+          if (dir.lengthSq() > 0) dir.normalize();
+          rig.position.addScaledVector(dir, 11 * dt);
+
+          for (const d of drones) {
+            d.position.addScaledVector(d.userData.vel, dt);
+            if (d.position.length() > 95) d.userData.vel.multiplyScalar(-1);
+          }
+
+          for (let i = bullets.length - 1; i >= 0; i--) {
+            const b = bullets[i];
+            b.position.addScaledVector(b.userData.dir, bulletSpeed * dt);
+            if (b.position.length() > 160) { sc.remove(b); bullets.splice(i, 1); continue; }
+            for (let j = drones.length - 1; j >= 0; j--) {
+              const d = drones[j];
+              if (b.position.distanceTo(d.position) < 1.4) {
+                sc.remove(d); drones.splice(j, 1);
+                sc.remove(b); bullets.splice(i, 1);
+                score++; hudSecondary.textContent = `Score ${score} | ACTION to shoot`;
+                break;
+              }
+            }
+          }
+
+          if (drones.length === 0) {
+            run = false;
+            addScore('arena', shared.name || 'Player', score);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+        }
+      };
+    }
+
+    // Runner
+    function setupRunnerTP(quality, skin, levelIndex, ownerFlag) {
+      const lvl = runnerLevels[levelIndex] || runnerLevels[0];
+      const rand = makeRand(lvl.seed);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const lights = makeLights('day'); sc.add(lights);
+
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(lvl.length, 60), new THREE.MeshStandardMaterial({ color: 0x228B22 }));
+      ground.rotation.x = -Math.PI / 2; ground.position.z = -lvl.length/6; sc.add(ground);
+
+      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rig.position.set(0, 1, 0); sc.add(rig);
+      if (ownerFlag) rig.add(makeOwnerLabel());
+
+      const obstacles = [];
+      function makeObs(z) {
+        const o = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshStandardMaterial({ color: 0x884444 }));
+        const lane = rand() < 0.33 ? -2 : (rand() < 0.5 ? 0 : 2);
+        o.position.set(lane + (rand() - 0.5) * 1.0, 0.6, -z);
+        sc.add(o); obstacles.push(o);
+      }
+      for (let i = 0; i < lvl.obstacles; i++) makeObs(6 + i * (lvl.length / lvl.obstacles));
+
+      let laneX = 0, speed = 8, time = 0, run = true, rings = 0, yaw = 0, pitch = 0;
+
+      function applyMapVariant(variant) {
+        const hemi = lights.children.find(l => l.isHemisphereLight);
+        const sun = lights.children.find(l => l.isDirectionalLight);
+        if (variant === 'night') {
+          sc.background = new THREE.Color(0x102020);
+          if (hemi) hemi.color.set(0xaaccff);
+          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
+          ground.material.color.set(0x1c3a1c);
+        } else {
+          sc.background = new THREE.Color(0x87ceeb);
+          if (hemi) hemi.color.set(0xffffff);
+          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
+          ground.material.color.set(0x228B22);
+        }
+      }
+      applyMapVariant('day');
+      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag) { const existing = rig.children.find(ch => ch.isSprite); if (flag && !existing) rig.add(makeOwnerLabel()); if (!flag && existing) rig.remove(existing); }
+
+      hudPrimary.textContent = `Endless Runner — Level ${levelIndex+1}`;
+      hudSecondary.textContent = 'Rings 0';
+
+      return {
+        scene: sc, camera: cam,
+        restart() {
+          obstacles.forEach(o => sc.remove(o)); obstacles.length = 0;
+          for (let i = 0; i < lvl.obstacles; i++) makeObs(6 + i * (lvl.length / lvl.obstacles));
+          laneX = 0; speed = 8; time = 0; rings = 0; run = true; msg.style.display = 'none';
+          rig.position.set(0, 1, 0);
+          hudSecondary.textContent = 'Rings 0';
+        },
+        dispose() {},
+        getCurrency: () => rings, setCurrency: v => { rings = v; hudSecondary.textContent = `Rings ${rings}`; },
+        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        update(dt) {
+          if (!run) return;
+          time += dt;
+          speed = 8 + time * (lvl.accel);
+
+          const { lx, ly } = getLookDelta(1.5);
+          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.4, 0.4);
+
+          const mv = moveStick.get();
+          if (mv.x < -0.3) laneX = -2;
+          else if (mv.x > 0.3) laneX = 2;
+          else laneX = 0;
+
+          rig.position.x = THREE.MathUtils.lerp(rig.position.x, laneX, 6 * dt);
+
+          for (const o of obstacles) {
+            o.position.z += speed * dt;
+            if (o.position.z > 4) {
+              o.position.z = -lvl.length - Math.random() * 60;
+              const lane = Math.random() < 0.5 ? -2 : 2;
+              o.position.x = lane + (Math.random() - 0.5) * 1.0;
+              rings++; hudSecondary.textContent = `Rings ${rings}`;
+            }
+            const dist = new THREE.Vector3(o.position.x - rig.position.x, 0, o.position.z).length();
+            if (dist < 1.0) {
+              run = false;
+              msgText.textContent = `Hit obstacle — Runner (Lvl ${levelIndex+1})`;
+              msg.style.display = 'block';
+              addScore('runner', shared.name || 'Player', rings);
+            }
+          }
+
+          if (rings >= Math.round(lvl.obstacles * 0.6)) {
+            run = false;
+            addScore('runner', shared.name || 'Player', rings);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
+          hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
+        }
+      };
+    }
+
+    // Maze
+    function setupMazeTP(quality, skin, levelIndex, ownerFlag) {
+      const lvl = mazeLevels[levelIndex] || mazeLevels[0];
+      const rand = makeRand(lvl.seed);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x101424);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const lights = makeLights('maze'); sc.add(lights);
+
+      const cellSize = 10, cells = lvl.cells;
+      const half = (cells * cellSize) / 2;
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(cells*cellSize+20, cells*cellSize+20), new THREE.MeshStandardMaterial({ color: 0x222a44, roughness: 0.9 }));
+      floor.rotation.x = -Math.PI / 2; sc.add(floor);
+
+      const walls = [];
+      function wall(x, y, z, sx, sy, sz) {
+        const w = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), new THREE.MeshStandardMaterial({ color: 0x3a64a6, emissive: 0x0a1530, emissiveIntensity: 0.2 }));
+        w.position.set(x, y, z); sc.add(w); walls.push(w);
+      }
+      for (let i = 0; i < cells; i++) {
+        for (let j = 0; j < cells; j++) {
+          if (rand() < 0.35) wall(-half + i*cellSize, 1.5, -half + j*cellSize, cellSize-2, 3, 2);
+          if (rand() < 0.35) wall(-half + i*cellSize, 1.5, -half + j*cellSize, 2, 3, cellSize-2);
+        }
+      }
+
+      const exit = new THREE.Mesh(new THREE.TorusGeometry(3, 0.3, 12, 32), new THREE.MeshStandardMaterial({ color: 0x88ffcc }));
+      exit.position.set(half - 10, 2.5, half - 10); sc.add(exit);
+
+      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rig.position.set(-half + 10, 0.9, -half + 10); sc.add(rig);
+      if (ownerFlag) rig.add(makeOwnerLabel());
+
+      let yaw = 0, pitch = 0, run = true;
+
+      hudPrimary.textContent = `Crystal Maze — Level ${levelIndex+1}`;
+      hudSecondary.textContent = 'Find the exit ring';
+
+      function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x0a0d1a) : new THREE.Color(0x101424); }
+      applyMapVariant('day');
+      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag) { const existing = rig.children.find(ch => ch.isSprite); if (flag && !existing) rig.add(makeOwnerLabel()); if (!flag && existing) rig.remove(existing); }
+
+      function restart() { rig.position.set(-half + 10, 0.9, -half + 10); yaw = 0; pitch = 0; run = true; msg.style.display = 'none'; }
+
+      return {
+        scene: sc, camera: cam, restart, dispose() {},
+        getCurrency: () => 0, setCurrency: () => {}, applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        update(dt) {
+          if (!run) return;
+          const { lx, ly } = getLookDelta(1.8);
+          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.4, 0.4);
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
+
+          const mv = moveStick.get();
+          const { inputX, inputY } = getMoveInput(keys, mv);
+          const { forward, right } = getCameraBasisXZ(cam, rig.position);
+          const next = rig.position.clone().addScaledVector(right, inputX * 8 * dt).addScaledVector(forward, inputY * 8 * dt);
+
+          let blocked = false;
+          for (const w of walls) {
+            const dx = Math.abs(next.x - w.position.x) - w.geometry.parameters.width / 2 - 0.5;
+            const dz = Math.abs(next.z - w.position.z) - w.geometry.parameters.depth / 2 - 0.5;
+            if (dx < 0 && dz < 0) { blocked = true; break; }
+          }
+          if (!blocked) rig.position.copy(next);
+
+          if (rig.position.distanceTo(exit.position) < 5) {
+            run = false;
+            addScore('maze', shared.name || 'Player', 1200 - levelIndex * 60);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+        }
+      };
+    }
+
+    // Range
+    function setupRangeTP(quality, skin, levelIndex, ownerFlag) {
+      const lvl = rangeLevels[levelIndex] || rangeLevels[0];
+      const rand = makeRand(lvl.seed);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x223344);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
+      const lights = makeLights('day'); sc.add(lights);
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(lvl.spread*2, lvl.spread*2), new THREE.MeshStandardMaterial({ color: 0x335577 }));
+      floor.rotation.x = -Math.PI / 2; sc.add(floor);
+
+      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
+      rig.position.set(0, 1, 40); sc.add(rig);
+      if (ownerFlag) rig.add(makeOwnerLabel());
+
+      const targets = [];
+      function spawnTarget() {
+        const t = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.25, 10, 20), new THREE.MeshStandardMaterial({ color: 0xffcc55, emissive: 0x553300, emissiveIntensity: 0.2 }));
+        t.position.set((rand() - 0.5) * lvl.spread, 2 + rand() * 6, -20 - rand() * lvl.spread);
+        sc.add(t); targets.push(t);
+      }
+      for (let i = 0; i < lvl.targets; i++) spawnTarget();
+
+      const bullets = [];
+      const bulletSpeed = 42;
+      function shoot() {
+        const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
+        const dir = new THREE.Vector3().subVectors(rig.position, cam.position);
+        dir.y = 0; if (dir.lengthSq() < 1e-6) dir.set(0,0,-1); dir.normalize();
+        b.position.copy(cam.position);
+        b.userData.dir = dir.clone();
+        sc.add(b); bullets.push(b);
+      }
+      actionBtn.onclick = shoot;
+
+      let yaw = 0, pitch = 0, run = true, score = 0;
+
+      hudPrimary.textContent = `Target Range — Level ${levelIndex+1}`;
+      hudSecondary.textContent = 'Score 0 | ACTION to shoot';
+
+      function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x162238) : new THREE.Color(0x223344); }
+      applyMapVariant('day');
+      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag) { const existing = rig.children.find(ch => ch.isSprite); if (flag && !existing) rig.add(makeOwnerLabel()); if (!flag && existing) rig.remove(existing); }
+
+      function restart() {
+        bullets.forEach(b => sc.remove(b)); bullets.length = 0;
+        targets.forEach(t => sc.remove(t)); targets.length = 0;
+        for (let i = 0; i < lvl.targets; i++) spawnTarget();
+        rig.position.set(0, 1, 40);
+        yaw = 0; pitch = 0; score = 0; hudSecondary.textContent = 'Score 0 | ACTION to shoot';
+        run = true; msg.style.display = 'none';
+      }
+
+      return {
+        scene: sc, camera: cam, restart, dispose() {},
+        getCurrency: () => score, setCurrency: v => { score = v; hudSecondary.textContent = `Score ${score} | ACTION to shoot`; },
+        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        update(dt) {
+          if (!run) return;
+          const { lx, ly } = getLookDelta(1.8);
+          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
+
+          const mv = moveStick.get();
+          rig.position.x += mv.x * 6 * dt;
+          rig.position.z += -mv.y * 6 * dt;
+
+          for (let i = bullets.length - 1; i >= 0; i--) {
+            const b = bullets[i];
+            b.position.addScaledVector(b.userData.dir, bulletSpeed * dt);
+            if (b.position.length() > 200) { sc.remove(b); bullets.splice(i, 1); continue; }
+            for (let j = targets.length - 1; j >= 0; j--) {
+              const t = targets[j];
+              if (b.position.distanceTo(t.position) < 1.2) {
+                sc.remove(t); targets.splice(j, 1);
+                sc.remove(b); bullets.splice(i, 1);
+                score++; hudSecondary.textContent = `Score ${score} | ACTION to shoot`;
+                setTimeout(spawnTarget, lvl.respawn * 1000);
+                break;
+              }
+            }
+          }
+
+          if (score >= Math.round(lvl.targets * 0.7)) {
+            run = false;
+            addScore('range', shared.name || 'Player', score);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+        }
+      };
+    }
+
+    // Voxel
+    function setupVoxelTP(quality, skin, levelIndex, ownerFlag) {
+      const lvl = voxelLevels[levelIndex] || voxelLevels[0];
+      const rand = makeRand(lvl.seed);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1600);
+      const lights = makeLights('day'); sc.add(lights);
+
+      const size = lvl.size;
+      const blockSize = 1;
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(size*blockSize, size*blockSize), new THREE.MeshStandardMaterial({ color: 0x88b36a }));
+      ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0, 0); sc.add(ground);
+
+      const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const player = new THREE.Mesh(new THREE.BoxGeometry(1, 1.8, 1), playerMat);
+      player.position.set(0, 1, 0); sc.add(player);
+      if (ownerFlag) player.add(makeOwnerLabel());
+
+      const palettes = [0x8B4513, 0xaaaaaa, 0x228B22, 0x3366ff, 0xffd84d];
+      let paletteIndex = 0;
+
+      const blocks = new Map();
+      function key(x,y,z){return `${x},${y},${z}`;}
+      function addBlock(x,y,z,color=null){
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(blockSize, blockSize, blockSize), new THREE.MeshStandardMaterial({ color: color ?? palettes[paletteIndex] }));
+        mesh.position.set(x, y, z); sc.add(mesh); blocks.set(key(x,y,z), mesh);
+      }
+      for (let i = 0; i < lvl.startBlocks; i++) {
+        const x = Math.floor((rand()-0.5)*size), z = Math.floor((rand()-0.5)*size), y = 0.5;
+        addBlock(x, y, z, 0x88b36a);
+      }
+
+      function rayFromCamera() { const dir = new THREE.Vector3().subVectors(player.position, cam.position).normalize(); const origin = cam.position.clone(); return { origin, dir }; }
+      function findNearestGridHit(maxDist=8) {
+        const { origin, dir } = rayFromCamera();
+        let best = null, bestDist = Infinity;
+        for (const [, mesh] of blocks) {
+          const to = new THREE.Vector3().subVectors(mesh.position, origin);
+          const proj = to.dot(dir);
+          if (proj > 0 && proj < maxDist) {
+            const closestPoint = origin.clone().addScaledVector(dir, proj);
+            const d = closestPoint.distanceTo(mesh.position);
+            if (d < 0.9 && proj < bestDist) { best = mesh; bestDist = proj; }
+          }
+        }
+        return best;
+      }
+      actionBtn.onclick = () => {
+        const hit = findNearestGridHit(8);
+        const pos = hit ? hit.position.clone().add(new THREE.Vector3(0, blockSize, 0)) : player.position.clone().add(new THREE.Vector3(0, 0, -2)).round();
+        const snap = new THREE.Vector3(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z));
+        const k = key(snap.x, snap.y, snap.z);
+        if (!blocks.has(k)) addBlock(snap.x, snap.y, snap.z);
+      };
+      jumpBtn.onclick = () => {
+        const hit = findNearestGridHit(8);
+        if (hit) { blocks.delete(key(hit.position.x, hit.position.y, hit.position.z)); sc.remove(hit); }
+      };
+      window.addEventListener('keydown', e => {
+        if (e.code === 'KeyQ') { paletteIndex = (paletteIndex + 1) % palettes.length; }
+        if (e.code === 'KeyE') { paletteIndex = (paletteIndex + palettes.length - 1) % palettes.length; }
+      });
+
+      let yaw = 0, pitch = 0;
+      let speed = 6.5;
+
+      hudPrimary.textContent = `Voxel Builder — Level ${levelIndex+1}`;
+      hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
+
+      function applyMapVariant(v) { sc.background = (v === 'night') ? new THREE.Color(0x10202a) : new THREE.Color(0x87ceeb); }
+      applyMapVariant('day');
+      function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag) { const existing = player.children.find(ch => ch.isSprite); if (flag && !existing) player.add(makeOwnerLabel()); if (!flag && existing) player.remove(existing); }
+
+      function restart() {
+        for (const [,mesh] of blocks) sc.remove(mesh);
+        blocks.clear();
+        for (let i = 0; i < lvl.startBlocks; i++) {
+          const x = Math.floor((rand()-0.5)*size), z = Math.floor((rand()-0.5)*size), y = 0.5;
+          addBlock(x, y, z, 0x88b36a);
+        }
+        player.position.set(0,1,0); yaw=0; pitch=0; msg.style.display='none';
+      }
+
+      return {
+        scene: sc, camera: cam, restart, dispose() {},
+        getCurrency: () => blocks.size, setCurrency: () => {},
+        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        update(dt) {
+          const { lx, ly } = getLookDelta(1.6);
+          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.7, 0.7);
+          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.5, 3.0);
+
+          const mv = moveStick.get();
+          const { inputX, inputY } = getMoveInput(keys, mv);
+          const { forward, right } = getCameraBasisXZ(cam, player.position);
+          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
+          if (dir.lengthSq() > 0) dir.normalize();
+          player.position.addScaledVector(dir, speed * dt);
+
+          hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
+
+          if (blocks.size >= lvl.startBlocks + lvl.goalDelta) {
+            addScore('voxel', shared.name || 'Player', blocks.size);
+            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+          }
+        }
+      };
+    }
+
+    // ————— HUB CONTROL —————
+    function showMenu() {
+      running = false;
+      hud.style.display = 'none';
+      settingsBar.style.display = 'none';
+      controls.style.display = 'none';
+      msg.style.display = 'none';
+      shopEl.style.display = 'none';
+      skinsEl.style.display = 'none';
+      leaderboardEl.style.display = 'none';
+      menu.style.display = 'grid';
+      if (cleanup && cleanup.dispose) cleanup.dispose();
+      cleanup = null; scene = null; camera = null;
+    }
+    function startGame(setup, gameKey, levelIdx) {
+      if (cleanup && cleanup.dispose) cleanup.dispose();
+      cleanup = setup(quality, shared.skin, levelIdx, shared.owner);
+      scene = cleanup.scene; camera = cleanup.camera;
+      shared.currentGame = gameKey;
+      running = true;
+      hud.style.display = 'block';
+      backBtn.style.display = 'inline-block';
+      controls.style.display = 'flex';
+      settingsBar.style.display = 'flex';
+      menu.style.display = 'none';
+      if (cleanup.applySkin) cleanup.applySkin(shared.skin);
+      if (cleanup.applyOwner) cleanup.applyOwner(shared.owner);
+      cleanup.nextLevel = () => advanceLevel(gameKey, levelIdx + 1);
+      cleanup.nextGame = () => advanceToNextGame(gameKey);
+    }
+    function advanceLevel(gameKey, nextIndex) {
+      if (nextIndex < maxLevels) startGame(gameSetups[gameKey], gameKey, nextIndex);
+      else advanceToNextGame(gameKey);
+    }
+    function advanceToNextGame(current) {
+      const idx = gameOrder.indexOf(current);
+      const nextGame = gameOrder[(idx + 1) % gameOrder.length];
+      startGame(gameSetups[nextGame], nextGame, 0);
+    }
     document.querySelectorAll('.menuBtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const game = btn.dataset.game;
-        if (typeof startGame === 'function') startGame(gameSetups[game], game, selectedLevel);
+        startGame(gameSetups[game], game, selectedLevel);
       });
     });
 
-    // Prevent iOS pinch/zoom
-    document.addEventListener('gesturestart', e => e.preventDefault());
-    document.addEventListener('gesturechange', e => e.preventDefault());
-    document.addEventListener('gestureend', e => e.preventDefault());
-  </script>
-  <script type="module">
-    // ————— Game 10 — Volcano Dash (solid floor) —————
-    function setupVolcanoTP(quality, skin, levelIndex, ownerFlag) {
-      const levels = simpleLevels(801);
-      const lvl = levels[levelIndex] || levels[0];
-      const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x2b0a0a);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
-      sc.add(makeLights('volcano'));
-
-      // Solid floor below all platforms
-      const base = new THREE.Mesh(new THREE.PlaneGeometry(2200, 2200), new THREE.MeshStandardMaterial({ color: 0x4a1f1f }));
-      base.rotation.x = -Math.PI/2; base.position.y = -8; sc.add(base);
-
-      // Platforms
-      const platMat = new THREE.MeshStandardMaterial({ color: 0x8f3a3a });
-      const plats = [];
-      for (let i=0;i<lvl.count;i++) {
-        const p = new THREE.Mesh(new THREE.BoxGeometry(20, 2, 20), platMat);
-        p.position.set((rand()-0.5)*300, 4 + rand()*24, (rand()-0.5)*300);
-        sc.add(p); plats.push(p);
-      }
-      const goal = new THREE.Mesh(new THREE.TorusGeometry(3.2, 0.6, 16, 32), new THREE.MeshStandardMaterial({ color: 0xffdd55, emissive: 0x552200 }));
-      goal.position.set(0, 26, 0); sc.add(goal);
-
-      const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const player = new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), playerMat);
-      player.position.set(0, 2, 0); sc.add(player);
-      if (ownerFlag) player.add(makeOwnerLabel());
-
-      let vel = new THREE.Vector3(0,0,0), yaw=0, pitch=0, onGround=false, jumps=2, run=true;
-      hudPrimary.textContent = `Volcano Dash — Level ${levelIndex+1}`;
-      hudSecondary.textContent = `Reach the ring | Double jump`;
-
-      function applySkin(s){ playerMat.color.setHex(skinToColor(s)); }
-      function applyOwner(flag){ const spr=player.children.find(ch=>ch.isSprite); if(flag && !spr) player.add(makeOwnerLabel()); if(!flag && spr) player.remove(spr); }
-      function tryJump(){ if(!run) return; if(onGround){ vel.y=18; jumps=1; onGround=false; } else if(jumps>0){ vel.y=17; jumps--; } }
-      jumpBtn.onclick = tryJump; window.addEventListener('keydown', e=>{ if(e.code==='Space') tryJump(); });
-
-      function collide(){ onGround=false;
-        for(const p of plats){
-          const top = p.position.y + 1;
-          const hw = p.geometry.parameters.width/2, hd = p.geometry.parameters.depth/2;
-          const withinX = (player.position.x > p.position.x - hw - 0.5) && (player.position.x < p.position.x + hw + 0.5);
-          const withinZ = (player.position.z > p.position.z - hd - 0.5) && (player.position.z < p.position.z + hd + 0.5);
-          const nearTop = Math.abs(player.position.y - (top + 0.5)) < 0.6 && vel.y <= 0;
-          if (withinX && withinZ && nearTop) { player.position.y = top + 0.5; vel.y=0; onGround=true; jumps=2; }
-        }
-        if (player.position.y < -50) { run=false; msgText.textContent = `You fell — Volcano Dash`; msg.style.display='block'; addScore('volcano', shared.name||'Player', 1); }
-      }
-
-      return {
-        scene: sc, camera: cam,
-        restart(){ player.position.set(0,2,0); vel.set(0,0,0); yaw=0; pitch=0; onGround=false; jumps=2; run=true; msg.style.display='none'; },
-        dispose(){}, getCurrency:()=>0, setCurrency:()=>{},
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.6); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.6,0.6);
-          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.2, 2.6);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys,mv); const {forward,right}=getCameraBasisXZ(cam, player.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize();
-          vel.x = THREE.MathUtils.lerp(vel.x, dir.x * 13, (onGround?8:4)*dt);
-          vel.z = THREE.MathUtils.lerp(vel.z, dir.z * 13, (onGround?8:4)*dt);
-          vel.y -= 18 * dt;
-          player.position.addScaledVector(vel, dt);
-          collide();
-          if(player.position.distanceTo(goal.position) < 5){ run=false; addScore('volcano', shared.name||'Player', 10); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-          hudSecondary.textContent = onGround ? 'On rock (double jump ready)' : (jumps>0 ? 'Air (double jump)' : 'Air');
-        }
-      };
-    }
-
-    // ————— Game 11 — Asteroid Field —————
-    function setupAsteroidsTP(quality, skin, levelIndex, ownerFlag) {
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x000000);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
-      sc.add(makeLights('space'));
-
-      const shipMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const ship = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.6, 18), shipMat);
-      ship.rotation.x = Math.PI/2; ship.position.set(0,0,0); sc.add(ship);
-      if(ownerFlag) ship.add(makeOwnerLabel());
-
-      const asteroids=[]; for(let i=0;i<26;i++){ const a=new THREE.Mesh(new THREE.IcosahedronGeometry(2 + Math.random()*2), new THREE.MeshStandardMaterial({ color:0x888888, roughness:0.9 })); a.position.set((Math.random()-0.5)*240,(Math.random()-0.5)*240,(Math.random()-0.5)*240); a.userData.vel = new THREE.Vector3((Math.random()-0.5)*6,(Math.random()-0.5)*6,(Math.random()-0.5)*6); sc.add(a); asteroids.push(a); }
-
-      let yaw=0,pitch=0,score=0,run=true;
-      hudPrimary.textContent = `Asteroid Field — Level ${levelIndex+1}`;
-      hudSecondary.textContent = `Score 0`;
-
-      function applySkin(s){ shipMat.color.setHex(skinToColor(s)); }
-      function applyOwner(flag){ const spr=ship.children.find(ch=>ch.isSprite); if(flag && !spr) ship.add(makeOwnerLabel()); if(!flag && spr) ship.remove(spr); }
-
-      return {
-        scene: sc, camera: cam,
-        restart(){ ship.position.set(0,0,0); score=0; run=true; msg.style.display='none'; },
-        dispose(){}, getCurrency:()=>score, setCurrency:v=>{score=v; hudSecondary.textContent=`Score ${score}`;},
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.4); yaw+=lx*dt; pitch+=ly*dt;
-          updateThirdPersonCamera(cam, ship.position, yaw, pitch, 12.5, 4.2);
-          const mv=moveStick.get(); ship.position.x += mv.x * 22 * dt; ship.position.y += -mv.y * 22 * dt;
-
-          for (const a of asteroids) {
-            a.rotation.x += 0.25*dt; a.rotation.y += 0.3*dt;
-            a.position.addScaledVector(a.userData.vel, dt);
-            // soft wrap
-            ['x','y','z'].forEach(k => { if (a.position[k] > 260) a.position[k] = -260; if (a.position[k] < -260) a.position[k] = 260; });
-            if (ship.position.distanceTo(a.position) < 3.2) { run=false; msgText.textContent='Crashed — Asteroids'; msg.style.display='block'; addScore('asteroids', shared.name||'Player', Math.floor(score)); }
-          }
-          score += dt * 12;
-          hudSecondary.textContent = `Score ${Math.floor(score)}`;
-          if (score >= 220) { run=false; addScore('asteroids', shared.name||'Player', Math.floor(score)); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 12 — Underwater —————
-    function setupUnderwaterTP(quality, skin, levelIndex, ownerFlag) {
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x063a66);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
-      sc.add(makeLights('underwater'));
-
-      const diverMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const diver = new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), diverMat);
-      diver.position.set(0,1,0); sc.add(diver);
-      if(ownerFlag) diver.add(makeOwnerLabel());
-
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshStandardMaterial({ color: 0x0a2a44 }));
-      floor.rotation.x = -Math.PI/2; floor.position.y = -6; sc.add(floor);
-
-      const bubbles=[]; for(let i=0;i<24;i++){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.4,12,12), new THREE.MeshStandardMaterial({ color:0xaad7ff, transparent:true, opacity:0.6 })); b.position.set((Math.random()-0.5)*80, Math.random()*28, (Math.random()-0.5)*80); sc.add(b); bubbles.push(b); }
-
-      let yaw=0,pitch=0,score=0,run=true;
-      hudPrimary.textContent = `Underwater — Level ${levelIndex+1}`;
-      hudSecondary.textContent = `Bubbles 0/${bubbles.length}`;
-
-      function applySkin(s){ diverMat.color.setHex(skinToColor(s)); }
-      function applyOwner(flag){ const spr=diver.children.find(ch=>ch.isSprite); if(flag && !spr) diver.add(makeOwnerLabel()); if(!flag && spr) diver.remove(spr); }
-
-      return {
-        scene: sc, camera: cam,
-        restart(){ diver.position.set(0,1,0); score=0; msg.style.display='none'; run=true; },
-        dispose(){}, getCurrency:()=>score, setCurrency:v=>{score=v; hudSecondary.textContent=`Bubbles ${score}/${bubbles.length}`;},
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.4); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.5,0.5);
-          updateThirdPersonCamera(cam, diver.position, yaw, pitch, 9.5, 3.2);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys,mv); const {forward,right}=getCameraBasisXZ(cam, diver.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize();
-          diver.position.addScaledVector(dir, 8.5*dt);
-          // gentle buoyancy
-          diver.position.y += Math.sin(performance.now()*0.002) * 0.12;
-
-          for (let i=bubbles.length-1;i>=0;i--) {
-            const b=bubbles[i];
-            b.position.y += 0.6*dt;
-            if (diver.position.distanceTo(b.position) < 1.2) {
-              sc.remove(b); bubbles.splice(i,1); score++; hudSecondary.textContent=`Bubbles ${score}/${24}`;
-            }
-          }
-          if (score >= 16) { run=false; addScore('underwater', shared.name||'Player', score); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 13 — Haunted Mansion —————
-    function setupHauntedTP(quality, skin, levelIndex, ownerFlag) {
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x0e0e18);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1500);
-      sc.add(makeLights('haunted'));
-
-      const floor=new THREE.Mesh(new THREE.PlaneGeometry(1400,1400), new THREE.MeshStandardMaterial({ color:0x1c1c26 }));
-      floor.rotation.x=-Math.PI/2; sc.add(floor);
-
-      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat);
-      rig.position.set(0,1,0); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
-
-      const ghosts=[]; for(let i=0;i<14;i++){ const g=new THREE.Mesh(new THREE.SphereGeometry(0.9,16,16), new THREE.MeshStandardMaterial({ color:0xbbccff, transparent:true, opacity:0.5 })); g.position.set((Math.random()-0.5)*60, 1.2, (Math.random()-0.5)*60); g.userData.phase=Math.random()*Math.PI*2; sc.add(g); ghosts.push(g); }
-
-      let yaw=0,pitch=0,score=0,run=true;
-      hudPrimary.textContent=`Haunted Mansion — Level ${levelIndex+1}`; hudSecondary.textContent=`Wisp orbs 0`;
-
-      const orbs=[]; for(let i=0;i<10;i++){ const o=new THREE.Mesh(new THREE.TorusGeometry(0.8,0.2,10,18), new THREE.MeshStandardMaterial({ color:0x88ffcc })); o.position.set((Math.random()-0.5)*90, 1.2, (Math.random()-0.5)*90); sc.add(o); orbs.push(o); }
-
-      function applySkin(s){ rigMat.color.setHex(skinToColor(s)); }
-      function applyOwner(flag){ const spr=rig.children.find(ch=>ch.isSprite); if(flag&&!spr) rig.add(makeOwnerLabel()); if(!flag&&spr) rig.remove(spr); }
-
-      return {
-        scene: sc, camera: cam,
-        restart(){ rig.position.set(0,1,0); score=0; msg.style.display='none'; run=true; },
-        dispose(){}, getCurrency:()=>score, setCurrency:v=>{ score=v; hudSecondary.textContent=`Wisp orbs ${score}`; },
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.5); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.5,0.5);
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 9.0, 3.0);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys,mv); const {forward,right}=getCameraBasisXZ(cam, rig.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize();
-          rig.position.addScaledVector(dir, 8.0*dt);
-
-          for(const g of ghosts){ g.position.y = 1.2 + Math.sin(g.userData.phase + performance.now()*0.0012)*0.6; if(rig.position.distanceTo(g.position)<1.1){ run=false; msgText.textContent='Caught by a ghost'; msg.style.display='block'; addScore('haunted', shared.name||'Player', score); } }
-          for(let i=orbs.length-1;i>=0;i--){ const o=orbs[i]; if(rig.position.distanceTo(o.position)<1.2){ sc.remove(o); orbs.splice(i,1); score++; hudSecondary.textContent=`Wisp orbs ${score}`; } }
-          if(score>=8){ run=false; addScore('haunted', shared.name||'Player', score); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 14 — Robot Factory —————
-    function setupFactoryTP(quality, skin, levelIndex, ownerFlag) {
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x121212);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1800);
-      sc.add(makeLights('factory'));
-
-      const floor=new THREE.Mesh(new THREE.PlaneGeometry(1600,1600), new THREE.MeshStandardMaterial({ color:0x2a2a2a, metalness:0.2 }));
-      floor.rotation.x=-Math.PI/2; sc.add(floor);
-
-      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat);
-      rig.position.set(0,1,0); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
-
-      const conveyors=[]; for(let i=0;i<6;i++){ const c=new THREE.Mesh(new THREE.BoxGeometry(30,1,6), new THREE.MeshStandardMaterial({ color:0x444444 })); c.position.set(i*40-100, 0.5, (i%2?20:-20)); sc.add(c); conveyors.push(c); }
-
-      const bots=[]; for(let i=0;i<10;i++){ const b=new THREE.Mesh(new THREE.BoxGeometry(1,1.6,1), new THREE.MeshStandardMaterial({ color:0x888888 })); b.position.set((Math.random()-0.5)*120, 0.8, (Math.random()-0.5)*120); b.userData.vel=new THREE.Vector3((Math.random()-0.5)*6,0,(Math.random()-0.5)*6); sc.add(b); bots.push(b); }
-
-      let yaw=0,pitch=0,score=0,run=true;
-      hudPrimary.textContent=`Robot Factory — Level ${levelIndex+1}`; hudSecondary.textContent=`Deactivate 0/${bots.length}`;
-
-      function applySkin(s){ rigMat.color.setHex(skinToColor(s)); }
-      function applyOwner(flag){ const spr=rig.children.find(ch=>ch.isSprite); if(flag && !spr) rig.add(makeOwnerLabel()); if(!flag && spr) rig.remove(spr); }
-
-      return {
-        scene: sc, camera: cam,
-        restart(){ rig.position.set(0,1,0); score=0; msg.style.display='none'; run=true; },
-        dispose(){}, getCurrency:()=>score, setCurrency:v=>{ score=v; hudSecondary.textContent=`Deactivate ${score}/${bots.length}`; },
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.5); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.5,0.5);
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 9.2, 3.0);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys,mv); const {forward,right}=getCameraBasisXZ(cam, rig.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize();
-          rig.position.addScaledVector(dir, 8.5*dt);
-
-          for(const b of bots){ b.position.addScaledVector(b.userData.vel, dt); if(Math.abs(b.position.x)>130) b.userData.vel.x*=-1; if(Math.abs(b.position.z)>130) b.userData.vel.z*=-1; }
-          for(let i=bots.length-1;i>=0;i--){ const b=bots[i]; if(rig.position.distanceTo(b.position)<1.2){ sc.remove(b); bots.splice(i,1); score++; hudSecondary.textContent=`Deactivate ${score}/${10}`; } }
-          if(score>=8){ run=false; addScore('factory', shared.name||'Player', score); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 15 — Sky Glider —————
-    function setupGliderTP(quality, skin, levelIndex, ownerFlag) {
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x87ceeb);
-      const cam=new THREE.PerspectiveCamera(80, window.innerWidth/window.innerHeight, 0.1, 2400);
-      sc.add(makeLights('day'));
-
-      const gliderMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const glider=new THREE.Mesh(new THREE.BoxGeometry(6,0.4,2.2), gliderMat);
-      glider.position.set(0,20,0); sc.add(glider); if(ownerFlag) glider.add(makeOwnerLabel());
-
-      const rings=[]; for(let i=0;i<14;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(3,0.25,12,28), new THREE.MeshStandardMaterial({ color:0xffff88 })); r.position.set(i*60, 10+Math.sin(i*0.6)*6, Math.sin(i*0.35)*18); sc.add(r); rings.push(r); }
-
-      let heading=0, speed=18, score=0, yaw=0, pitch=0, run=true;
-      hudPrimary.textContent=`Sky Glider — Level ${levelIndex+1}`; hudSecondary.textContent=`Rings 0/${rings.length}`;
-
-      function applySkin(s){ gliderMat.color.setHex(skinToColor(s)); }
-      function applyOwner(flag){ const spr=glider.children.find(ch=>ch.isSprite); if(flag && !spr) glider.add(makeOwnerLabel()); if(!flag && spr) glider.remove(spr); }
-
-      return {
-        scene: sc, camera: cam,
-        restart(){ glider.position.set(0,20,0); heading=0; speed=18; score=0; run=true; msg.style.display='none'; },
-        dispose(){}, getCurrency:()=>score, setCurrency:v=>{ score=v; hudSecondary.textContent=`Rings ${score}/${14}`; },
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(0.9); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.35,0.35);
-          heading += lx*dt*0.8; speed = THREE.MathUtils.clamp(speed + ly*dt*-10, 12, 28);
-          const dir = new THREE.Vector3(Math.sin(heading), -Math.sin(pitch)*0.6, Math.cos(heading));
-          glider.position.addScaledVector(dir, speed*dt);
-          glider.rotation.y = heading;
-          updateThirdPersonCamera(cam, glider.position, heading, pitch, 14, 4);
-
-          for(let i=rings.length-1;i>=0;i--){ const r=rings[i]; if(glider.position.distanceTo(r.position)<3.6){ sc.remove(r); rings.splice(i,1); score++; hudSecondary.textContent=`Rings ${score}/${14}`; } }
-          if(rings.length===0){ run=false; addScore('glider', shared.name||'Player', score); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 16 — Sandstorm Survival —————
-    function setupSandstormTP(quality, skin, levelIndex, ownerFlag) {
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0xe6c184);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
-      sc.add(makeLights('sand'));
-
-      const ground=new THREE.Mesh(new THREE.PlaneGeometry(2000,2000), new THREE.MeshStandardMaterial({ color:0xdec58c }));
-      ground.rotation.x=-Math.PI/2; sc.add(ground);
-
-      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat);
-      rig.position.set(0,1,0); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
-
-      const gusts=[]; for(let i=0;i<22;i++){ const g=new THREE.Mesh(new THREE.ConeGeometry(1.0, 2.0, 12), new THREE.MeshStandardMaterial({ color:0xccaa77, transparent:true, opacity:0.5 })); g.position.set((Math.random()-0.5)*120, 1, (Math.random()-0.5)*120); g.userData.vel=new THREE.Vector3((Math.random()-0.5)*14,0,(Math.random()-0.5)*14); sc.add(g); gusts.push(g); }
-
-      let yaw=0,pitch=0,time=0,run=true,score=0;
-      hudPrimary.textContent=`Sandstorm — Level ${levelIndex+1}`; hudSecondary.textContent=`Survive`;
-
-      function applySkin(s){ rigMat.color.setHex(skinToColor(s)); }
-      function applyOwner(flag){ const spr=rig.children.find(ch=>ch.isSprite); if(flag&&!spr) rig.add(makeOwnerLabel()); if(!flag&&spr) rig.remove(spr); }
-
-      return {
-        scene: sc, camera: cam,
-        restart(){ rig.position.set(0,1,0); time=0; score=0; run=true; msg.style.display='none'; },
-        dispose(){}, getCurrency:()=>Math.floor(score), setCurrency:v=>{ score=v; },
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          time += dt; score = time * 10;
-          const {lx,ly}=getLookDelta(1.3); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.45,0.45);
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.6, 3.0);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys,mv); const {forward,right}=getCameraBasisXZ(cam, rig.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize();
-          rig.position.addScaledVector(dir, 8.4*dt);
-
-          for(const g of gusts){ g.position.addScaledVector(g.userData.vel, dt); if(Math.abs(g.position.x)>140) g.userData.vel.x*=-1; if(Math.abs(g.position.z)>140) g.userData.vel.z*=-1; if(rig.position.distanceTo(g.position)<1.2){ run=false; msgText.textContent='Blown away — Sandstorm'; msg.style.display='block'; addScore('sandstorm', shared.name||'Player', Math.floor(score)); } }
-          hudSecondary.textContent = `Survive — Score ${Math.floor(score)}`;
-          if(score >= 160){ run=false; addScore('sandstorm', shared.name||'Player', Math.floor(score)); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 17 — Crystal Collector —————
-    function setupCrystalTP(quality, skin, levelIndex, ownerFlag) {
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x24334a);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
-      sc.add(makeLights('maze'));
-
-      const floor=new THREE.Mesh(new THREE.PlaneGeometry(1600,1600), new THREE.MeshStandardMaterial({ color:0x1b273a }));
-      floor.rotation.x=-Math.PI/2; sc.add(floor);
-
-      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat);
-      rig.position.set(0,1,0); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
-
-      const crystals=[]; for(let i=0;i<20;i++){ const c=new THREE.Mesh(new THREE.OctahedronGeometry(0.8), new THREE.MeshStandardMaterial({ color:0x66ffee, emissive:0x226666 })); c.position.set((Math.random()-0.5)*90, 1, (Math.random()-0.5)*90); sc.add(c); crystals.push(c); }
-
-      let yaw=0,pitch=0,score=0,run=true;
-      hudPrimary.textContent=`Crystal Collector — Level ${levelIndex+1}`; hudSecondary.textContent=`Crystals 0/${crystals.length}`;
-
-      function applySkin(s){ rigMat.color.setHex(skinToColor(s)); }
-      function applyOwner(flag){ const spr=rig.children.find(ch=>ch.isSprite); if(flag&&!spr) rig.add(makeOwnerLabel()); if(!flag&&spr) rig.remove(spr); }
-
-      return {
-        scene: sc, camera: cam,
-        restart(){ rig.position.set(0,1,0); score=0; run=true; msg.style.display='none'; },
-        dispose(){}, getCurrency:()=>score, setCurrency:v=>{ score=v; hudSecondary.textContent=`Crystals ${score}/${20}`; },
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.4); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.5,0.5);
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.4, 3.0);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys,mv); const {forward,right}=getCameraBasisXZ(cam, rig.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize();
-          rig.position.addScaledVector(dir, 8.2*dt);
-
-          for(let i=crystals.length-1;i>=0;i--){ const c=crystals[i]; c.rotation.y += 1.2*dt; if(rig.position.distanceTo(c.position)<1.2){ sc.remove(c); crystals.splice(i,1); score++; hudSecondary.textContent=`Crystals ${score}/${20}`; } }
-          if(score>=16){ run=false; addScore('crystal', shared.name||'Player', score); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-        }
-      };
-    }
-
-    // ————— Game 18 — Tower Climb (solid floor + spawn on first step) —————
-    function setupTowerTP(quality, skin, levelIndex, ownerFlag) {
-      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x101820);
-      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2400);
-      sc.add(makeLights('day'));
-
-      // Solid floor
-      const base=new THREE.Mesh(new THREE.PlaneGeometry(2200,2200), new THREE.MeshStandardMaterial({ color:0x222222 }));
-      base.rotation.x=-Math.PI/2; base.position.y=-2; sc.add(base);
-
-      // Spiral tower steps
-      const steps=[]; const stepMat=new THREE.MeshStandardMaterial({ color:0x6a6a6a });
-      let angle=0, radius=20, height=2;
-      for(let i=0;i<60;i++){ const s=new THREE.Mesh(new THREE.BoxGeometry(10,2,4), stepMat); s.position.set(Math.cos(angle)*radius, height, Math.sin(angle)*radius); s.rotation.y = -angle; sc.add(s); steps.push(s); angle += Math.PI/6; height += 2.2; radius *= 0.98; }
-
-      const goal=new THREE.Mesh(new THREE.TorusGeometry(4,0.5,16,32), new THREE.MeshStandardMaterial({ color:0x88ff88 })); goal.position.set(Math.cos(angle)*radius, height+6, Math.sin(angle)*radius); sc.add(goal);
-
-      const playerMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const player=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), playerMat);
-      const first=steps[0]; player.position.set(first.position.x, first.position.y+1, first.position.z); sc.add(player);
-      if(ownerFlag) player.add(makeOwnerLabel());
-
-      let vel=new THREE.Vector3(), yaw=0, pitch=0, onGround=true, jumps=2, run=true;
-      hudPrimary.textContent=`Tower Climb — Level ${levelIndex+1}`; hudSecondary.textContent=`Reach the top | Double jump`;
-
-      function applySkin(s){ playerMat.color.setHex(skinToColor(s)); }
-      function applyOwner(flag){ const spr=player.children.find(ch=>ch.isSprite); if(flag&&!spr) player.add(makeOwnerLabel()); if(!flag&&spr) player.remove(spr); }
-      function tryJump(){ if(!run) return; if(onGround){ vel.y=18; jumps=1; onGround=false; } else if(jumps>0){ vel.y=17; jumps--; } }
-      jumpBtn.onclick=tryJump; window.addEventListener('keydown', e=>{ if(e.code==='Space') tryJump(); });
-
-      function collide(){ onGround=false;
-        for(const p of steps){
-          const top=p.position.y+1;
-          const hw=p.geometry.parameters.width/2, hd=p.geometry.parameters.depth/2;
-          const withinX=(player.position.x>p.position.x-hw-0.5)&&(player.position.x<p.position.x+hw+0.5);
-          const withinZ=(player.position.z>p.position.z-hd-0.5)&&(player.position.z<p.position.z+hd+0.5);
-          const nearTop=Math.abs(player.position.y-(top+0.5))<0.6 && vel.y<=0;
-          if(withinX && withinZ && nearTop){ player.position.y=top+0.5; vel.y=0; onGround=true; jumps=2; }
-        }
-        if(player.position.y < -20){ run=false; msgText.textContent='You fell — Tower Climb'; msg.style.display='block'; addScore('tower', shared.name||'Player', 1); }
-      }
-
-      return {
-        scene: sc, camera: cam,
-        restart(){ const f=steps[0]; player.position.set(f.position.x, f.position.y+1, f.position.z); vel.set(0,0,0); yaw=0; pitch=0; onGround=true; jumps=2; run=true; msg.style.display='none'; },
-        dispose(){}, getCurrency:()=>0, setCurrency:()=>{},
-        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade:()=>{},
-        update(dt){
-          if(!run) return;
-          const {lx,ly}=getLookDelta(1.5); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.6,0.6);
-          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.0, 2.6);
-          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys,mv); const {forward,right}=getCameraBasisXZ(cam, player.position);
-          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize();
-          vel.x = THREE.MathUtils.lerp(vel.x, dir.x * 12, (onGround?10:6)*dt);
-          vel.z = THREE.MathUtils.lerp(vel.z, dir.z * 12, (onGround?10:6)*dt);
-          vel.y -= 18 * dt;
-          player.position.addScaledVector(vel, dt);
-          collide();
-          if(player.position.distanceTo(goal.position)<6){ run=false; addScore('tower', shared.name||'Player', 10); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
-          hudSecondary.textContent = onGround ? 'On step (double jump ready)' : (jumps>0 ? 'Air (double jump)' : 'Air');
-        }
-      };
-    }
-
-    // Register remaining games
-    Object.assign(gameSetups, {
-      volcano: setupVolcanoTP,
-      asteroids: setupAsteroidsTP,
-      underwater: setupUnderwaterTP,
-      haunted: setupHauntedTP,
-      factory: setupFactoryTP,
-      glider: setupGliderTP,
-      sandstorm: setupSandstormTP,
-      crystal: setupCrystalTP,
-      tower: setupTowerTP
-    });
-
-    // Hub control
-    function showMenu() {
-      running = false;
-      menu.style.display = 'grid';
-      backBtn.style.display = 'none';
-      hud.style.display = 'none';
-      controls.style.display = 'none';
-      settingsBar.style.display = 'none';
-      msg.style.display = 'none';
-    }
-    function hideMenu() {
-      menu.style.display = 'none';
-      backBtn.style.display = 'inline-block';
-      hud.style.display = 'block';
-      controls.style.display = 'flex';
-      settingsBar.style.display = 'flex';
-    }
-    function startGame(setup, gameKey, levelIdx = 0) {
-      if (!setup) return;
-      if (cleanup && cleanup.dispose) cleanup.dispose();
-      scene = null; camera = null;
-      const pack = setup(quality, shared.skin, levelIdx, shared.owner);
-      scene = pack.scene; camera = pack.camera;
-      running = true; shared.currentGame = gameKey;
-      cleanup = {
-        restart: pack.restart, dispose: pack.dispose, update: pack.update,
-        getCurrency: pack.getCurrency, setCurrency: pack.setCurrency,
-        applyMapVariant: pack.applyMapVariant, applySkin: pack.applySkin,
-        applyOwner: pack.applyOwner, applyWeaponUpgrade: pack.applyWeaponUpgrade,
-        nextLevel: () => advanceLevel(gameKey, levelIdx + 1)
-      };
-      hideMenu();
-    }
-    function advanceLevel(gameKey, nextIndex) {
-      if (nextIndex < maxLevels) {
-        const setup = gameSetups[gameKey];
-        startGame(setup, gameKey, nextIndex);
-        return;
-      }
-      const currentIdx = gameOrder.indexOf(gameKey);
-      const nextGameKey = gameOrder[(currentIdx + 1) % gameOrder.length];
-      startGame(gameSetups[nextGameKey], nextGameKey, 0);
-    }
-
-    backBtn.onclick = showMenu;
+    // Back/restart
+    backBtn.onclick = () => showMenu();
     restartBtn.onclick = () => { if (cleanup && cleanup.restart) cleanup.restart(); };
 
-    // Main loop
+    // MAIN LOOP
     let sceneLast = performance.now();
     function loop(now) {
-      const dt = Math.min((now - sceneLast) / 1000, 1 / 30);
-      sceneLast = now;
+      const dt = Math.min((now - sceneLast) / 1000, 1 / 30); sceneLast = now;
       if (running && cleanup && cleanup.update) cleanup.update(dt, now);
       if (scene && camera) renderer.render(scene, camera);
       requestAnimationFrame(loop);
@@ -1424,7 +1495,7 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Boot to menu
+    // Start
     showMenu();
   </script>
 </body>
