@@ -15,13 +15,29 @@
   .stick-base, .stick-thumb { position: absolute; border-radius: 50%; }
   .stick-base { width: 140px; height: 140px; background: rgba(255,255,255,0.08); }
   .stick-thumb { width: 70px; height: 70px; left: 35px; top: 35px; background: rgba(255,255,255,0.2); }
-  .btn { position: absolute; right: 20px; bottom: 120px; width: 90px; height: 90px; border-radius: 50%; pointer-events: auto; background: radial-gradient(circle at 30% 30%, #fff 0%, #f6b73c 35%, #e36c1b 60%, #ad3a0a 100%); box-shadow: 0 10px 25px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.5); }
+  .btn { position: absolute; right: 20px; bottom: 120px; width: 90px; height: 90px; border-radius: 50%; pointer-events: auto; touch-action: manipulation;
+    background: radial-gradient(circle at 30% 30%, #fff 0%, #f6b73c 35%, #e36c1b 60%, #ad3a0a 100%); box-shadow: 0 10px 25px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.5); }
   .btn:active { transform: scale(0.96); }
   #menu { position: fixed; left: 50%; transform: translateX(-50%); bottom: 70px; display: flex; gap: 8px; pointer-events: auto; }
   #menu select, #menu button { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.35); color:#e6e6e6; }
   #pauseOverlay { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); color:#fff; font-size: 20px; font-weight:700; text-align:center; }
   #pauseOverlay .inner { background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.2); padding: 14px 18px; border-radius: 10px; }
-  * { -webkit-tap-highlight-color: transparent; user-select: none; }
+
+  /* Main menu overlay */
+  #mainMenu { position: fixed; inset: 0; display: none; background: rgba(0,0,0,0.7); color: #e6e6e6; }
+  #mainMenu .wrap { position: absolute; left:50%; top:50%; transform: translate(-50%,-50%); width: min(720px, 92vw); max-height: 80vh; overflow:auto;
+    background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; }
+  #mainMenu h2 { margin: 0 0 10px; font-weight: 700; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tab { padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); cursor: pointer; }
+  .tab.active { background: rgba(255,255,255,0.18); }
+  .tabpane { display: none; }
+  .tabpane.active { display: block; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; }
+  .row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+  .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); cursor: pointer; }
+  .closeMenu { position: absolute; right: 12px; top: 12px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); }
 </style>
 </head>
 <body>
@@ -37,11 +53,12 @@
 <div id="msg">Collect stars and reach the glowing goal!</div>
 
 <div id="controls">
-  <!-- Movement joystick only -->
+  <!-- Movement joystick -->
   <div class="stick-wrap" id="moveStick" style="left:20px; bottom:20px;">
     <div class="stick-base"></div>
     <div class="stick-thumb" id="moveThumb"></div>
   </div>
+  <!-- Jump button (camera deadzone underneath this area) -->
   <button class="btn" id="jumpBtn" aria-label="Jump"></button>
 </div>
 
@@ -55,9 +72,56 @@
   <button id="restartBtn">Restart</button>
   <button id="pauseBtn">Pause</button>
   <button id="toggleViewBtn">Toggle View</button>
+  <button id="openMenuBtn">Main Menu</button>
 </div>
 
 <div id="pauseOverlay"><div class="inner">Paused<br/><small>(Tap or press P to resume)</small></div></div>
+
+<!-- Main Menu Overlay -->
+<div id="mainMenu">
+  <div class="wrap">
+    <button class="closeMenu" id="closeMenuBtn">Close</button>
+    <h2>Main menu</h2>
+    <div class="tabs">
+      <div class="tab active" data-tab="levelsTab">Levels</div>
+      <div class="tab" data-tab="customTab">Customize</div>
+      <div class="tab" data-tab="optionsTab">Options</div>
+    </div>
+    <div id="levelsTab" class="tabpane active">
+      <div class="grid" id="levelsGrid"></div>
+    </div>
+    <div id="customTab" class="tabpane">
+      <div class="card">
+        <h3>Character customization</h3>
+        <div class="row">
+          <div>Color:</div>
+          <div class="swatch" data-color="#f0f3f8" style="background:#f0f3f8"></div>
+          <div class="swatch" data-color="#ff9aa2" style="background:#ff9aa2"></div>
+          <div class="swatch" data-color="#9ad1ff" style="background:#9ad1ff"></div>
+          <div class="swatch" data-color="#a3ffb0" style="background:#a3ffb0"></div>
+          <div class="swatch" data-color="#ffd54f" style="background:#ffd54f"></div>
+        </div>
+        <div class="row">
+          <label><input type="checkbox" id="hatToggle"/> Hat accessory</label>
+          <label><input type="checkbox" id="trailToggle"/> Sparkle trail</label>
+        </div>
+      </div>
+    </div>
+    <div id="optionsTab" class="tabpane">
+      <div class="card">
+        <h3>Gameplay</h3>
+        <div class="row">
+          <label><input type="checkbox" id="doubleJumpToggle" checked/> Enable double jump</label>
+        </div>
+        <div class="row">
+          <label>Camera sensitivity
+            <input type="range" id="camSens" min="1.0" max="6.0" step="0.1" value="3.0"/>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
 <script>
@@ -88,27 +152,42 @@
   // Materials
   const matPlatform = new THREE.MeshStandardMaterial({ color: 0x2b5c4b, roughness: 0.8, metalness: 0.1 });
   const matPlatformAlt = new THREE.MeshStandardMaterial({ color: 0x3a2b5c, roughness: 0.85, metalness: 0.1 });
-  const matPlayer = new THREE.MeshStandardMaterial({ color: 0xf0f3f8, roughness: 0.3, metalness: 0.2, emissive: 0x111111, emissiveIntensity: 0.25 });
   const matStar = new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0xffc107, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.6 });
   const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.8, roughness: 0.4, metalness: 0.4 });
 
-  // Player capsule
+  // Player capsule + customization
   const playerRadius = 0.5;
   const playerHeight = 1.2;
+  let playerColor = 0xf0f3f8;
+  const matPlayer = new THREE.MeshStandardMaterial({ color: playerColor, roughness: 0.3, metalness: 0.2, emissive: 0x111111, emissiveIntensity: 0.25 });
+
   const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, playerHeight, 8, 16), matPlayer);
   player.castShadow = true;
-  player.receiveShadow = false;
   scene.add(player);
+
+  // Accessories
+  const hat = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xff6f61, roughness: 0.5 }));
+  hat.rotation.x = Math.PI;
+  hat.visible = false;
+  scene.add(hat);
+
+  const trailGeom = new THREE.TorusGeometry(0.25, 0.05, 8, 24);
+  const trailMat = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x88aaff, emissiveIntensity: 0.6, roughness: 0.2, metalness: 0.2 });
+  const trail = new THREE.Mesh(trailGeom, trailMat);
+  trail.visible = false;
+  scene.add(trail);
 
   // Camera rig / mode
   let cameraMode = 'third'; // 'third' | 'first'
   let camYaw = 0;
   let camPitch = 0.25;
   const pitchMin = -0.3, pitchMax = 0.85;
+  let camSensitivity = 3.0;
   const orbitRadius = 7.5;
 
-  // Level data
+  // Level data (more maps)
   const LEVELS = [
+    // Original 3
     {
       name: "Beginnings",
       platforms: [
@@ -148,6 +227,46 @@
       stars: [[6,3,-6],[-6,5,-12],[6,7,-18],[-6,9,-24],[0,11,-30]],
       goal: [0,11.5,-30],
       spawn: [0,2.5,5]
+    },
+    // New maps
+    {
+      name: "Crystal steps",
+      platforms: [
+        {x:0,y:0,z:0,w:22,d:22,alt:false},
+        {x:4,y:2,z:-6,w:4,d:4,alt:true},
+        {x:8,y:4,z:-12,w:4,d:4,alt:true},
+        {x:12,y:6,z:-18,w:4,d:4,alt:true},
+        {x:16,y:8,z:-24,w:4,d:4,alt:true}
+      ],
+      stars: [[4,3,-6],[8,5,-12],[12,7,-18],[16,9,-24]],
+      goal: [18,9.5,-26],
+      spawn: [0,2.5,6]
+    },
+    {
+      name: "Rolling plains",
+      platforms: [
+        {x:0,y:0,z:0,w:26,d:26,alt:false},
+        {x:-10,y:2,z:-10,w:8,d:6,alt:true},
+        {x:10,y:2,z:-10,w:8,d:6,alt:true},
+        {x:0,y:4,z:-22,w:10,d:6,alt:false}
+      ],
+      stars: [[-10,3,-10],[10,3,-10],[0,5,-22],[0,1,0]],
+      goal: [0,5.5,-26],
+      spawn: [0,2.5,8]
+    },
+    {
+      name: "Twin towers",
+      platforms: [
+        {x:0,y:0,z:0,w:22,d:22,alt:false},
+        {x:-4,y:4,z:-8,w:4,d:4,alt:true},
+        {x:-4,y:8,z:-12,w:4,d:4,alt:true},
+        {x:6,y:4,z:-10,w:4,d:4,alt:false},
+        {x:6,y:8,z:-14,w:4,d:4,alt:false},
+        {x:1,y:12,z:-20,w:6,d:6,alt:true}
+      ],
+      stars: [[-4,5,-8],[6,5,-10],[-4,9,-12],[6,9,-14],[1,13,-20]],
+      goal: [1,13.2,-20],
+      spawn: [0,2.5,6]
     }
   ];
 
@@ -171,12 +290,67 @@
   const restartBtn = document.getElementById('restartBtn');
   const pauseBtn = document.getElementById('pauseBtn');
   const toggleViewBtn = document.getElementById('toggleViewBtn');
+  const openMenuBtn = document.getElementById('openMenuBtn');
 
-  // Populate level dropdown
+  // Main menu overlay elements
+  const mainMenu = document.getElementById('mainMenu');
+  const closeMenuBtn = document.getElementById('closeMenuBtn');
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const panes = {
+    levelsTab: document.getElementById('levelsTab'),
+    customTab: document.getElementById('customTab'),
+    optionsTab: document.getElementById('optionsTab')
+  };
+  const levelsGrid = document.getElementById('levelsGrid');
+  const hatToggle = document.getElementById('hatToggle');
+  const trailToggle = document.getElementById('trailToggle');
+  const doubleJumpToggle = document.getElementById('doubleJumpToggle');
+  const camSensInput = document.getElementById('camSens');
+
+  // Populate level dropdown and menu grid
   LEVELS.forEach((l, i) => {
     const opt = document.createElement('option');
     opt.value = i; opt.textContent = `${i+1}. ${l.name}`;
     levelSelect.appendChild(opt);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<strong>${i+1}. ${l.name}</strong><br/><button data-level="${i}">Play</button>`;
+    levelsGrid.appendChild(card);
+  });
+  levelsGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-level]');
+    if (!btn) return;
+    const idx = parseInt(btn.getAttribute('data-level'), 10);
+    loadLevel(idx);
+    mainMenu.style.display = 'none';
+  });
+
+  // Tab behavior
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    Object.values(panes).forEach(p => p.classList.remove('active'));
+    panes[t.getAttribute('data-tab')].classList.add('active');
+  }));
+
+  // Customization swatches
+  Array.from(document.querySelectorAll('.swatch')).forEach(sw => {
+    sw.addEventListener('click', () => {
+      const hex = sw.getAttribute('data-color');
+      playerColor = parseInt(hex.replace('#', ''), 16);
+      matPlayer.color.setHex(playerColor);
+    });
+  });
+
+  hatToggle.addEventListener('change', () => {
+    hat.visible = hatToggle.checked;
+  });
+  trailToggle.addEventListener('change', () => {
+    trail.visible = trailToggle.checked;
+  });
+  camSensInput.addEventListener('input', () => {
+    camSensitivity = parseFloat(camSensInput.value);
   });
 
   // Game mode state
@@ -202,6 +376,10 @@
   const airControl = 0.6;
   let onGround = false;
 
+  // Double jump state
+  let canDoubleJump = true;
+  let doubleJumpEnabled = true;
+
   // Input state
   const keys = { left: false, right: false, up: false, down: false, jump: false };
   let moveDx = 0, moveDy = 0;
@@ -209,7 +387,7 @@
   let score = 0;
   const voidY = -20;
 
-  // Keyboard controls
+  // Keyboard
   window.addEventListener('keydown', (e) => {
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
     if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
@@ -217,6 +395,7 @@
     if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = true;
     if (e.code === 'Space') keys.jump = true;
     if (e.code === 'KeyP') togglePause();
+    if (e.code === 'Escape') mainMenu.style.display = 'none';
   });
   window.addEventListener('keyup', (e) => {
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
@@ -226,36 +405,39 @@
     if (e.code === 'Space') keys.jump = false;
   });
 
-  // Camera look via pointer drag, with deadzone behind movement joystick
+  // Camera look via pointer drag, with deadzones for controls
   let lastMouse = null;
   window.addEventListener('pointerdown', (e) => { lastMouse = { x: e.clientX, y: e.clientY }; });
   window.addEventListener('pointerup', () => { lastMouse = null; });
   window.addEventListener('pointermove', (e) => {
     if (!lastMouse) return;
 
-    // Deadzone: if pointer is inside the movement joystick area, ignore camera updates
     const moveRect = document.getElementById('moveStick').getBoundingClientRect();
-    if (e.clientX >= moveRect.left && e.clientX <= moveRect.right &&
-        e.clientY >= moveRect.top && e.clientY <= moveRect.bottom) {
+    const jumpRect = document.getElementById('jumpBtn').getBoundingClientRect();
+    const overMove = e.clientX >= moveRect.left && e.clientX <= moveRect.right && e.clientY >= moveRect.top && e.clientY <= moveRect.bottom;
+    const overJump = e.clientX >= jumpRect.left && e.clientX <= jumpRect.right && e.clientY >= jumpRect.top && e.clientY <= jumpRect.bottom;
+
+    if (overMove || overJump) {
+      // Camera deadzone when interacting near controls
       lastMouse = { x: e.clientX, y: e.clientY };
       return;
     }
 
     const dx = (e.clientX - lastMouse.x) / window.innerWidth;
     const dy = (e.clientY - lastMouse.y) / window.innerHeight;
-    const jitterDeadzone = 0.01; // ignore tiny movements
+    const jitterDeadzone = 0.01;
 
-    if (Math.abs(dx) > jitterDeadzone) camYaw -= dx * 3.0;
+    if (Math.abs(dx) > jitterDeadzone) camYaw -= dx * camSensitivity;
     if (Math.abs(dy) > jitterDeadzone) {
       camPitch = THREE.MathUtils.clamp(
-        camPitch + (cameraMode === 'third' ? dy * 2.0 : -dy * 2.0),
+        camPitch + (cameraMode === 'third' ? dy * (camSensitivity * 0.66) : -dy * (camSensitivity * 0.66)),
         pitchMin, pitchMax
       );
     }
     lastMouse = { x: e.clientX, y: e.clientY };
   });
 
-  // Virtual joystick setup
+  // Virtual joystick setup (movement only)
   function setupStick(stickId, thumbId, cb) {
     const stick = document.getElementById(stickId);
     const thumb = document.getElementById(thumbId);
@@ -283,7 +465,6 @@
     stick.addEventListener('pointercancel', () => { active = false; reset(); });
   }
 
-  // Movement joystick (invert directions)
   setupStick('moveStick', 'moveThumb', (dx, dy) => { moveDx = -dx; moveDy = -dy; });
 
   // Jump button
@@ -307,6 +488,10 @@
     cameraMode = cameraMode === 'third' ? 'first' : 'third';
     player.visible = cameraMode !== 'first'; // hide capsule in first person
   });
+
+  // Open/close main menu
+  openMenuBtn.addEventListener('click', () => { mainMenu.style.display = 'block'; });
+  closeMenuBtn.addEventListener('click', () => { mainMenu.style.display = 'none'; });
 
   // Geometry helpers
   function makePlatform(x, y, z, w, d, alt = false) {
@@ -372,6 +557,7 @@
     player.position.set(lvl.spawn[0], lvl.spawn[1], lvl.spawn[2]);
     velocity.set(0,0,0);
     onGround = false;
+    canDoubleJump = true;
     msgEl.textContent = 'Collect stars and reach the glowing goal!';
     updateHUD();
   }
@@ -383,21 +569,18 @@
     updateHUD();
   }
 
-  levelSelect.addEventListener('change', (e) => {
-    loadLevel(parseInt(e.target.value, 10));
-  });
-  modeSelect.addEventListener('change', (e) => {
-    applyMode(e.target.value);
-  });
-  restartBtn.addEventListener('click', () => {
-    loadLevel(currentLevel);
-  });
+  levelSelect.addEventListener('change', (e) => loadLevel(parseInt(e.target.value, 10)));
+  modeSelect.addEventListener('change', (e) => applyMode(e.target.value));
+  restartBtn.addEventListener('click', () => loadLevel(currentLevel));
+  doubleJumpToggle.addEventListener('change', (e) => { doubleJumpEnabled = e.target.checked; });
 
+  // Respawn
   function respawn(penalize = true) {
     const spawn = LEVELS[currentLevel].spawn;
     player.position.set(spawn[0], spawn[1], spawn[2]);
     velocity.set(0,0,0);
     onGround = false;
+    canDoubleJump = true;
 
     if (gameMode === 'survival' && penalize) {
       lives -= 1;
@@ -433,6 +616,11 @@
 
     const dt = Math.min(0.033, clock.getDelta());
 
+    // Accessories follow player
+    hat.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 0.4, player.position.z);
+    trail.position.set(player.position.x, player.position.y + 0.2, player.position.z);
+    trail.rotation.y += dt * 2.0;
+
     // Time attack
     if (gameMode === 'time') {
       timeLeft -= dt;
@@ -461,7 +649,7 @@
       .addScaledVector(forward, input.z)
       .addScaledVector(right, input.x);
 
-    // Movement
+    // Movement params
     const accelMag = onGround ? 16 : 16 * airControl;
     acceleration.set(moveVec.x * accelMag, 0, moveVec.z * accelMag);
     acceleration.add(gravity);
@@ -473,17 +661,26 @@
       velocity.z = THREE.MathUtils.damp(velocity.z, 0, friction, dt);
     }
 
-    // Jump (stronger)
-    if (keys.jump && onGround) {
-      velocity.y = 14.0;
-      onGround = false;
-      keys.jump = false;
+    // Jump handling: stronger jump + double jump
+    if (keys.jump) {
+      if (onGround) {
+        velocity.y = 14.0;            // stronger first jump
+        onGround = false;
+        canDoubleJump = true;         // allow a double jump after leaving ground
+        keys.jump = false;
+      } else if (doubleJumpEnabled && canDoubleJump) {
+        velocity.y = 11.5;            // second jump slightly weaker
+        canDoubleJump = false;        // consume double jump
+        msgEl.textContent = 'Double jump!';
+        keys.jump = false;
+      }
     }
 
     // Integrate
     player.position.addScaledVector(velocity, dt);
 
     // Collisions
+    const wasGrounded = onGround;
     onGround = false;
     for (const box of platforms) {
       const hit = aabbSphereCollision(box, player.position, playerRadius);
@@ -503,6 +700,10 @@
           velocity.z *= 0.82;
         }
       }
+    }
+    // Reset double jump when we land
+    if (!wasGrounded && onGround) {
+      canDoubleJump = true;
     }
 
     // Stars
