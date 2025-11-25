@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Offline (8 games, longer levels, mobile controls)</title>
+  <title>3D Game Hub — Offline (8 games, mobile controls, triple jump platformer)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
@@ -21,10 +21,6 @@
     .menuBtn:hover { background:#2a2f; }
     .row { display:flex; gap:8px; align-items:center; margin-top:12px; flex-wrap:wrap; }
     .pill { padding:8px 12px; border-radius:999px; background:#fff1; border:1px solid #fff2; cursor:pointer; }
-    .inputRow { display:flex; gap:8px; align-items:center; margin-top:12px; }
-    .inputRow input { background:#222; border:1px solid #444; color:#fff; border-radius:8px; padding:8px 10px; width:220px; }
-
-    #levelBar { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
     .levelBtn { padding:8px 12px; border-radius:999px; background:#222a; border:1px solid #fff2; color:#fff; cursor:pointer; }
 
     #hud { position:absolute; bottom:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
@@ -67,7 +63,7 @@
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — Offline (8 games, longer levels, mobile controls)</div>
+    <div id="title">3D Game Hub — Offline (8 games, mobile controls, triple jump platformer)</div>
     <div class="small" id="hint">Left: move. Right: look. Jump/Action. Esc returns to menu.</div>
   </div>
 
@@ -78,7 +74,7 @@
       <h1>Pick a game</h1>
       <div id="menuGrid">
         <button class="menuBtn" data-game="jungle"><div style="font-weight:800">Lava Monkey Jungle</div><div class="small">Survive enemies and lava. Longer varied levels.</div></button>
-        <button class="menuBtn" data-game="platformer"><div style="font-weight:800">Sky Platforms (Double Jump)</div><div class="small">Reach the goal across extended courses.</div></button>
+        <button class="menuBtn" data-game="platformer"><div style="font-weight:800">Sky Platforms (Triple Jump)</div><div class="small">Reach the goal across extended courses.</div></button>
         <button class="menuBtn" data-game="racer"><div style="font-weight:800">Desert Ridge Racer</div><div class="small">Drive longer tracks with different shapes.</div></button>
         <button class="menuBtn" data-game="arena"><div style="font-weight:800">Space Drone Arena</div><div class="small">Clear waves with increasing complexity.</div></button>
         <button class="menuBtn" data-game="runner"><div style="font-weight:800">Forest Endless Runner</div><div class="small">Longer lanes, varied obstacle patterns.</div></button>
@@ -95,7 +91,7 @@
         <div class="pill" id="exitBtn">Exit</div>
       </div>
 
-      <div id="levelBar" class="row">
+      <div class="row" id="levelBar">
         <span class="small" style="opacity:0.8">Start level:</span>
         <button class="levelBtn" data-level="0">Level 1</button>
         <button class="levelBtn" data-level="1">Level 2</button>
@@ -220,8 +216,6 @@
     const resetLeaderboardBtn = document.getElementById('resetLeaderboard');
     const exitBtn = document.getElementById('exitBtn');
 
-    const codeInput = document.createElement('input'); // optional hidden; no codes now
-
     // Prevent iOS pinch/zoom
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
@@ -260,7 +254,6 @@
 
     // Hub state
     let scene = null, camera = null, cleanup = null, running = false, selectedLevel = 0;
-
     const gameOrder = ['jungle', 'platformer', 'racer', 'arena', 'runner', 'maze', 'range', 'voxel'];
     const maxLevels = 5;
 
@@ -432,11 +425,11 @@
       { size: 320, trees: 60, coins: 32, kits: 7, lavaSpeed: 0.028, enemyRate: 0.8, seed: 505 },
     ];
     const platformerLevels = [
-      { len: 14, segment: 32, heightStep: 12, layoutVar: 1.6, moveSpeed: 13, jumpVel: 17.5, seed: 55 },
-      { len: 16, segment: 34, heightStep: 12, layoutVar: 1.6, moveSpeed: 13.5, jumpVel: 17.8, seed: 66 },
-      { len: 18, segment: 36, heightStep: 12, layoutVar: 1.6, moveSpeed: 14, jumpVel: 18.0, seed: 77 },
-      { len: 20, segment: 38, heightStep: 12, layoutVar: 1.6, moveSpeed: 14.5, jumpVel: 18.2, seed: 88 },
-      { len: 22, segment: 40, heightStep: 12, layoutVar: 1.6, moveSpeed: 15, jumpVel: 18.4, seed: 99 },
+      { len: 14, segment: 32, heightStep: 12, layoutVar: 1.6, moveSpeed: 13, jumpVel: 17.8, seed: 55 },
+      { len: 16, segment: 34, heightStep: 12, layoutVar: 1.6, moveSpeed: 13.5, jumpVel: 18.0, seed: 66 },
+      { len: 18, segment: 36, heightStep: 12, layoutVar: 1.6, moveSpeed: 14, jumpVel: 18.2, seed: 77 },
+      { len: 20, segment: 38, heightStep: 12, layoutVar: 1.6, moveSpeed: 14.5, jumpVel: 18.4, seed: 88 },
+      { len: 22, segment: 40, heightStep: 12, layoutVar: 1.6, moveSpeed: 15, jumpVel: 18.6, seed: 99 },
     ];
     const racerLevels = [
       { gates: 22, amp: 55, freq: 0.8, turn: 2.0, seed: 88 },
@@ -699,7 +692,7 @@
       };
     }
 
-    // Platformer
+    // Platformer (TRIPLE JUMP + mobile-friendly jumping while moving)
     function setupPlatformerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = platformerLevels[levelIndex] || platformerLevels[0];
       const rand = makeRand(lvl.seed);
@@ -732,10 +725,10 @@
 
       const vel = new THREE.Vector3(0, 0, 0);
       const gravity = 18, moveSpeed = lvl.moveSpeed, jumpVel = lvl.jumpVel;
-      let onGround = false, run = true, won = false, yaw = 0, pitch = 0, jumpsLeft = 2;
+      let onGround = false, run = true, won = false, yaw = 0, pitch = 0, jumpsLeft = 3; // triple jump
 
       hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
-      hudSecondary.textContent = 'Reach the goal (Double jump)';
+      hudSecondary.textContent = 'Reach the goal (Triple jump)';
 
       function applyMapVariant(variant) {
         const hemi = lights.children.find(l => l.isHemisphereLight);
@@ -760,10 +753,11 @@
         if (!flag && existing) player.remove(existing);
       }
 
+      // Mobile-friendly jump while moving: button and space key both call tryJump
       function tryJump() {
         if (!run) return;
-        if (onGround) { vel.y = jumpVel; jumpsLeft = 1; onGround = false; }
-        else if (jumpsLeft > 0) { vel.y = jumpVel * 0.95; jumpsLeft = 0; }
+        if (onGround) { vel.y = jumpVel; jumpsLeft = 2; onGround = false; } // first jump uses 1, leaves 2 more
+        else if (jumpsLeft > 0) { vel.y = jumpVel * 0.95; jumpsLeft--; }     // mid-air jumps decrement
       }
       jumpBtn.onclick = tryJump;
       window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
@@ -781,7 +775,7 @@
           const nearTop = Math.abs(player.position.y - (top + playerRadius)) < 0.6 && vel.y <= 0;
           if (withinX && withinZ && nearTop) {
             player.position.y = top + playerRadius;
-            vel.y = 0; onGround = true; jumpsLeft = 2;
+            vel.y = 0; onGround = true; jumpsLeft = 3; // reset to triple jump on landing
           }
         }
         if (player.position.y < -60) {
@@ -792,7 +786,7 @@
         }
       }
 
-      function restart() { player.position.set(-16, 6, 0); vel.set(0, 0, 0); yaw = 0; pitch = 0; won = false; run = true; msg.style.display = 'none'; jumpsLeft = 2; }
+      function restart() { player.position.set(-16, 6, 0); vel.set(0, 0, 0); yaw = 0; pitch = 0; won = false; run = true; msg.style.display = 'none'; jumpsLeft = 3; }
 
       return {
         scene: sc, camera: cam, restart, dispose() {},
@@ -802,14 +796,17 @@
           const { lx, ly } = getLookDelta(1.8); yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
           updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.0, 2.6);
 
+          // Movement remains responsive in air (mobile-friendly)
           const mv = moveStick.get();
           const { inputX, inputY } = getMoveInput(keys, mv);
           const { forward, right } = getCameraBasisXZ(cam, player.position);
           const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
           if (dir.lengthSq() > 0) dir.normalize();
 
-          vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, 8 * dt);
-          vel.z = THREE.MathUtils.lerp(vel.z, dir.z * moveSpeed, 8 * dt);
+          // Strong control in air for mobile play
+          const control = onGround ? 1.0 : 0.9;
+          vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, (onGround ? 10 : 6) * control * dt);
+          vel.z = THREE.MathUtils.lerp(vel.z, dir.z * moveSpeed, (onGround ? 10 : 6) * control * dt);
           vel.y -= gravity * dt;
 
           player.position.addScaledVector(vel, dt);
@@ -824,7 +821,7 @@
           }
 
           hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
-          hudSecondary.textContent = onGround ? 'On platform (Double jump ready)' : (jumpsLeft > 0 ? 'Air (Double jump available)' : 'Air');
+          hudSecondary.textContent = onGround ? 'On platform (Triple jump ready)' : (jumpsLeft > 0 ? `Air (${jumpsLeft} jumps left)` : 'Air');
         }
       };
     }
@@ -1475,9 +1472,6 @@
         startGame(gameSetups[game], game, selectedLevel);
       });
     });
-
-    // Owner cosmetic toggle via secret code (optional)
-    // document.addEventListener('keydown', e => { if (e.code === 'KeyO') { shared.owner = !shared.owner; if (cleanup && cleanup.applyOwner) cleanup.applyOwner(shared.owner); } });
 
     // Back/restart
     backBtn.onclick = () => showMenu();
