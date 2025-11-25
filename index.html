@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Third Person, Varied Longer Levels, Single Server, Skins, Leaderboard, Voxel Builder</title>
+  <title>3D Game Hub — Offline (8 games, longer levels, mobile controls)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
@@ -10,11 +10,6 @@
 
     #topbar { position:absolute; top:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none; }
     #topbar .small { font-size:12px; opacity:0.85; font-weight:500; }
-
-    #netbar { position:absolute; top:10px; left:50%; transform:translateX(-50%); background:#111a; color:#fff; padding:8px 12px; border-radius:10px; border:1px solid #fff2; z-index:12; display:flex; gap:8px; align-items:center; }
-    #netbar input { background:#222; border:1px solid #444; color:#fff; border-radius:8px; padding:6px 8px; width:160px; }
-    #netbar .server { display:none; }
-    #netbar .label { opacity:0.7; font-size:12px; }
 
     #backBtn { position:absolute; top:10px; right:10px; z-index:12; padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; display:none; cursor:pointer; }
 
@@ -28,7 +23,6 @@
     .pill { padding:8px 12px; border-radius:999px; background:#fff1; border:1px solid #fff2; cursor:pointer; }
     .inputRow { display:flex; gap:8px; align-items:center; margin-top:12px; }
     .inputRow input { background:#222; border:1px solid #444; color:#fff; border-radius:8px; padding:8px 10px; width:220px; }
-    #exitBtn { background:#ff4d4d; border-color:#ff7a7a; }
 
     #levelBar { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
     .levelBtn { padding:8px 12px; border-radius:999px; background:#222a; border:1px solid #fff2; color:#fff; cursor:pointer; }
@@ -36,7 +30,7 @@
     #hud { position:absolute; bottom:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
     #hud .line { margin-top:6px; font-weight:600; }
 
-    #settingsBar { position:absolute; top:56px; right:10px; z-index:12; display:none; display:flex; gap:8px; }
+    #settingsBar { position:absolute; top:56px; right:10px; z-index:12; display:none; gap:8px; }
     .settingsBtn { padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; cursor:pointer; }
 
     #skins { position:absolute; top:18%; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; width:440px; border:1px solid #fff2; }
@@ -73,14 +67,8 @@
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — Third Person, Varied Longer Levels, Single Server, Skins, Leaderboard, Voxel Builder</div>
+    <div id="title">3D Game Hub — Offline (8 games, longer levels, mobile controls)</div>
     <div class="small" id="hint">Left: move. Right: look. Jump/Action. Esc returns to menu.</div>
-  </div>
-
-  <div id="netbar">
-    <span class="label">Name:</span><input id="playerName" placeholder="Guest" />
-    <button id="connectBtn">Join server</button>
-    <span id="connStatus" style="margin-left:8px; opacity:0.8"></span>
   </div>
 
   <button id="backBtn">Back to menu</button>
@@ -105,13 +93,6 @@
         <div class="pill" id="skinsBtn">Player skins</div>
         <div class="pill" id="leaderboardBtn">Leaderboard</div>
         <div class="pill" id="exitBtn">Exit</div>
-      </div>
-
-      <div class="inputRow">
-        <label for="codeInput">Code:</label>
-        <input id="codeInput" />
-        <button id="applyCodeBtn" class="pill">Apply</button>
-        <span id="codeStatus" class="small" style="opacity:0.85"></span>
       </div>
 
       <div id="levelBar" class="row">
@@ -146,7 +127,7 @@
       <div class="swatch" data-skin="black" style="background:#222"></div>
       <div class="swatch" data-skin="yellow" style="background:#ffd84d"></div>
     </div>
-    <div class="row"><span style="opacity:0.8">Applies to all games and online presence.</span></div>
+    <div class="row"><span style="opacity:0.8">Applies to all games.</span></div>
     <button id="closeSkins">Close</button>
   </div>
 
@@ -239,14 +220,12 @@
     const resetLeaderboardBtn = document.getElementById('resetLeaderboard');
     const exitBtn = document.getElementById('exitBtn');
 
-    const netbar = document.getElementById('netbar');
-    const playerNameInput = document.getElementById('playerName');
-    const connectBtn = document.getElementById('connectBtn');
-    const connStatus = document.getElementById('connStatus');
+    const codeInput = document.createElement('input'); // optional hidden; no codes now
 
-    const codeInput = document.getElementById('codeInput');
-    const applyCodeBtn = document.getElementById('applyCodeBtn');
-    const codeStatus = document.getElementById('codeStatus');
+    // Prevent iOS pinch/zoom
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+    document.addEventListener('gestureend', e => e.preventDefault());
 
     // Joysticks
     function setupStick(stickId, knobId) {
@@ -273,11 +252,6 @@
     const moveStick = setupStick('leftStick', 'leftKnob');
     const lookStick = setupStick('rightStick', 'rightKnob');
 
-    // Prevent iOS pinch/zoom
-    document.addEventListener('gesturestart', e => e.preventDefault());
-    document.addEventListener('gesturechange', e => e.preventDefault());
-    document.addEventListener('gestureend', e => e.preventDefault());
-
     // Graphics
     let quality = 'high';
     graphicsLow.onclick = () => { quality = 'low'; graphicsLow.style.background = '#44aa44'; graphicsHigh.style.background = '#fff1'; };
@@ -294,24 +268,6 @@
     window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') showMenu(); });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-    // Single server configuration — replace with your server IP/host
-    const SERVER_URL = 'ws://YOUR_SERVER_IP:8080'; // e.g., ws://192.168.1.50:8080 or ws://yourdomain.com:8080
-
-    // Shared state
-    const shared = {
-      skin: localStorage.getItem('skin') || 'blue',
-      name: localStorage.getItem('name') || '',
-      server: SERVER_URL,
-      ws: null,
-      id: Math.random().toString(36).slice(2),
-      peers: new Map(),
-      currentGame: null,
-      owner: localStorage.getItem('owner') === 'true' || false
-    };
-
-    playerNameInput.value = shared.name;
-    netbar.style.display = 'flex';
-
     // Skin color
     function skinToColor(skin) {
       switch (skin) {
@@ -325,8 +281,14 @@
         default: return 0x4da3ff;
       }
     }
+    const shared = {
+      skin: localStorage.getItem('skin') || 'blue',
+      name: localStorage.getItem('name') || '',
+      currentGame: null,
+      owner: false
+    };
 
-    // Owner label
+    // Owner label cosmetic
     function makeOwnerLabel() {
       const canvas = document.createElement('canvas');
       canvas.width = 256; canvas.height = 128;
@@ -350,24 +312,8 @@
         shared.skin = e.target.dataset.skin;
         localStorage.setItem('skin', shared.skin);
         if (cleanup && cleanup.applySkin) cleanup.applySkin(shared.skin);
-        broadcastState();
       }
     });
-
-    // Code input (ownercole)
-    applyCodeBtn.onclick = () => {
-      const code = codeInput.value.trim().toLowerCase();
-      if (code === 'ownercole') {
-        shared.owner = true;
-        localStorage.setItem('owner', 'true');
-        codeStatus.textContent = 'Owner cosmetic unlocked!';
-        codeStatus.style.color = '#ff4d4d';
-        if (cleanup && cleanup.applyOwner) cleanup.applyOwner(true);
-      } else {
-        codeStatus.textContent = 'Invalid code';
-        codeStatus.style.color = '#ccc';
-      }
-    };
 
     // Exit
     exitBtn.onclick = () => { window.location.href = 'about:blank'; };
@@ -381,18 +327,17 @@
       };
     });
 
-    // Leaderboard
+    // Leaderboard (localStorage)
     leaderboardBtn.onclick = () => { leaderboardEl.style.display = 'block'; refreshLeaderboard(lbGame.value); };
     closeLeaderboardBtn.onclick = () => { leaderboardEl.style.display = 'none'; };
     lbGame.onchange = () => refreshLeaderboard(lbGame.value);
     resetLeaderboardBtn.onclick = () => { localStorage.removeItem('leaderboard'); refreshLeaderboard(lbGame.value); };
-
     function getLB() { const raw = localStorage.getItem('leaderboard'); return raw ? JSON.parse(raw) : {}; }
     function setLB(data) { localStorage.setItem('leaderboard', JSON.stringify(data)); }
     function addScore(game, name, score) {
       const lb = getLB();
       if (!lb[game]) lb[game] = [];
-      lb[game].push({ name, score, date: new Date().toISOString() });
+      lb[game].push({ name: name || 'Player', score, date: new Date().toISOString() });
       lb[game].sort((a,b)=>b.score-a.score);
       lb[game] = lb[game].slice(0, 20);
       setLB(lb);
@@ -406,163 +351,6 @@
         lbTable.appendChild(tr);
       });
     }
-
-    // Networking — single server
-    connectBtn.onclick = () => {
-      const name = playerNameInput.value.trim();
-      shared.name = name || 'Guest';
-      localStorage.setItem('name', shared.name);
-      connectWS();
-    };
-
-    function connectWS() {
-      try {
-        if (shared.ws) { shared.ws.close(); shared.ws = null; }
-        const ws = new WebSocket(shared.server);
-        shared.ws = ws;
-        connStatus.textContent = 'Connecting...';
-        ws.onopen = () => { connStatus.textContent = 'Connected'; broadcastState(true); };
-        ws.onmessage = (evt) => { try { handleNetMessage(JSON.parse(evt.data)); } catch {} };
-        ws.onclose = () => { connStatus.textContent = 'Disconnected'; };
-        ws.onerror = () => { connStatus.textContent = 'Error'; };
-      } catch { connStatus.textContent = 'Error'; }
-    }
-
-    function handleNetMessage(msg) {
-      if (msg.type === 'state' && msg.id && msg.id !== shared.id) {
-        if (msg.game !== shared.currentGame || !scene) return;
-        let peer = shared.peers.get(msg.id);
-        if (!peer) {
-          const mesh = createPeerMesh(msg.game, msg.skin, msg.owner);
-          scene.add(mesh);
-          const label = makeNameLabel(msg.name);
-          mesh.add(label);
-          peer = { mesh, label, lastSeen: performance.now(), data: msg };
-          shared.peers.set(msg.id, peer);
-        }
-        peer.lastSeen = performance.now();
-        peer.data = msg;
-        peer.mesh.position.set(msg.x, msg.y, msg.z);
-        setPeerYaw(peer.mesh, msg.yaw);
-        setPeerSkin(peer.mesh, msg.skin);
-        setPeerOwner(peer.mesh, !!msg.owner);
-      }
-    }
-
-    function makeNameLabel(name) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256; canvas.height = 128;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 48px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(name || 'Guest', canvas.width/2, canvas.height/2);
-      const tex = new THREE.CanvasTexture(canvas);
-      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
-      const sprite = new THREE.Sprite(mat);
-      sprite.scale.set(2.0, 1.0, 1);
-      sprite.position.set(0, 1.5, 0);
-      return sprite;
-    }
-
-    function createPeerMesh(game, skin, owner=false) {
-      const color = skinToColor(skin);
-      let mesh;
-      if (game === 'racer') mesh = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), new THREE.MeshStandardMaterial({ color }));
-      else if (game === 'voxel') mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1.8, 1), new THREE.MeshStandardMaterial({ color }));
-      else mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), new THREE.MeshStandardMaterial({ color }));
-      mesh.userData.isPeer = true;
-      if (owner) mesh.add(makeOwnerLabel());
-      return mesh;
-    }
-    function setPeerYaw(mesh, yaw) { mesh.rotation.y = yaw || 0; }
-    function setPeerSkin(mesh, skin) { const color = skinToColor(skin); if (mesh.material && mesh.material.color) mesh.material.color.setHex(color); }
-    function setPeerOwner(mesh, owner) {
-      const existing = mesh.children.find(ch => ch.isSprite);
-      if (owner && !existing) mesh.add(makeOwnerLabel());
-      if (!owner && existing) mesh.remove(existing);
-    }
-    function broadcastState(initial=false) {
-      if (!shared.ws || shared.ws.readyState !== 1 || !cleanup) return;
-      const p = cleanup.getLocalState ? cleanup.getLocalState() : null;
-      if (!p) return;
-      const msg = {
-        type: 'state',
-        id: shared.id,
-        name: shared.name || 'Guest',
-        skin: shared.skin,
-        owner: shared.owner,
-        game: shared.currentGame || '',
-        x: p.pos.x, y: p.pos.y, z: p.pos.z,
-        yaw: p.yaw || 0,
-        t: Date.now(),
-        initial
-      };
-      try { shared.ws.send(JSON.stringify(msg)); } catch {}
-    }
-
-    // Clean peers
-    setInterval(() => {
-      const now = performance.now();
-      for (const [id, peer] of shared.peers) {
-        if (now - peer.lastSeen > 8000) {
-          if (scene) scene.remove(peer.mesh);
-          shared.peers.delete(id);
-        }
-      }
-    }, 4000);
-
-    // Show/hide
-    function showMenu() {
-      running = false;
-      hud.style.display = 'none';
-      settingsBar.style.display = 'none';
-      controls.style.display = 'none';
-      msg.style.display = 'none';
-      shopEl.style.display = 'none';
-      skinsEl.style.display = 'none';
-      leaderboardEl.style.display = 'none';
-      menu.style.display = 'grid';
-      if (cleanup && cleanup.dispose) cleanup.dispose();
-      if (scene) { for (const [, peer] of shared.peers) scene.remove(peer.mesh); }
-      shared.peers.clear();
-      cleanup = null; scene = null; camera = null;
-      netbar.style.display = 'flex';
-    }
-    function startGame(setup, gameKey, levelIdx) {
-      if (cleanup && cleanup.dispose) cleanup.dispose();
-      cleanup = setup(quality, shared.skin, levelIdx, shared.owner);
-      scene = cleanup.scene; camera = cleanup.camera;
-      shared.currentGame = gameKey;
-      running = true;
-      hud.style.display = 'block';
-      backBtn.style.display = 'inline-block';
-      controls.style.display = 'flex';
-      settingsBar.style.display = 'flex';
-      netbar.style.display = 'flex';
-      menu.style.display = 'none';
-      if (cleanup.applySkin) cleanup.applySkin(shared.skin);
-      if (cleanup.applyOwner) cleanup.applyOwner(shared.owner);
-      cleanup.nextLevel = () => advanceLevel(gameKey, levelIdx + 1);
-      cleanup.nextGame = () => advanceToNextGame(gameKey);
-      broadcastState(true);
-    }
-
-    function advanceLevel(gameKey, nextIndex) {
-      if (nextIndex < maxLevels) startGame(gameSetups[gameKey], gameKey, nextIndex);
-      else advanceToNextGame(gameKey);
-    }
-    function advanceToNextGame(current) {
-      const idx = gameOrder.indexOf(current);
-      const nextGame = gameOrder[(idx + 1) % gameOrder.length];
-      startGame(gameSetups[nextGame], nextGame, 0);
-    }
-
-    document.querySelectorAll('.menuBtn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const game = btn.dataset.game;
-        startGame(gameSetups[game], game, selectedLevel);
-      });
-    });
 
     // Shop
     shopBtn.onclick = () => { shopEl.style.display = 'block'; };
@@ -582,7 +370,7 @@
     });
 
     // Camera helpers
-    function updateThirdPersonCamera(cam, playerPos, yaw, pitch=0, dist=6.5, height=2.6) {
+    function updateThirdPersonCamera(cam, playerPos, yaw, pitch=0, dist=6.8, height=2.6) {
       const h = height + Math.sin(pitch) * 0.5;
       const offset = new THREE.Vector3(Math.sin(yaw) * dist, h, -Math.cos(yaw) * dist);
       cam.position.copy(playerPos).add(offset);
@@ -626,7 +414,16 @@
       return group;
     }
 
-    // Varied, longer level configs (each level changes layout/length)
+    // PRNG for repeatable layout per level
+    function makeRand(seed) {
+      let s = seed >>> 0;
+      return () => {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return (s & 0xffffffff) / 0x100000000;
+      };
+    }
+
+    // Longer level configs
     const jungleLevels = [
       { size: 160, trees: 24, coins: 12, kits: 4, lavaSpeed: 0.015, enemyRate: 1.2, seed: 101 },
       { size: 200, trees: 32, coins: 16, kits: 5, lavaSpeed: 0.020, enemyRate: 1.0, seed: 202 },
@@ -635,51 +432,42 @@
       { size: 320, trees: 60, coins: 32, kits: 7, lavaSpeed: 0.028, enemyRate: 0.8, seed: 505 },
     ];
     const platformerLevels = [
-      { len: 6, segment: 24, heightStep: 8, layoutVar: 0.8, moveSpeed: 9, jumpVel: 16, seed: 11 },
-      { len: 8, segment: 26, heightStep: 9, layoutVar: 1.0, moveSpeed: 10, jumpVel: 16.5, seed: 22 },
-      { len: 10, segment: 28, heightStep: 10, layoutVar: 1.2, moveSpeed: 11, jumpVel: 17, seed: 33 },
-      { len: 12, segment: 30, heightStep: 11, layoutVar: 1.4, moveSpeed: 12, jumpVel: 17.2, seed: 44 },
       { len: 14, segment: 32, heightStep: 12, layoutVar: 1.6, moveSpeed: 13, jumpVel: 17.5, seed: 55 },
+      { len: 16, segment: 34, heightStep: 12, layoutVar: 1.6, moveSpeed: 13.5, jumpVel: 17.8, seed: 66 },
+      { len: 18, segment: 36, heightStep: 12, layoutVar: 1.6, moveSpeed: 14, jumpVel: 18.0, seed: 77 },
+      { len: 20, segment: 38, heightStep: 12, layoutVar: 1.6, moveSpeed: 14.5, jumpVel: 18.2, seed: 88 },
+      { len: 22, segment: 40, heightStep: 12, layoutVar: 1.6, moveSpeed: 15, jumpVel: 18.4, seed: 99 },
     ];
     const racerLevels = [
-      { gates: 18, amp: 40, freq: 0.7, turn: 1.8, seed: 77 },
       { gates: 22, amp: 55, freq: 0.8, turn: 2.0, seed: 88 },
       { gates: 26, amp: 70, freq: 0.9, turn: 2.2, seed: 99 },
       { gates: 30, amp: 85, freq: 1.0, turn: 2.4, seed: 111 },
       { gates: 34, amp: 100, freq: 1.1, turn: 2.6, seed: 123 },
+      { gates: 38, amp: 120, freq: 1.2, turn: 2.8, seed: 135 },
     ];
     const arenaLevels = [
       { drones: 12, waveSpeed: 4, seed: 9 }, { drones: 16, waveSpeed: 4.5, seed: 19 }, { drones: 20, waveSpeed: 5, seed: 29 }, { drones: 26, waveSpeed: 5.5, seed: 39 }, { drones: 32, waveSpeed: 6, seed: 49 }
     ];
     const runnerLevels = [
-      { length: 280, obstacles: 28, accel: 1.05, seed: 13 },
       { length: 340, obstacles: 36, accel: 1.10, seed: 23 },
       { length: 420, obstacles: 44, accel: 1.15, seed: 33 },
       { length: 520, obstacles: 56, accel: 1.20, seed: 43 },
       { length: 640, obstacles: 68, accel: 1.25, seed: 53 },
+      { length: 760, obstacles: 80, accel: 1.30, seed: 63 },
     ];
     const mazeLevels = [
-      { cells: 9, seed: 6 }, { cells: 11, seed: 12 }, { cells: 13, seed: 18 }, { cells: 15, seed: 24 }, { cells: 17, seed: 30 }
+      { cells: 11, seed: 12 }, { cells: 13, seed: 18 }, { cells: 15, seed: 24 }, { cells: 17, seed: 30 }, { cells: 19, seed: 36 }
     ];
     const rangeLevels = [
-      { targets: 12, respawn: 1.0, spread: 70, seed: 71 }, { targets: 16, respawn: 0.9, spread: 80, seed: 81 }, { targets: 20, respawn: 0.85, spread: 90, seed: 91 }, { targets: 24, respawn: 0.8, spread: 100, seed: 101 }, { targets: 28, respawn: 0.75, spread: 110, seed: 111 }
+      { targets: 16, respawn: 0.9, spread: 80, seed: 81 }, { targets: 20, respawn: 0.85, spread: 90, seed: 91 }, { targets: 24, respawn: 0.8, spread: 100, seed: 101 }, { targets: 28, respawn: 0.75, spread: 110, seed: 111 }, { targets: 32, respawn: 0.7, spread: 120, seed: 121 }
     ];
     const voxelLevels = [
-      { size: 24, startBlocks: 100, goalDelta: 20, seed: 201 },
       { size: 28, startBlocks: 140, goalDelta: 24, seed: 202 },
       { size: 32, startBlocks: 180, goalDelta: 28, seed: 203 },
       { size: 36, startBlocks: 220, goalDelta: 32, seed: 204 },
-      { size: 40, startBlocks: 260, goalDelta: 36, seed: 205 }
+      { size: 40, startBlocks: 260, goalDelta: 36, seed: 205 },
+      { size: 44, startBlocks: 300, goalDelta: 40, seed: 206 }
     ];
-
-    // PRNG for repeatable layout variation per level
-    function makeRand(seed) {
-      let s = seed >>> 0;
-      return () => {
-        s = (s * 1664525 + 1013904223) >>> 0;
-        return (s & 0xffffffff) / 0x100000000;
-      };
-    }
 
     // Game registry
     const gameSetups = {
@@ -693,7 +481,9 @@
       voxel: setupVoxelTP
     };
 
-    // GAME 1: Jungle — larger maps per level, varied placement
+    // ————— GAME IMPLEMENTATIONS (offline) —————
+
+    // Jungle
     function setupJungleTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = jungleLevels[levelIndex] || jungleLevels[0];
       const rand = makeRand(lvl.seed);
@@ -702,7 +492,6 @@
       const lights = makeLights('day'); sc.add(lights);
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(lvl.size, lvl.size), new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 }));
       ground.rotation.x = -Math.PI / 2; sc.add(ground);
-
       function addTree(x, z) {
         const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 2.2, 10), new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
         trunk.position.set(x, 1.1, z);
@@ -710,20 +499,13 @@
         foliage.position.set(x, 2.6, z);
         sc.add(trunk, foliage);
       }
-      for (let i = 0; i < lvl.trees; i++) {
-        const a = rand() * Math.PI * 2, d = 18 + rand() * (lvl.size * 0.45);
-        addTree(Math.cos(a) * d, Math.sin(a) * d);
-      }
-
+      for (let i = 0; i < lvl.trees; i++) { const a = rand() * Math.PI * 2, d = 18 + rand() * (lvl.size * 0.45); addTree(Math.cos(a) * d, Math.sin(a) * d); }
       const playerRadius = 0.5;
       const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16), playerMat);
-      player.position.set(0, playerRadius + 0.3, 0); sc.add(player);
-      if (ownerFlag) player.add(makeOwnerLabel());
-
+      player.position.set(0, playerRadius + 0.3, 0); sc.add(player); if (ownerFlag) player.add(makeOwnerLabel());
       const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), new THREE.MeshStandardMaterial({ color: 0x885000 }));
       weapon.position.set(0.45, 0.35, 0.0); player.add(weapon);
-
       const lava = new THREE.Mesh(new THREE.CylinderGeometry(lvl.size*0.6, lvl.size*0.6, 0.3, 64, 1, true),
         new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.95 }));
       lava.position.y = -2.5; sc.add(lava);
@@ -841,7 +623,6 @@
         getCurrency: () => coinCount, setCurrency: v => { coinCount = v; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`; },
         applyMapVariant, applySkin, applyOwner,
         applyWeaponUpgrade: () => { attackRange = 1.8; weapon.scale.set(1.1, 1.3, 1.1); },
-        getLocalState: () => ({ pos: player.position, yaw }),
         update(dt, now) {
           if (!run) return;
           const { lx, ly } = getLookDelta(1.8);
@@ -901,12 +682,12 @@
           const lavaTop = lava.position.y + 0.15;
           if (feet <= lavaTop || health <= 0) {
             run = false; msgText.textContent = `Game Over — Jungle (Lvl ${levelIndex+1})`; msg.style.display = 'block';
-            addScore('jungle', shared.name || 'Guest', Math.round(coinCount));
+            addScore('jungle', shared.name || 'Player', Math.round(coinCount));
           }
 
           if (coinCount >= lvl.coins) {
             run = false;
-            addScore('jungle', shared.name || 'Guest', coinCount);
+            addScore('jungle', shared.name || 'Player', coinCount);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
@@ -914,18 +695,16 @@
 
           hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`;
           hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
-
-          broadcastState();
         }
       };
     }
 
-    // GAME 2: Platformer — procedural longer course per level
+    // Platformer
     function setupPlatformerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = platformerLevels[levelIndex] || platformerLevels[0];
       const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
       const lights = makeLights('day'); sc.add(lights);
 
       const platMat = new THREE.MeshStandardMaterial({ color: 0x6aa86a, roughness: 0.8 });
@@ -934,28 +713,21 @@
         const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), platMat);
         p.position.set(x, y, z); sc.add(p); plats.push(p);
       }
-      const baseY = 0;
-      let x = 0, y = baseY + 2, z = 0;
+      let x = 0, y = 4, z = 0;
       for (let i = 0; i < lvl.len; i++) {
-        const w = lvl.segment + rand()*8;
-        const h = 2;
-        const d = 12 + rand()*6;
+        const w = lvl.segment + rand()*8; const h = 2; const d = 12 + rand()*6;
         platform(w, h, d, x, y, z);
         x += w * 1.2;
         y += (rand() < 0.5 ? 1 : -1) * lvl.heightStep * (0.6 + rand()*lvl.layoutVar);
         z += (rand() - 0.5) * 12;
       }
-
-      const goal = new THREE.Mesh(
-        new THREE.TorusKnotGeometry(3, 1, 120, 16),
-        new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0x553300, emissiveIntensity: 0.3 })
-      );
+      const goal = new THREE.Mesh(new THREE.TorusKnotGeometry(3, 1, 120, 16), new THREE.MeshStandardMaterial({ color: 0xffd54f }));
       goal.position.set(x + 40, y + 10, z + 6); sc.add(goal);
 
       const playerRadius = 0.6;
       const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), playerMat);
-      player.position.set(-16, baseY + 6, 0); sc.add(player);
+      player.position.set(-16, 6, 0); sc.add(player);
       if (ownerFlag) player.add(makeOwnerLabel());
 
       const vel = new THREE.Vector3(0, 0, 0);
@@ -963,7 +735,7 @@
       let onGround = false, run = true, won = false, yaw = 0, pitch = 0, jumpsLeft = 2;
 
       hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
-      hudSecondary.textContent = 'Reach the glowing goal (Double jump)';
+      hudSecondary.textContent = 'Reach the goal (Double jump)';
 
       function applyMapVariant(variant) {
         const hemi = lights.children.find(l => l.isHemisphereLight);
@@ -996,7 +768,7 @@
       jumpBtn.onclick = tryJump;
       window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
 
-      actionBtn.onclick = () => {}; // reserved for future actions
+      actionBtn.onclick = () => {};
 
       function collide() {
         onGround = false;
@@ -1016,17 +788,16 @@
           run = false;
           msgText.textContent = `You fell — Platformer (Lvl ${levelIndex+1})`;
           msg.style.display = 'block';
-          addScore('platformer', shared.name || 'Guest', Math.max(1, 100 - levelIndex * 10));
+          addScore('platformer', shared.name || 'Player', Math.max(1, 100 - levelIndex * 10));
         }
       }
 
-      function restart() { player.position.set(-16, baseY + 6, 0); vel.set(0, 0, 0); yaw = 0; pitch = 0; won = false; run = true; msg.style.display = 'none'; jumpsLeft = 2; }
+      function restart() { player.position.set(-16, 6, 0); vel.set(0, 0, 0); yaw = 0; pitch = 0; won = false; run = true; msg.style.display = 'none'; jumpsLeft = 2; }
 
       return {
         scene: sc, camera: cam, restart, dispose() {},
         getCurrency: () => 0, setCurrency: () => {}, applyMapVariant, applySkin, applyOwner,
-        applyWeaponUpgrade: () => {}, getLocalState: () => ({ pos: player.position, yaw }),
-        update(dt) {
+        applyWeaponUpgrade: () => {}, update(dt) {
           if (!run || won) return;
           const { lx, ly } = getLookDelta(1.8); yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
           updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.0, 2.6);
@@ -1046,7 +817,7 @@
 
           if (player.position.distanceTo(goal.position) < 6) {
             won = true;
-            addScore('platformer', shared.name || 'Guest', 1200 - levelIndex * 60);
+            addScore('platformer', shared.name || 'Player', 1200 - levelIndex * 60);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
@@ -1054,13 +825,11 @@
 
           hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
           hudSecondary.textContent = onGround ? 'On platform (Double jump ready)' : (jumpsLeft > 0 ? 'Air (Double jump available)' : 'Air');
-
-          broadcastState();
         }
       };
     }
 
-    // GAME 3: Racer — longer, shaped tracks per level
+    // Racer
     function setupRacerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = racerLevels[levelIndex] || racerLevels[0];
       const rand = makeRand(lvl.seed);
@@ -1080,7 +849,6 @@
         const g = new THREE.Mesh(new THREE.TorusGeometry(4, 0.3, 12, 24), new THREE.MeshStandardMaterial({ color: 0xffee88 }));
         g.position.set(x, 2.5, z); sc.add(g); gates.push(g);
       }
-      // Generate track path
       for (let i = 0; i < lvl.gates; i++) {
         const gx = i * 36;
         const gz = Math.sin(i * lvl.freq) * lvl.amp + Math.sin(i * 0.35) * (lvl.amp * 0.25) * (rand() - 0.5);
@@ -1127,7 +895,6 @@
         scene: sc, camera: cam, restart, dispose() {},
         getCurrency: () => score, setCurrency: v => { score = v; hudSecondary.textContent = `Gates ${score}/${lvl.gates}`; },
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        getLocalState: () => ({ pos: car.position, yaw: heading }),
         update(dt) {
           if (!run) return;
           const { lx, ly } = getLookDelta(0.8); yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.5, 0.5);
@@ -1156,19 +923,17 @@
 
           if (gates.length === 0) {
             run = false;
-            addScore('racer', shared.name || 'Guest', Math.round(speed*10));
+            addScore('racer', shared.name || 'Player', Math.round(speed*10));
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
           }
           hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
-
-          broadcastState();
         }
       };
     }
 
-    // GAME 4: Arena — more drones per level, faster waves
+    // Arena
     function setupArenaTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = arenaLevels[levelIndex] || arenaLevels[0];
       const rand = makeRand(lvl.seed);
@@ -1227,7 +992,6 @@
         scene: sc, camera: cam, restart, dispose() {},
         getCurrency: () => score, setCurrency: v => { score = v; hudSecondary.textContent = `Score ${score} | ACTION to shoot`; },
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        getLocalState: () => ({ pos: rig.position, yaw }),
         update(dt) {
           if (!run) return;
           const { lx, ly } = getLookDelta(1.8);
@@ -1263,18 +1027,16 @@
 
           if (drones.length === 0) {
             run = false;
-            addScore('arena', shared.name || 'Guest', score);
+            addScore('arena', shared.name || 'Player', score);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
           }
-
-          broadcastState();
         }
       };
     }
 
-    // GAME 5: Runner — longer lanes and varied patterns per level
+    // Runner
     function setupRunnerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = runnerLevels[levelIndex] || runnerLevels[0];
       const rand = makeRand(lvl.seed);
@@ -1335,7 +1097,6 @@
         dispose() {},
         getCurrency: () => rings, setCurrency: v => { rings = v; hudSecondary.textContent = `Rings ${rings}`; },
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        getLocalState: () => ({ pos: rig.position, yaw }),
         update(dt) {
           if (!run) return;
           time += dt;
@@ -1354,9 +1115,9 @@
           for (const o of obstacles) {
             o.position.z += speed * dt;
             if (o.position.z > 4) {
-              o.position.z = -lvl.length - rand() * 60;
-              const lane = rand() < 0.5 ? -2 : 2;
-              o.position.x = lane + (rand() - 0.5) * 1.0;
+              o.position.z = -lvl.length - Math.random() * 60;
+              const lane = Math.random() < 0.5 ? -2 : 2;
+              o.position.x = lane + (Math.random() - 0.5) * 1.0;
               rings++; hudSecondary.textContent = `Rings ${rings}`;
             }
             const dist = new THREE.Vector3(o.position.x - rig.position.x, 0, o.position.z).length();
@@ -1364,13 +1125,13 @@
               run = false;
               msgText.textContent = `Hit obstacle — Runner (Lvl ${levelIndex+1})`;
               msg.style.display = 'block';
-              addScore('runner', shared.name || 'Guest', rings);
+              addScore('runner', shared.name || 'Player', rings);
             }
           }
 
           if (rings >= Math.round(lvl.obstacles * 0.6)) {
             run = false;
-            addScore('runner', shared.name || 'Guest', rings);
+            addScore('runner', shared.name || 'Player', rings);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
@@ -1378,13 +1139,11 @@
 
           updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
           hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
-
-          broadcastState();
         }
       };
     }
 
-    // GAME 6: Maze — bigger cell grids per level
+    // Maze
     function setupMazeTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = mazeLevels[levelIndex] || mazeLevels[0];
       const rand = makeRand(lvl.seed);
@@ -1403,7 +1162,6 @@
         const w = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), new THREE.MeshStandardMaterial({ color: 0x3a64a6, emissive: 0x0a1530, emissiveIntensity: 0.2 }));
         w.position.set(x, y, z); sc.add(w); walls.push(w);
       }
-      // Randomized wall grid (not perfect maze, but varied)
       for (let i = 0; i < cells; i++) {
         for (let j = 0; j < cells; j++) {
           if (rand() < 0.35) wall(-half + i*cellSize, 1.5, -half + j*cellSize, cellSize-2, 3, 2);
@@ -1434,7 +1192,6 @@
       return {
         scene: sc, camera: cam, restart, dispose() {},
         getCurrency: () => 0, setCurrency: () => {}, applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        getLocalState: () => ({ pos: rig.position, yaw }),
         update(dt) {
           if (!run) return;
           const { lx, ly } = getLookDelta(1.8);
@@ -1456,18 +1213,16 @@
 
           if (rig.position.distanceTo(exit.position) < 5) {
             run = false;
-            addScore('maze', shared.name || 'Guest', 1200 - levelIndex * 60);
+            addScore('maze', shared.name || 'Player', 1200 - levelIndex * 60);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
           }
-
-          broadcastState();
         }
       };
     }
 
-    // GAME 7: Range — more targets and wider spread per level
+    // Range
     function setupRangeTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = rangeLevels[levelIndex] || rangeLevels[0];
       const rand = makeRand(lvl.seed);
@@ -1526,7 +1281,6 @@
         scene: sc, camera: cam, restart, dispose() {},
         getCurrency: () => score, setCurrency: v => { score = v; hudSecondary.textContent = `Score ${score} | ACTION to shoot`; },
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        getLocalState: () => ({ pos: rig.position, yaw }),
         update(dt) {
           if (!run) return;
           const { lx, ly } = getLookDelta(1.8);
@@ -1555,18 +1309,16 @@
 
           if (score >= Math.round(lvl.targets * 0.7)) {
             run = false;
-            addScore('range', shared.name || 'Guest', score);
+            addScore('range', shared.name || 'Player', score);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
           }
-
-          broadcastState();
         }
       };
     }
 
-    // GAME 8: Voxel Builder — larger worlds per level
+    // Voxel
     function setupVoxelTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = voxelLevels[levelIndex] || voxelLevels[0];
       const rand = makeRand(lvl.seed);
@@ -1633,7 +1385,7 @@
       let speed = 6.5;
 
       hudPrimary.textContent = `Voxel Builder — Level ${levelIndex+1}`;
-      hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E to cycle)`;
+      hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
 
       function applyMapVariant(v) { sc.background = (v === 'night') ? new THREE.Color(0x10202a) : new THREE.Color(0x87ceeb); }
       applyMapVariant('day');
@@ -1654,7 +1406,6 @@
         scene: sc, camera: cam, restart, dispose() {},
         getCurrency: () => blocks.size, setCurrency: () => {},
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        getLocalState: () => ({ pos: player.position, yaw }),
         update(dt) {
           const { lx, ly } = getLookDelta(1.6);
           yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.7, 0.7);
@@ -1670,16 +1421,67 @@
           hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
 
           if (blocks.size >= lvl.startBlocks + lvl.goalDelta) {
-            addScore('voxel', shared.name || 'Guest', blocks.size);
+            addScore('voxel', shared.name || 'Player', blocks.size);
             msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
           }
-
-          broadcastState();
         }
       };
     }
+
+    // ————— HUB CONTROL —————
+    function showMenu() {
+      running = false;
+      hud.style.display = 'none';
+      settingsBar.style.display = 'none';
+      controls.style.display = 'none';
+      msg.style.display = 'none';
+      shopEl.style.display = 'none';
+      skinsEl.style.display = 'none';
+      leaderboardEl.style.display = 'none';
+      menu.style.display = 'grid';
+      if (cleanup && cleanup.dispose) cleanup.dispose();
+      cleanup = null; scene = null; camera = null;
+    }
+    function startGame(setup, gameKey, levelIdx) {
+      if (cleanup && cleanup.dispose) cleanup.dispose();
+      cleanup = setup(quality, shared.skin, levelIdx, shared.owner);
+      scene = cleanup.scene; camera = cleanup.camera;
+      shared.currentGame = gameKey;
+      running = true;
+      hud.style.display = 'block';
+      backBtn.style.display = 'inline-block';
+      controls.style.display = 'flex';
+      settingsBar.style.display = 'flex';
+      menu.style.display = 'none';
+      if (cleanup.applySkin) cleanup.applySkin(shared.skin);
+      if (cleanup.applyOwner) cleanup.applyOwner(shared.owner);
+      cleanup.nextLevel = () => advanceLevel(gameKey, levelIdx + 1);
+      cleanup.nextGame = () => advanceToNextGame(gameKey);
+    }
+    function advanceLevel(gameKey, nextIndex) {
+      if (nextIndex < maxLevels) startGame(gameSetups[gameKey], gameKey, nextIndex);
+      else advanceToNextGame(gameKey);
+    }
+    function advanceToNextGame(current) {
+      const idx = gameOrder.indexOf(current);
+      const nextGame = gameOrder[(idx + 1) % gameOrder.length];
+      startGame(gameSetups[nextGame], nextGame, 0);
+    }
+    document.querySelectorAll('.menuBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const game = btn.dataset.game;
+        startGame(gameSetups[game], game, selectedLevel);
+      });
+    });
+
+    // Owner cosmetic toggle via secret code (optional)
+    // document.addEventListener('keydown', e => { if (e.code === 'KeyO') { shared.owner = !shared.owner; if (cleanup && cleanup.applyOwner) cleanup.applyOwner(shared.owner); } });
+
+    // Back/restart
+    backBtn.onclick = () => showMenu();
+    restartBtn.onclick = () => { if (cleanup && cleanup.restart) cleanup.restart(); };
 
     // MAIN LOOP
     let sceneLast = performance.now();
@@ -1699,17 +1501,8 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Back/restart
-    backBtn.onclick = () => showMenu();
-    restartBtn.onclick = () => { if (cleanup && cleanup.restart) cleanup.restart(); };
-
-    // Auto-connect to single server on load (optional; still lets player set name before)
-    connectWS();
-
-    // Start on menu
+    // Start
     showMenu();
-
-    // Tip: Replace SERVER_URL with your actual host/IP running server.js. Enter code “ownercole” to unlock the OWNER cosmetic.
   </script>
 </body>
 </html>
