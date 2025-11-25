@@ -11,7 +11,6 @@
     #backBtn{position:absolute;top:10px;right:10px;z-index:12;padding:10px 14px;border-radius:12px;border:1px solid #fff2;background:#111a;color:#fff;display:none;cursor:pointer;}
     #menu{position:absolute;inset:0;display:grid;place-items:center;z-index:11;}
     #menuPanel{width:1100px;max-width:96vw;background:#111a;backdrop-filter:blur(8px);border:1px solid #fff2;border-radius:16px;padding:20px;color:#fff;}
-    #menuPanel h1{margin:0 0 8px;}
     #menuGrid{display:grid;grid-template-columns:repeat(3,minmax(260px,1fr));gap:10px;margin-top:10px;}
     .menuBtn{padding:12px;background:#222a;border:1px solid #fff2;color:#fff;border-radius:12px;cursor:pointer;text-align:left;}
     .menuBtn:hover{background:#2a2f;}
@@ -19,7 +18,6 @@
     .pill{padding:8px 12px;border-radius:999px;background:#fff1;border:1px solid #fff2;cursor:pointer;}
     .levelBtn{padding:8px 12px;border-radius:999px;background:#222a;border:1px solid #fff2;color:#fff;cursor:pointer;}
     #hud{position:absolute;bottom:10px;left:10px;z-index:12;color:#fff;font-weight:700;text-shadow:0 1px 2px #000;display:none;}
-    #hud .line{margin-top:6px;font-weight:600;}
     #settingsBar{position:absolute;top:56px;right:10px;z-index:12;display:none;gap:8px;}
     .settingsBtn{padding:10px 14px;border-radius:12px;border:1px solid #fff2;background:#111a;color:#fff;cursor:pointer;}
     #skins,#shop,#leaderboard{position:absolute;left:50%;transform:translateX(-50%);background:#1e1e1e;color:#fff;padding:20px;border-radius:12px;display:none;z-index:13;border:1px solid #fff2;}
@@ -80,8 +78,10 @@
         <div class="pill" id="exitBtn">Exit</div>
       </div>
 
-      <!-- OWNER BADGE -->
+      <!-- OWNER CODE BOX (replaces prompt) -->
       <div class="row">
+        <input id="ownerInput" placeholder="Enter owner code" style="padding:6px;border-radius:8px;border:1px solid #fff2;background:#222;color:#fff;">
+        <button id="ownerBtn" class="pill">Unlock Owner</button>
         <span id="ownerBadge" style="font-weight:700; color:#ff3b3b; display:none;">OWNER MODE ENABLED</span>
       </div>
 
@@ -218,6 +218,8 @@
     const resetLeaderboardBtn = document.getElementById('resetLeaderboard');
     const exitBtn = document.getElementById('exitBtn');
     const ownerBadge = document.getElementById('ownerBadge');
+    const ownerInput = document.getElementById('ownerInput');
+    const ownerBtn = document.getElementById('ownerBtn');
 
     // Joysticks
     function setupStick(stickId, knobId) {
@@ -250,19 +252,20 @@
     graphicsHigh.onclick = () => { quality = 'high'; graphicsHigh.style.background = '#44aa44'; graphicsLow.style.background = '#fff1'; };
     graphicsHigh.click();
 
-    // Owner cosmetic unlock
+    // Owner unlock via input (no prompt)
     const OWNER_CODE = "12345";
     let ownerUnlocked = false;
     if (localStorage.getItem("ownerUnlocked") === "true") {
-      ownerUnlocked = true;
-    } else {
-      const entered = prompt("Enter owner code (or leave blank):");
-      if (entered === OWNER_CODE) {
-        ownerUnlocked = true;
-        localStorage.setItem("ownerUnlocked", "true");
-      }
+      ownerUnlocked = true; ownerBadge.style.display = 'inline';
     }
-    if (ownerUnlocked) ownerBadge.style.display = 'inline';
+    ownerBtn.onclick = () => {
+      const val = ownerInput.value.trim();
+      if (val === OWNER_CODE) {
+        ownerUnlocked = true; localStorage.setItem("ownerUnlocked","true");
+        ownerBadge.style.display = 'inline';
+        if (cleanup && cleanup.applyOwner) cleanup.applyOwner(true);
+      }
+    };
 
     // Hub state
     let scene = null, camera = null, cleanup = null, running = false, selectedLevel = 0;
@@ -313,6 +316,9 @@
     }
 
     // Skins
+    const skinsBtn = document.getElementById('skinsBtn');
+    const skinsEl = document.getElementById('skins');
+    const closeSkinsBtn = document.getElementById('closeSkins');
     skinsBtn.onclick = () => { skinsEl.style.display = 'block'; };
     closeSkinsBtn.onclick = () => { skinsEl.style.display = 'none'; };
     skinsEl.addEventListener('click', (e) => {
@@ -361,6 +367,9 @@
     resetLeaderboardBtn.onclick = () => { localStorage.removeItem('leaderboard'); refreshLeaderboard(lbGame.value); };
 
     // Shop
+    const shopBtn = document.getElementById('shopBtn');
+    const shopEl = document.getElementById('shop');
+    const closeShopBtn = document.getElementById('closeShop');
     shopBtn.onclick = () => { shopEl.style.display = 'block'; };
     closeShopBtn.onclick = () => { shopEl.style.display = 'none'; };
     shopEl.addEventListener('click', (e) => {
@@ -486,7 +495,7 @@
     const voxelLevels = [ { size: 28, startBlocks: 140, goalDelta: 24, seed: 202 }, { size: 32, startBlocks: 180, goalDelta: 28, seed: 203 }, { size: 36, startBlocks: 220, goalDelta: 32, seed: 204 }, { size: 40, startBlocks: 260, goalDelta: 36, seed: 205 }, { size: 44, startBlocks: 300, goalDelta: 40, seed: 206 } ];
     const simpleLevels = (seedBase) => Array.from({length:5}, (_,i)=>({seed: seedBase+i, count: 24+ i*6}));
 
-    // Registry (filled in chunk 2 after all setups exist)
+    // Registry
     const gameSetups = {};
 
     // ————— Game 1 — Jungle —————
@@ -555,7 +564,7 @@
       };
     }
 
-    // ————— Game 2 — Platformer (solid floor + spawn on first platform) —————
+    // ————— Game 2 — Platformer (solid floor) —————
     function setupPlatformerTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = platformerLevels[levelIndex] || platformerLevels[0]; const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
@@ -570,7 +579,6 @@
       const goal=new THREE.Mesh(new THREE.TorusKnotGeometry(3,1,120,16), new THREE.MeshStandardMaterial({ color: 0xffd54f })); goal.position.set(x+40,y+10,z+6); sc.add(goal);
       const playerRadius = 0.6; const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), playerMat);
-      // Spawn on top of first platform
       const firstPlat = plats[0];
       const topY = firstPlat.position.y + (firstPlat.geometry.parameters.height || 2) / 2;
       player.position.set(firstPlat.position.x, topY + playerRadius, firstPlat.position.z);
@@ -578,13 +586,8 @@
       const vel = new THREE.Vector3(0,0,0); const gravity=18, moveSpeed=lvl.moveSpeed, jumpVel=lvl.jumpVel;
       let onGround=false, run=true, won=false, yaw=0, pitch=0, jumpsLeft=3;
       hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`; hudSecondary.textContent = 'Reach the goal (Triple jump)';
-      function applyMapVariant(variant){ const hemi=lights.children.find(l=>l.isHemisphereLight); const sun=lights.children.find(l=>l.isDirectionalLight);
-        if(variant==='night'){ sc.background=new THREE.Color(0x0a2030); if(hemi) hemi.color.set(0xaaccff); if(sun){sun.color.set(0x88aaff); sun.intensity=0.8;} platMat.color.set(0x355a35);}
-        else{ sc.background=new THREE.Color(0x87b3ff); if(hemi) hemi.color.set(0xffffff); if(sun){sun.color.set(0xffffff); sun.intensity=1.5;} platMat.color.set(0x6aa86a);}
-      }
-      applyMapVariant('day');
       function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const existing=player.children.find(ch=>ch.isSprite); if(flag && !existing) player.add(makeOwnerLabel()); if(!flag && existing) player.remove(existing); }
+      function applyOwner(flag){ const s=player.children.find(ch=>ch.isSprite); if(flag && !s) player.add(makeOwnerLabel()); if(!flag && s) player.remove(s); }
       function tryJump(){ if(!run) return; if(onGround){ vel.y=jumpVel; jumpsLeft=2; onGround=false; } else if(jumpsLeft>0){ vel.y=jumpVel*0.95; jumpsLeft--; } }
       jumpBtn.onclick = tryJump; window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
       actionBtn.onclick = () => {};
@@ -600,7 +603,7 @@
       function restart(){ const fp=plats[0]; const ty=fp.position.y + (fp.geometry.parameters.height || 2)/2; player.position.set(fp.position.x, ty + playerRadius, fp.position.z); vel.set(0,0,0); yaw=0; pitch=0; won=false; run=true; msg.style.display='none'; jumpsLeft=3; }
       return {
         scene: sc, camera: cam, restart, dispose(){},
-        getCurrency: () => 0, setCurrency: () => {}, applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        getCurrency: () => 0, setCurrency: () => {}, applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
         update(dt){
           if(!run || won) return;
           const {lx,ly} = getLookDelta(1.8); yaw += lx*dt; pitch = THREE.MathUtils.clamp(pitch + ly*dt, -0.8, 0.8);
@@ -630,19 +633,14 @@
       const gates=[]; function gate(x,z){ const g=new THREE.Mesh(new THREE.TorusGeometry(4,0.3,12,24), new THREE.MeshStandardMaterial({ color:0xffee88 })); g.position.set(x,2.5,z); sc.add(g); gates.push(g); }
       for(let i=0;i<lvl.gates;i++){ const gx=i*36; const gz=Math.sin(i*lvl.freq)*lvl.amp + Math.sin(i*0.35)*(lvl.amp*0.25)*(rand()-0.5); gate(gx,gz); }
       let speed=0, heading=0, score=0, run=true, yaw=0, pitch=0;
-      function applyMapVariant(variant){ const hemi=lights.children.find(l=>l.isHemisphereLight); const sun=lights.children.find(l=>l.isDirectionalLight);
-        if(variant==='night'){ sc.background=new THREE.Color(0x302018); if(hemi) hemi.color.set(0xaaccff); if(sun){ sun.color.set(0x88aaff); sun.intensity=0.8;} ground.material.color.set(0x8b6a3a); }
-        else{ sc.background=new THREE.Color(0xd0b38a); if(hemi) hemi.color.set(0xffffff); if(sun){ sun.color.set(0xffffff); sun.intensity=1.5;} ground.material.color.set(0xb5894a); }
-      }
-      applyMapVariant('day');
       function applySkin(newSkin){ carMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const existing=car.children.find(ch=>ch.isSprite); if(flag && !existing) car.add(makeOwnerLabel()); if(!flag && existing) car.remove(existing); }
+      function applyOwner(flag){ const s=car.children.find(ch=>ch.isSprite); if(flag && !s) car.add(makeOwnerLabel()); if(!flag && s) car.remove(s); }
       hudPrimary.textContent=`Desert Racer — Level ${levelIndex+1}`; hudSecondary.textContent=`Gates 0/${lvl.gates}`;
-      function restart(){ car.position.set(0,0.6,0); speed=0; heading=0; score=0; run=true; msg.style.display='none'; gates.forEach(g=>sc.remove(g)); gates.length=0; for(let i=0;i<lvl.gates;i++){ const gx=i*36; const gz=Math.sin(i*lvl.freq)*lvl.amp + Math.sin(i*0.35)*(lvl.amp*0.25)*(rand()-0.5); gate(gx,gz); } hudSecondary.textContent=`Gates 0/${lvl.gates}`; }
+      function restart(){ car.position.set(0,0.6,0); speed=0; heading=0; score=0; run=true; msg.style.display='none'; gates.forEach(g=>sc.remove(g)); gates.length=0; for(let i=0;i<lvl.gates;i++){ const gx=i*36; const gz=Math.sin(i*lvl.freq)*lvl.amp + Math.sin(i*0.35)*(lvl.amp*0.25)*(Math.random()-0.5); gate(gx,gz); } hudSecondary.textContent=`Gates 0/${lvl.gates}`; }
       return {
         scene: sc, camera: cam, restart, dispose(){},
         getCurrency: () => score, setCurrency: v => { score=v; hudSecondary.textContent=`Gates ${score}/${lvl.gates}`; },
-        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
         update(dt){
           if(!run) return;
           const {lx,ly}=getLookDelta(0.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.5,0.5);
@@ -671,13 +669,13 @@
       actionBtn.onclick = shoot;
       let run=true, score=0, yaw=0, pitch=0;
       hudPrimary.textContent=`Space Arena — Level ${levelIndex+1}`; hudSecondary.textContent='Score 0 | ACTION to shoot';
-      function applyMapVariant(variant){ sc.background=(variant==='night')?new THREE.Color(0x04060c):new THREE.Color(0x080a12); }
-      applyMapVariant('day'); function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=rig.children.find(ch=>ch.isSprite); if(flag && !existing) rig.add(makeOwnerLabel()); if(!flag && existing) rig.remove(existing); }
+      function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag){ const s=rig.children.find(ch=>ch.isSprite); if(flag && !s) rig.add(makeOwnerLabel()); if(!flag && s) rig.remove(s); }
       function restart(){ drones.forEach(d=>sc.remove(d)); drones.length=0; bullets.forEach(b=>sc.remove(b)); bullets.length=0; for(let i=0;i<lvl.drones;i++) drone(); score=0; hudSecondary.textContent='Score 0 | ACTION to shoot'; rig.position.set(0,1,0); yaw=0; pitch=0; run=true; msg.style.display='none'; }
       return {
         scene: sc, camera: cam, restart, dispose(){},
         getCurrency: () => score, setCurrency: v => { score=v; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; },
-        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
         update(dt){
           if(!run) return;
           const {lx,ly}=getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.8,0.8);
@@ -703,17 +701,14 @@
       const obstacles=[]; function makeObs(z){ const o=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.2,1.2), new THREE.MeshStandardMaterial({ color:0x884444 })); const lane=rand()<0.33?-2:(rand()<0.5?0:2); o.position.set(lane+(rand()-0.5)*1.0,0.6,-z); sc.add(o); obstacles.push(o); }
       for(let i=0;i<lvl.obstacles;i++) makeObs(6 + i*(lvl.length/lvl.obstacles));
       let laneX=0, speed=8, time=0, run=true, rings=0, yaw=0, pitch=0;
-      function applyMapVariant(variant){ const hemi=lights.children.find(l=>l.isHemisphereLight); const sun=lights.children.find(l=>l.isDirectionalLight);
-        if(variant==='night'){ sc.background=new THREE.Color(0x102020); if(hemi) hemi.color.set(0xaaccff); if(sun){sun.color.set(0x88aaff); sun.intensity=0.8;} ground.material.color.set(0x1c3a1c);}
-        else{ sc.background=new THREE.Color(0x87ceeb); if(hemi) hemi.color.set(0xffffff); if(sun){sun.color.set(0xffffff); sun.intensity=1.5;} ground.material.color.set(0x228B22);}
-      }
-      applyMapVariant('day'); function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=rig.children.find(ch=>ch.isSprite); if(flag && !existing) rig.add(makeOwnerLabel()); if(!flag && existing) rig.remove(existing); }
+      function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag){ const s=rig.children.find(ch=>ch.isSprite); if(flag && !s) rig.add(makeOwnerLabel()); if(!flag && s) rig.remove(s); }
       hudPrimary.textContent=`Endless Runner — Level ${levelIndex+1}`; hudSecondary.textContent='Rings 0';
       return {
         scene: sc, camera: cam,
         restart(){ obstacles.forEach(o=>sc.remove(o)); obstacles.length=0; for(let i=0;i<lvl.obstacles;i++) makeObs(6 + i*(lvl.length/lvl.obstacles)); laneX=0; speed=8; time=0; rings=0; run=true; msg.style.display='none'; rig.position.set(0,1,0); hudSecondary.textContent='Rings 0'; },
         dispose(){}, getCurrency:()=>rings, setCurrency:v=>{ rings=v; hudSecondary.textContent=`Rings ${rings}`; },
-        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
         update(dt){
           if(!run) return;
           time += dt; speed = 8 + time * (runnerLevels[levelIndex]?.accel || 1.15);
@@ -745,12 +740,12 @@
       const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat); rig.position.set(-half+10,0.9,-half+10); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
       let yaw=0, pitch=0, run=true;
       hudPrimary.textContent=`Crystal Maze — Level ${levelIndex+1}`; hudSecondary.textContent='Find the exit ring';
-      function applyMapVariant(variant){ sc.background=(variant==='night')?new THREE.Color(0x0a0d1a):new THREE.Color(0x101424); }
-      applyMapVariant('day'); function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=rig.children.find(ch=>ch.isSprite); if(flag && !existing) rig.add(makeOwnerLabel()); if(!flag && existing) rig.remove(existing); }
+      function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag){ const s=rig.children.find(ch=>ch.isSprite); if(flag && !s) rig.add(makeOwnerLabel()); if(!flag && s) rig.remove(s); }
       function restart(){ rig.position.set(-half+10,0.9,-half+10); yaw=0; pitch=0; run=true; msg.style.display='none'; }
       return {
         scene: sc, camera: cam, restart, dispose(){}, getCurrency:()=>0, setCurrency:()=>{},
-        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
         update(dt){
           if(!run) return;
           const {lx,ly} = getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.4,0.4);
@@ -778,12 +773,12 @@
       actionBtn.onclick = shoot;
       let yaw=0,pitch=0,run=true,score=0;
       hudPrimary.textContent=`Target Range — Level ${levelIndex+1}`; hudSecondary.textContent='Score 0 | ACTION to shoot';
-      function applyMapVariant(variant){ sc.background=(variant==='night')?new THREE.Color(0x162238):new THREE.Color(0x223344); }
-      applyMapVariant('day'); function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=rig.children.find(ch=>ch.isSprite); if(flag && !existing) rig.add(makeOwnerLabel()); if(!flag && existing) rig.remove(existing); }
+      function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag){ const s=rig.children.find(ch=>ch.isSprite); if(flag && !s) rig.add(makeOwnerLabel()); if(!flag && s) rig.remove(s); }
       function restart(){ bullets.forEach(b=>sc.remove(b)); bullets.length=0; targets.forEach(t=>sc.remove(t)); targets.length=0; for(let i=0;i<lvl.targets;i++) spawnTarget(); rig.position.set(0,1,40); yaw=0; pitch=0; score=0; hudSecondary.textContent='Score 0 | ACTION to shoot'; run=true; msg.style.display='none'; }
       return {
         scene: sc, camera: cam, restart, dispose(){}, getCurrency:()=>score, setCurrency:v=>{ score=v; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; },
-        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
         update(dt){
           if(!run) return;
           const {lx,ly}=getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.8,0.8); updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
@@ -815,12 +810,12 @@
       window.addEventListener('keydown', e => { if(e.code==='KeyQ'){ paletteIndex=(paletteIndex+1)%palettes.length; } if(e.code==='KeyE'){ paletteIndex=(paletteIndex+palettes.length-1)%palettes.length; } });
       let yaw=0,pitch=0; let speed=6.5;
       hudPrimary.textContent=`Voxel Builder — Level ${levelIndex+1}`; hudSecondary.textContent=`Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
-      function applyMapVariant(v){ sc.background=(v==='night')?new THREE.Color(0x10202a):new THREE.Color(0x87ceeb); }
-      applyMapVariant('day'); function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=player.children.find(ch=>ch.isSprite); if(flag && !existing) player.add(makeOwnerLabel()); if(!flag && existing) player.remove(existing); }
+      function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag){ const s=player.children.find(ch=>ch.isSprite); if(flag && !s) player.add(makeOwnerLabel()); if(!flag && s) player.remove(s); }
       function restart(){ for(const [,mesh] of blocks) sc.remove(mesh); blocks.clear(); for(let i=0;i<lvl.startBlocks;i++){ const x=Math.floor((rand()-0.5)*size), z=Math.floor((rand()-0.5)*size), y=0.5; addBlock(x,y,z,0x88b36a); } player.position.set(0,1,0); yaw=0; pitch=0; msg.style.display='none'; }
       return {
         scene: sc, camera: cam, restart, dispose(){}, getCurrency:()=>blocks.size, setCurrency:()=>{},
-        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        applyMapVariant:()=>{}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
         update(dt){
           const {lx,ly}=getLookDelta(1.6); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.7,0.7);
           updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.5, 3.0);
@@ -856,7 +851,7 @@
       let vel = new THREE.Vector3(0,0,0), yaw=0, pitch=0, onGround=false, run=true, jumpsLeft=2;
       hudPrimary.textContent=`Ice Cavern — Level ${levelIndex+1}`; hudSecondary.textContent='Slippery floor, double jump';
       function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag){ const existing=player.children.find(ch=>ch.isSprite); if(flag && !existing) player.add(makeOwnerLabel()); if(!flag && existing) player.remove(existing); }
+      function applyOwner(flag){ const s=player.children.find(ch=>ch.isSprite); if(flag && !s) player.add(makeOwnerLabel()); if(!flag && s) player.remove(s); }
       function tryJump(){ if(!run) return; if(onGround){ vel.y=18; jumpsLeft=1; onGround=false; } else if(jumpsLeft>0){ vel.y=17; jumpsLeft--; } }
       jumpBtn.onclick=tryJump; window.addEventListener('keydown', e=>{ if(e.code==='Space') tryJump(); });
       function collide(){ onGround=false;
@@ -886,7 +881,7 @@
       };
     }
 
-    // Fill registry for games 1–9 here (games 10–18 in chunk 2)
+    // Register games 1–9 (remaining in chunk 2)
     Object.assign(gameSetups, {
       jungle: setupJungleTP,
       platformer: setupPlatformerTP,
@@ -899,11 +894,10 @@
       icecavern: setupIceCavernTP
     });
 
-    // Bind menu buttons to start games (hub control provided in chunk 2)
+    // Bind menu buttons (startGame comes in chunk 2)
     document.querySelectorAll('.menuBtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const game = btn.dataset.game;
-        // startGame defined in chunk 2 — placeholder to avoid errors before chunk 2 loads
         if (typeof startGame === 'function') startGame(gameSetups[game], game, selectedLevel);
       });
     });
@@ -913,905 +907,103 @@
     document.addEventListener('gesturechange', e => e.preventDefault());
     document.addEventListener('gestureend', e => e.preventDefault());
   </script>
-<script type="module">
-  // ————— Game 10 — Volcano Dash (solid floor) —————
-  function setupVolcanoTP(quality, skin, levelIndex, ownerFlag) {
-    const levels = simpleLevels(801);
-    const lvl = levels[levelIndex] || levels[0];
-    const rand = makeRand(lvl.seed);
-
-    const sc = new THREE.Scene(); sc.background = new THREE.Color(0x220d08);
-    const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-    const lights = makeLights('volcano'); sc.add(lights);
-
-    // Solid floor under bridges
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(4000, 4000),
-      new THREE.MeshStandardMaterial({ color: 0x5a3a2a })
-    );
-    floor.rotation.x = -Math.PI / 2; floor.position.y = 0; sc.add(floor);
-
-    // Lava river
-    const lava = new THREE.Mesh(
-      new THREE.PlaneGeometry(1200, 180),
-      new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.95 })
-    );
-    lava.rotation.x = -Math.PI / 2; lava.position.set(0, 0.2, 0); sc.add(lava);
-
-    // Bridges
-    const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x6e4a37, roughness: 0.7 });
-    const bridges = [];
-    let x = -500, z = 0, y = 4;
-    for (let i = 0; i < lvl.count; i++) {
-      const w = 36 + rand() * 12, d = 12 + rand() * 8;
-      const b = new THREE.Mesh(new THREE.BoxGeometry(w, 2, d), bridgeMat);
-      b.position.set(x, y, z);
-      sc.add(b); bridges.push(b);
-      x += w * (1.25 + rand() * 0.2);
-      z += (rand() - 0.5) * 24;
-      y += (rand() < 0.5 ? 1 : -1) * (4 + rand() * 3);
-    }
-
-    const goal = new THREE.Mesh(
-      new THREE.TorusKnotGeometry(3, 1, 120, 16),
-      new THREE.MeshStandardMaterial({ color: 0xffd54f })
-    );
-    goal.position.set(x + 60, y + 12, z); sc.add(goal);
-
-    // Player
-    const playerRadius = 0.6;
-    const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-    const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), playerMat);
-    const first = bridges[0];
-    const topY = first.position.y + 1; // half-height of bridge box
-    player.position.set(first.position.x, topY + playerRadius, first.position.z);
-    sc.add(player); if (ownerFlag) player.add(makeOwnerLabel());
-
-    // Movement
-    const vel = new THREE.Vector3(0, 0, 0);
-    let yaw = 0, pitch = 0, onGround = true, run = true;
-    const gravity = 18, moveSpeed = 14, jumpVel = 18;
-    let jumpsLeft = 2;
-
-    hudPrimary.textContent = `Volcano Dash — Level ${levelIndex + 1}`;
-    hudSecondary.textContent = 'Survive the heat. Double jump available.';
-
-    function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
-    function applyOwner(flag) { const s = player.children.find(ch => ch.isSprite); if (flag && !s) player.add(makeOwnerLabel()); if (!flag && s) player.remove(s); }
-
-    function tryJump() {
-      if (!run) return;
-      if (onGround) { vel.y = jumpVel; jumpsLeft = 1; onGround = false; }
-      else if (jumpsLeft > 0) { vel.y = jumpVel * 0.95; jumpsLeft--; }
-    }
-    jumpBtn.onclick = tryJump;
-    window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
-
-    function collide() {
-      onGround = false;
-      for (const p of bridges) {
-        const top = p.position.y + 1;
-        const halfW = p.geometry.parameters.width / 2;
-        const halfD = p.geometry.parameters.depth / 2;
-        const withinX = (player.position.x > p.position.x - halfW - playerRadius) && (player.position.x < p.position.x + halfW + playerRadius);
-        const withinZ = (player.position.z > p.position.z - halfD - playerRadius) && (player.position.z < p.position.z + halfD + playerRadius);
-        const nearTop = Math.abs(player.position.y - (top + playerRadius)) < 0.6 && vel.y <= 0;
-        if (withinX && withinZ && nearTop) {
-          player.position.y = top + playerRadius; vel.y = 0; onGround = true; jumpsLeft = 2;
-        }
+  <script type="module">
+    // ————— Game 10 — Volcano Dash (solid floor) —————
+    function setupVolcanoTP(quality, skin, levelIndex, ownerFlag) {
+      const levels = simpleLevels(801);
+      const lvl = levels[levelIndex] || levels[0];
+      const rand = makeRand(lvl.seed);
+      const sc = new THREE.Scene();
+      sc.background = new THREE.Color(0x330000);
+      const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1500);
+      sc.add(makeLights('volcano'));
+      // Solid floor
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000,2000), new THREE.MeshStandardMaterial({ color: 0x552222 }));
+      floor.rotation.x = -Math.PI/2; floor.position.y = -2; sc.add(floor);
+      const platMat = new THREE.MeshStandardMaterial({ color: 0x883333 });
+      const plats = [];
+      for(let i=0;i<lvl.count;i++){
+        const p=new THREE.Mesh(new THREE.BoxGeometry(20,2,20), platMat);
+        p.position.set((rand()-0.5)*200, 2+rand()*20, (rand()-0.5)*200);
+        sc.add(p); plats.push(p);
       }
-      // Below the floor height means fell into the lava area
-      if (player.position.y < 0) {
-        run = false; msgText.textContent = `You fell — Volcano Dash (Lvl ${levelIndex + 1})`; msg.style.display = 'block';
-        addScore('volcano', shared.name || 'Player', Math.max(1, 100 - levelIndex * 10));
-      }
-    }
-
-    function restart() {
-      const fp = bridges[0];
-      const ty = fp.position.y + 1;
-      player.position.set(fp.position.x, ty + playerRadius, fp.position.z);
-      vel.set(0, 0, 0); yaw = 0; pitch = 0; onGround = true; run = true; jumpsLeft = 2;
-      msg.style.display = 'none';
-    }
-
-    return {
-      scene: sc, camera: cam, restart, dispose() {},
-      getCurrency: () => 0, setCurrency: () => {},
-      applyMapVariant: () => {}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-      update(dt) {
-        if (!run) return;
-        const { lx, ly } = getLookDelta(1.6);
-        yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.6, 0.6);
-        updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.2, 2.6);
-
-        const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv);
-        const { forward, right } = getCameraBasisXZ(cam, player.position);
-        const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-        if (dir.lengthSq() > 0) dir.normalize();
-
-        vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, (onGround ? 9 : 5) * dt);
-        vel.z = THREE.MathUtils.lerp(vel.z, dir.z * moveSpeed, (onGround ? 9 : 5) * dt);
-        vel.y -= gravity * dt;
-        player.position.addScaledVector(vel, dt);
-        collide();
-
-        if (player.position.distanceTo(goal.position) < 6) {
-          run = false; addScore('volcano', shared.name || 'Player', 1000 - levelIndex * 50);
-          msgText.textContent = `Level ${levelIndex + 1} complete — advancing...`; msg.style.display = 'block';
-          setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
+      const goal=new THREE.Mesh(new THREE.TorusGeometry(3,0.5,16,32), new THREE.MeshStandardMaterial({ color:0xffff00 }));
+      goal.position.set(0,20,0); sc.add(goal);
+      const playerMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const player=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), playerMat);
+      player.position.set(0,1,0); sc.add(player);
+      if(ownerFlag) player.add(makeOwnerLabel());
+      let vel=new THREE.Vector3(), yaw=0, pitch=0, run=true;
+      hudPrimary.textContent=`Volcano Dash — Level ${levelIndex+1}`;
+      hudSecondary.textContent='Reach the glowing ring';
+      return {
+        scene: sc, camera: cam,
+        restart(){ player.position.set(0,1,0); vel.set(0,0,0); yaw=0; pitch=0; run=true; msg.style.display='none'; },
+        dispose(){}, getCurrency:()=>0, setCurrency:()=>{},
+        applyMapVariant:()=>{}, applySkin:(s)=>playerMat.color.setHex(skinToColor(s)),
+        applyOwner:(f)=>{ const spr=player.children.find(ch=>ch.isSprite); if(f&&!spr) player.add(makeOwnerLabel()); if(!f&&spr) player.remove(spr); },
+        applyWeaponUpgrade:()=>{},
+        update(dt){
+          if(!run) return;
+          const {lx,ly}=getLookDelta(1.6); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.6,0.6);
+          updateThirdPersonCamera(cam, player.position, yaw, pitch, 8, 2.6);
+          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys,mv);
+          const {forward,right}=getCameraBasisXZ(cam, player.position);
+          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY);
+          if(dir.lengthSq()>0) dir.normalize();
+          vel.x=THREE.MathUtils.lerp(vel.x, dir.x*10, 8*dt);
+          vel.z=THREE.MathUtils.lerp(vel.z, dir.z*10, 8*dt);
+          vel.y-=18*dt;
+          player.position.addScaledVector(vel, dt);
+          if(player.position.y<-10){ run=false; msgText.textContent=`You fell — Volcano Dash`; msg.style.display='block'; addScore('volcano', shared.name||'Player', 1); }
+          if(player.position.distanceTo(goal.position)<5){ run=false; addScore('volcano', shared.name||'Player', 10); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); },1200); }
         }
-        hudSecondary.textContent = onGround ? 'On bridge (double jump ready)' : (jumpsLeft > 0 ? 'Air (double jump)' : 'Air');
-      }
-    };
-  }
-
-  // ————— Game 11 — Asteroid Field —————
-  function setupAsteroidsTP(quality, skin, levelIndex, ownerFlag) {
-    const levels = simpleLevels(901);
-    const lvl = levels[levelIndex] || levels[0];
-    const rand = makeRand(lvl.seed);
-
-    const sc = new THREE.Scene(); sc.background = new THREE.Color(0x05070d);
-    const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-    sc.add(makeLights('space'));
-
-    const shipMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-    const ship = new THREE.Mesh(new THREE.ConeGeometry(0.7, 2.2, 10), shipMat);
-    ship.rotation.x = Math.PI / 2; ship.position.set(0, 0, 0); sc.add(ship);
-    if (ownerFlag) ship.add(makeOwnerLabel());
-
-    const asteroids = [];
-    function spawnAst() {
-      const a = new THREE.Mesh(new THREE.IcosahedronGeometry(1.2 + rand() * 1.0), new THREE.MeshStandardMaterial({ color: 0x888888 }));
-      a.position.set((rand() - 0.5) * 60, (rand() - 0.5) * 40, -120 - rand() * 80);
-      a.userData.vel = new THREE.Vector3((rand() - 0.5) * 4, (rand() - 0.5) * 2, 30 + rand() * 20);
-      sc.add(a); asteroids.push(a);
-    }
-    for (let i = 0; i < lvl.count; i++) spawnAst();
-
-    let yaw = 0, pitch = 0, run = true, score = 0;
-    hudPrimary.textContent = `Asteroid Field — Level ${levelIndex + 1}`;
-    hudSecondary.textContent = 'Avoid impacts. Score grows with survival.';
-
-    function applySkin(newSkin) { shipMat.color.setHex(skinToColor(newSkin)); }
-    function applyOwner(flag) { const s = ship.children.find(ch => ch.isSprite); if (flag && !s) ship.add(makeOwnerLabel()); if (!flag && s) ship.remove(s); }
-
-    function restart() {
-      asteroids.forEach(a => sc.remove(a)); asteroids.length = 0;
-      for (let i = 0; i < lvl.count; i++) spawnAst();
-      ship.position.set(0, 0, 0); yaw = 0; pitch = 0; score = 0; run = true; msg.style.display = 'none';
+      };
     }
 
-    return {
-      scene: sc, camera: cam, restart, dispose() {},
-      getCurrency: () => score, setCurrency: v => { score = v; },
-      applyMapVariant: () => {}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-      update(dt) {
-        if (!run) return;
-        const { lx, ly } = getLookDelta(1.2);
-        yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.6, 0.6);
-        updateThirdPersonCamera(cam, ship.position, yaw, pitch, 10.0, 2.6);
-
-        const mv = moveStick.get();
-        ship.position.x += mv.x * 12 * dt;
-        ship.position.y += -mv.y * 12 * dt;
-        ship.position.x = THREE.MathUtils.clamp(ship.position.x, -28, 28);
-        ship.position.y = THREE.MathUtils.clamp(ship.position.y, -18, 18);
-
-        for (let i = asteroids.length - 1; i >= 0; i--) {
-          const a = asteroids[i];
-          a.position.addScaledVector(a.userData.vel, dt);
-          if (a.position.z > 20) { a.position.set((rand() - 0.5) * 60, (rand() - 0.5) * 40, -120 - rand() * 80); }
-          if (a.position.distanceTo(ship.position) < 1.6) {
-            run = false;
-            msgText.textContent = `Impact — Asteroids (Lvl ${levelIndex + 1})`;
-            msg.style.display = 'block';
-            addScore('asteroids', shared.name || 'Player', Math.round(score));
-          }
+    // ————— Game 11 — Asteroids —————
+    function setupAsteroidsTP(quality, skin, levelIndex, ownerFlag) {
+      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x000000);
+      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+      sc.add(makeLights('space'));
+      const shipMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const ship=new THREE.Mesh(new THREE.ConeGeometry(1,2,16), shipMat);
+      ship.rotation.x=Math.PI/2; ship.position.set(0,0,0); sc.add(ship);
+      if(ownerFlag) ship.add(makeOwnerLabel());
+      const asteroids=[]; for(let i=0;i<20;i++){ const a=new THREE.Mesh(new THREE.IcosahedronGeometry(2+Math.random()*2), new THREE.MeshStandardMaterial({ color:0x888888 })); a.position.set((Math.random()-0.5)*200,(Math.random()-0.5)*200,(Math.random()-0.5)*200); sc.add(a); asteroids.push(a); }
+      let yaw=0,pitch=0,score=0,run=true;
+      hudPrimary.textContent=`Asteroid Field — Level ${levelIndex+1}`; hudSecondary.textContent='Score 0';
+      return {
+        scene: sc, camera: cam,
+        restart(){ ship.position.set(0,0,0); score=0; run=true; msg.style.display='none'; },
+        dispose(){}, getCurrency:()=>score, setCurrency:v=>{score=v; hudSecondary.textContent=`Score ${score}`;},
+        applyMapVariant:()=>{}, applySkin:(s)=>shipMat.color.setHex(skinToColor(s)),
+        applyOwner:(f)=>{ const spr=ship.children.find(ch=>ch.isSprite); if(f&&!spr) ship.add(makeOwnerLabel()); if(!f&&spr) ship.remove(spr); },
+        applyWeaponUpgrade:()=>{},
+        update(dt){
+          if(!run) return;
+          const {lx,ly}=getLookDelta(1.6); yaw+=lx*dt; pitch+=ly*dt;
+          updateThirdPersonCamera(cam, ship.position, yaw, pitch, 12, 4);
+          const mv=moveStick.get(); ship.position.x+=mv.x*20*dt; ship.position.y+=-mv.y*20*dt;
+          for(const a of asteroids){ a.rotation.x+=0.2*dt; a.rotation.y+=0.3*dt; if(ship.position.distanceTo(a.position)<3){ run=false; msgText.textContent=`Crashed — Asteroids`; msg.style.display='block'; addScore('asteroids', shared.name||'Player', score); } }
+          score+=dt*10; hudSecondary.textContent=`Score ${Math.floor(score)}`;
+          if(score>200){ run=false; addScore('asteroids', shared.name||'Player', Math.floor(score)); msgText.textContent='Level complete — advancing...'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); },1200); }
         }
-
-        score += dt * 20;
-        hudSecondary.textContent = `Score ${Math.round(score)}`;
-        if (score >= 600 + levelIndex * 120) {
-          run = false; addScore('asteroids', shared.name || 'Player', Math.round(score));
-          msgText.textContent = `Level ${levelIndex + 1} complete — advancing...`; msg.style.display = 'block';
-          setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-        }
-      }
-    };
-  }
-
-  // ————— Game 12 — Underwater —————
-  function setupUnderwaterTP(quality, skin, levelIndex, ownerFlag) {
-    const levels = simpleLevels(1001);
-    const lvl = levels[levelIndex] || levels[0];
-    const rand = makeRand(lvl.seed);
-
-    const sc = new THREE.Scene(); sc.background = new THREE.Color(0x0e2a44);
-    const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-    sc.add(makeLights('underwater'));
-
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.MeshStandardMaterial({ color: 0x335577 }));
-    floor.rotation.x = -Math.PI / 2; sc.add(floor);
-
-    const diverMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-    const diver = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), diverMat);
-    diver.position.set(0, 3, 0); sc.add(diver);
-    if (ownerFlag) diver.add(makeOwnerLabel());
-
-    const bubbles = [];
-    function spawnBubble() {
-      const b = new THREE.Mesh(new THREE.SphereGeometry(0.6, 12, 12), new THREE.MeshStandardMaterial({ color: 0xaadfff, transparent: true, opacity: 0.6 }));
-      b.position.set((rand() - 0.5) * 60, 1 + rand() * 12, (rand() - 0.5) * 60);
-      b.userData.velY = 2 + rand() * 1.5;
-      sc.add(b); bubbles.push(b);
-    }
-    for (let i = 0; i < lvl.count; i++) spawnBubble();
-
-    let yaw = 0, pitch = 0, oxygen = 100, score = 0, run = true;
-
-    hudPrimary.textContent = `Underwater — Level ${levelIndex + 1}`;
-    hudSecondary.textContent = 'Collect bubbles to refill oxygen';
-
-    function applySkin(newSkin) { diverMat.color.setHex(skinToColor(newSkin)); }
-    function applyOwner(flag) { const s = diver.children.find(ch => ch.isSprite); if (flag && !s) diver.add(makeOwnerLabel()); if (!flag && s) diver.remove(s); }
-
-    function restart() {
-      bubbles.forEach(b => sc.remove(b)); bubbles.length = 0;
-      for (let i = 0; i < lvl.count; i++) spawnBubble();
-      diver.position.set(0, 3, 0); yaw = 0; pitch = 0; oxygen = 100; score = 0; run = true; msg.style.display = 'none';
+      };
     }
 
-    return {
-      scene: sc, camera: cam, restart, dispose() {},
-      getCurrency: () => score, setCurrency: v => { score = v; },
-      applyMapVariant: () => {}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-      update(dt) {
-        if (!run) return;
-        const { lx, ly } = getLookDelta(1.4);
-        yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.5, 0.5);
-        updateThirdPersonCamera(cam, diver.position, yaw, pitch, 7.8, 2.8);
-
-        const mv = moveStick.get();
-        const { inputX, inputY } = getMoveInput(keys, mv);
-        const { forward, right } = getCameraBasisXZ(cam, diver.position);
-        const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY); if (dir.lengthSq() > 0) dir.normalize();
-        diver.position.addScaledVector(dir, 7 * dt);
-        diver.position.y += ly * 1.2; // gentle vertical swim via look
-
-        oxygen -= dt * 4; if (oxygen < 0) oxygen = 0;
-
-        for (let i = bubbles.length - 1; i >= 0; i--) {
-          const b = bubbles[i];
-          b.position.y += b.userData.velY * dt;
-          if (b.position.y > 16) { b.position.y = 1; b.position.x = (rand() - 0.5) * 60; b.position.z = (rand() - 0.5) * 60; }
-          if (b.position.distanceTo(diver.position) < 1.2) {
-            oxygen = Math.min(100, oxygen + 18); score += 1; hudSecondary.textContent = `Oxygen ${Math.round(oxygen)} | Bubbles ${score}`;
-            b.position.y = 1; b.position.x = (rand() - 0.5) * 60; b.position.z = (rand() - 0.5) * 60;
-          }
-        }
-
-        if (oxygen <= 0) {
-          run = false; msgText.textContent = `Out of oxygen — Underwater (Lvl ${levelIndex + 1})`; msg.style.display = 'block';
-          addScore('underwater', shared.name || 'Player', score);
-        }
-        if (score >= 24 + levelIndex * 6) {
-          run = false; addScore('underwater', shared.name || 'Player', score);
-          msgText.textContent = `Level ${levelIndex + 1} complete — advancing...`; msg.style.display = 'block';
-          setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-        }
-
-        hudPrimary.textContent = `Underwater — Level ${levelIndex + 1}`;
-        hudSecondary.textContent = `Oxygen ${Math.round(oxygen)} | Bubbles ${score}`;
-      }
-    };
-  }
-
-  // ————— Game 13 — Haunted Mansion —————
-  function setupHauntedTP(quality, skin, levelIndex, ownerFlag) {
-    const levels = simpleLevels(1101);
-    const lvl = levels[levelIndex] || levels[0];
-    const rand = makeRand(lvl.seed);
-
-    const sc = new THREE.Scene(); sc.background = new THREE.Color(0x14141c);
-    const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
-    sc.add(makeLights('haunted'));
-
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshStandardMaterial({ color: 0x222222 }));
-    floor.rotation.x = -Math.PI / 2; sc.add(floor);
-
-    const walls = [];
-    function wall(x, z, w, h, d) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: 0x444455 }));
-      m.position.set(x, h / 2, z); sc.add(m); walls.push(m);
-    }
-    for (let i = 0; i < lvl.count; i++) {
-      wall((rand() - 0.5) * 200, (rand() - 0.5) * 200, 20 + rand() * 30, 8 + rand() * 8, 4 + rand() * 6);
-    }
-
-    const key = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.25, 12, 24), new THREE.MeshStandardMaterial({ color: 0xffdd55, emissive: 0x553300 }));
-    key.position.set(80, 2.5, 80); sc.add(key);
-
-    const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-    const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-    rig.position.set(-80, 1, -80); sc.add(rig);
-    if (ownerFlag) rig.add(makeOwnerLabel());
-
-    let yaw = 0, pitch = 0, run = true;
-
-    hudPrimary.textContent = `Haunted Mansion — Level ${levelIndex + 1}`;
-    hudSecondary.textContent = `Find the glowing key`;
-
-    function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
-    function applyOwner(flag) { const s = rig.children.find(ch => ch.isSprite); if (flag && !s) rig.add(makeOwnerLabel()); if (!flag && s) rig.remove(s); }
-
-    function restart() {
-      rig.position.set(-80, 1, -80); yaw = 0; pitch = 0; run = true; msg.style.display = 'none';
-    }
-
-    return {
-      scene: sc, camera: cam, restart, dispose() {},
-      getCurrency: () => 0, setCurrency: () => {},
-      applyMapVariant: () => {}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-      update(dt) {
-        if (!run) return;
-        const { lx, ly } = getLookDelta(1.6);
-        yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.5, 0.5);
-        updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.2, 3.0);
-
-        const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv);
-        const { forward, right } = getCameraBasisXZ(cam, rig.position);
-        const next = rig.position.clone().addScaledVector(right, inputX * 7 * dt).addScaledVector(forward, inputY * 7 * dt);
-
-        // Simple wall collision
-        let blocked = false;
-        for (const w of walls) {
-          const dx = Math.abs(next.x - w.position.x) - w.geometry.parameters.width / 2 - 0.5;
-          const dz = Math.abs(next.z - w.position.z) - w.geometry.parameters.depth / 2 - 0.5;
-          if (dx < 0 && dz < 0) { blocked = true; break; }
-        }
-        if (!blocked) rig.position.copy(next);
-
-        if (rig.position.distanceTo(key.position) < 4) {
-          run = false; addScore('haunted', shared.name || 'Player', 1000);
-          msgText.textContent = `Level ${levelIndex + 1} complete — advancing...`; msg.style.display = 'block';
-          setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-        }
-      }
-    };
-  }
-
-  // ————— Game 14 — Robot Factory —————
-  function setupFactoryTP(quality, skin, levelIndex, ownerFlag) {
-    const levels = simpleLevels(1201);
-    const lvl = levels[levelIndex] || levels[0];
-    const rand = makeRand(lvl.seed);
-
-    const sc = new THREE.Scene(); sc.background = new THREE.Color(0x121212);
-    const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
-    sc.add(makeLights('factory'));
-
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshStandardMaterial({ color: 0x444444 }));
-    floor.rotation.x = -Math.PI / 2; sc.add(floor);
-
-    const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-    const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-    rig.position.set(0, 1, 0); sc.add(rig); if (ownerFlag) rig.add(makeOwnerLabel());
-
-    const bots = [];
-    function bot() {
-      const b = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.8, 1.4), new THREE.MeshStandardMaterial({ color: 0x8888aa }));
-      b.position.set((rand() - 0.5) * 80, 0.9, (rand() - 0.5) * 80);
-      b.userData.vel = new THREE.Vector3((rand() - 0.5) * 6, 0, (rand() - 0.5) * 6);
-      sc.add(b); bots.push(b);
-    }
-    for (let i = 0; i < lvl.count; i++) bot();
-
-    const goal = new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.4, 12, 24), new THREE.MeshStandardMaterial({ color: 0x88ffaa }));
-    goal.position.set(64, 2, -64); sc.add(goal);
-
-    let yaw = 0, pitch = 0, run = true, health = 100;
-
-    hudPrimary.textContent = `Robot Factory — Level ${levelIndex + 1}`;
-    hudSecondary.textContent = `Health 100`;
-
-    function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
-    function applyOwner(flag) { const s = rig.children.find(ch => ch.isSprite); if (flag && !s) rig.add(makeOwnerLabel()); if (!flag && s) rig.remove(s); }
-
-    function restart() {
-      rig.position.set(0, 1, 0); health = 100; yaw = 0; pitch = 0; run = true; msg.style.display = 'none';
-      hudSecondary.textContent = `Health ${health}`;
-    }
-
-    return {
-      scene: sc, camera: cam, restart, dispose() {},
-      getCurrency: () => 0, setCurrency: () => {},
-      applyMapVariant: () => {}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-      update(dt) {
-        if (!run) return;
-        const { lx, ly } = getLookDelta(1.6);
-        yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.5, 0.5);
-        updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.2, 3.0);
-
-        const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv);
-        const { forward, right } = getCameraBasisXZ(cam, rig.position);
-        const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-        if (dir.lengthSq() > 0) dir.normalize();
-        rig.position.addScaledVector(dir, 8 * dt);
-
-        for (const b of bots) {
-          b.position.addScaledVector(b.userData.vel, dt);
-          if (Math.abs(b.position.x) > 90) b.userData.vel.x *= -1;
-          if (Math.abs(b.position.z) > 90) b.userData.vel.z *= -1;
-          if (b.position.distanceTo(rig.position) < 1.6) {
-            health -= 20 * dt; if (health < 0) health = 0;
-          }
-        }
-
-        hudSecondary.textContent = `Health ${Math.round(health)}`;
-        if (health <= 0) {
-          run = false; msgText.textContent = `Out of health — Factory (Lvl ${levelIndex + 1})`; msg.style.display = 'block';
-          addScore('factory', shared.name || 'Player', 100);
-        }
-        if (rig.position.distanceTo(goal.position) < 6) {
-          run = false; addScore('factory', shared.name || 'Player', 1000);
-          msgText.textContent = `Level ${levelIndex + 1} complete — advancing...`; msg.style.display = 'block';
-          setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-        }
-      }
-    };
-  }
-
-  // ————— Game 15 — Sky Glider —————
-  function setupGliderTP(quality, skin, levelIndex, ownerFlag) {
-    const levels = simpleLevels(1301);
-    const lvl = levels[levelIndex] || levels[0];
-    const rand = makeRand(lvl.seed);
-
-    const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
-    const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-    sc.add(makeLights('day'));
-
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshStandardMaterial({ color: 0x88b36a }));
-    ground.rotation.x = -Math.PI / 2; sc.add(ground);
-
-    const gliderMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-    const glider = new THREE.Mesh(new THREE.BoxGeometry(3, 0.6, 1.2), gliderMat);
-    glider.position.set(0, 18, 0); sc.add(glider);
-    if (ownerFlag) glider.add(makeOwnerLabel());
-
-    const rings = [];
-    function ring(x, y, z) {
-      const r = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.3, 12, 24), new THREE.MeshStandardMaterial({ color: 0xffee88 }));
-      r.position.set(x, y, z); sc.add(r); rings.push(r);
-    }
-    for (let i = 0; i < lvl.count; i++) {
-      ring(i * 40, 14 + Math.sin(i * 0.35) * 6, Math.sin(i * 0.6) * 30);
-    }
-
-    let yaw = 0, pitch = 0, run = true, score = 0, speed = 16;
-
-    hudPrimary.textContent = `Sky Glider — Level ${levelIndex + 1}`;
-    hudSecondary.textContent = `Rings 0/${lvl.count}`;
-
-    function applySkin(newSkin) { gliderMat.color.setHex(skinToColor(newSkin)); }
-    function applyOwner(flag) { const s = glider.children.find(ch => ch.isSprite); if (flag && !s) glider.add(makeOwnerLabel()); if (!flag && s) glider.remove(s); }
-
-    function restart() {
-      glider.position.set(0, 18, 0); yaw = 0; pitch = 0; run = true; score = 0; speed = 16; msg.style.display = 'none';
-      hudSecondary.textContent = `Rings 0/${lvl.count}`;
-    }
-
-    return {
-      scene: sc, camera: cam, restart, dispose() {},
-      getCurrency: () => score, setCurrency: v => { score = v; },
-      applyMapVariant: () => {}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-      update(dt) {
-        if (!run) return;
-        const { lx, ly } = getLookDelta(1.2);
-        yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.4, 0.4);
-        speed = THREE.MathUtils.lerp(speed, 18 + Math.abs(ly) * 8, 2 * dt);
-
-        const heading = yaw;
-        const dir = new THREE.Vector3(Math.sin(heading), pitch * 4, Math.cos(heading));
-        glider.position.addScaledVector(dir, speed * dt);
-
-        updateThirdPersonCamera(cam, glider.position, yaw, pitch, 10.5, 3.4);
-
-        for (let i = rings.length - 1; i >= 0; i--) {
-          const r = rings[i];
-          if (glider.position.distanceTo(r.position) < 3) {
-            score++; sc.remove(r); rings.splice(i, 1);
-            hudSecondary.textContent = `Rings ${score}/${lvl.count}`;
-          }
-        }
-
-        if (rings.length === 0) {
-          run = false; addScore('glider', shared.name || 'Player', score);
-          msgText.textContent = `Level ${levelIndex + 1} complete — advancing...`; msg.style.display = 'block';
-          setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-        }
-      }
-    };
-  }
-
-  // ————— Game 16 — Sandstorm Survival —————
-  function setupSandstormTP(quality, skin, levelIndex, ownerFlag) {
-    const levels = simpleLevels(1401);
-    const lvl = levels[levelIndex] || levels[0];
-    const rand = makeRand(lvl.seed);
-
-    const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd8b56a);
-    const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-    sc.add(makeLights('sand'));
-
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600), new THREE.MeshStandardMaterial({ color: 0xd0a45a }));
-    floor.rotation.x = -Math.PI / 2; sc.add(floor);
-
-    const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-    const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-    rig.position.set(0, 1, 0); sc.add(rig);
-    if (ownerFlag) rig.add(makeOwnerLabel());
-
-    const waters = [];
-    function water() {
-      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.4, 16), new THREE.MeshStandardMaterial({ color: 0x66ccee }));
-      w.position.set((rand() - 0.5) * 120, 0.2, (rand() - 0.5) * 120);
-      sc.add(w); waters.push(w);
-    }
-    for (let i = 0; i < lvl.count; i++) water();
-
-    let yaw = 0, pitch = 0, run = true, thirst = 100, collected = 0;
-
-    hudPrimary.textContent = `Sandstorm — Level ${levelIndex + 1}`;
-    hudSecondary.textContent = `Thirst ${thirst} | Water 0/${lvl.count}`;
-
-    function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
-    function applyOwner(flag) { const s = rig.children.find(ch => ch.isSprite); if (flag && !s) rig.add(makeOwnerLabel()); if (!flag && s) rig.remove(s); }
-
-    function restart() {
-      waters.forEach(w => sc.remove(w)); waters.length = 0; for (let i = 0; i < lvl.count; i++) water();
-      rig.position.set(0, 1, 0); yaw = 0; pitch = 0; run = true; thirst = 100; collected = 0; msg.style.display = 'none';
-      hudSecondary.textContent = `Thirst ${thirst} | Water 0/${lvl.count}`;
-    }
-
-    return {
-      scene: sc, camera: cam, restart, dispose() {},
-      getCurrency: () => collected, setCurrency: v => { collected = v; },
-      applyMapVariant: () => {}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-      update(dt) {
-        if (!run) return;
-        const { lx, ly } = getLookDelta(1.4);
-        yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.4, 0.4);
-        updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.5, 3.0);
-
-        const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv);
-        const { forward, right } = getCameraBasisXZ(cam, rig.position);
-        const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-        if (dir.lengthSq() > 0) dir.normalize();
-        rig.position.addScaledVector(dir, 8 * dt);
-
-        thirst -= dt * 6; if (thirst < 0) thirst = 0;
-
-        for (let i = waters.length - 1; i >= 0; i--) {
-          const w = waters[i];
-          if (w.position.distanceTo(rig.position) < 1.2) {
-            collected++; thirst = Math.min(100, thirst + 25);
-            sc.remove(w); waters.splice(i, 1);
-          }
-        }
-
-        hudSecondary.textContent = `Thirst ${Math.round(thirst)} | Water ${collected}/${levels[levelIndex]?.count || lvl.count}`;
-
-        if (thirst <= 0) {
-          run = false; msgText.textContent = `Dehydrated — Sandstorm (Lvl ${levelIndex + 1})`; msg.style.display = 'block';
-          addScore('sandstorm', shared.name || 'Player', collected);
-        }
-
-        if (waters.length === 0) {
-          run = false; addScore('sandstorm', shared.name || 'Player', collected);
-          msgText.textContent = `Level ${levelIndex + 1} complete — advancing...`; msg.style.display = 'block';
-          setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-        }
-      }
-    };
-  }
-
-  // ————— Game 17 — Crystal Collector —————
-  function setupCrystalTP(quality, skin, levelIndex, ownerFlag) {
-    const levels = simpleLevels(1501);
-    const lvl = levels[levelIndex] || levels[0];
-    const rand = makeRand(lvl.seed);
-
-    const sc = new THREE.Scene(); sc.background = new THREE.Color(0x223344);
-    const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
-    sc.add(makeLights('day'));
-
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: 0x335577 }));
-    floor.rotation.x = -Math.PI / 2; sc.add(floor);
-
-    const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-    const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-    rig.position.set(0, 1, 0); sc.add(rig); if (ownerFlag) rig.add(makeOwnerLabel());
-
-    const crystals = [];
-    function crystal() {
-      const c = new THREE.Mesh(new THREE.OctahedronGeometry(0.9), new THREE.MeshStandardMaterial({ color: 0x99eeff, emissive: 0x224455, emissiveIntensity: 0.3 }));
-      c.position.set((rand() - 0.5) * 80, 1 + rand() * 8, (rand() - 0.5) * 80);
-      sc.add(c); crystals.push(c);
-    }
-    for (let i = 0; i < lvl.count; i++) crystal();
-
-    let yaw = 0, pitch = 0, run = true, collected = 0;
-
-    hudPrimary.textContent = `Crystal Collector — Level ${levelIndex + 1}`;
-    hudSecondary.textContent = `Collected 0/${lvl.count}`;
-
-    function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
-    function applyOwner(flag) { const s = rig.children.find(ch => ch.isSprite); if (flag && !s) rig.add(makeOwnerLabel()); if (!flag && s) rig.remove(s); }
-
-    function restart() {
-      crystals.forEach(c => sc.remove(c)); crystals.length = 0; for (let i = 0; i < lvl.count; i++) crystal();
-      rig.position.set(0, 1, 0); yaw = 0; pitch = 0; collected = 0; run = true; msg.style.display = 'none';
-      hudSecondary.textContent = `Collected 0/${lvl.count}`;
-    }
-
-    return {
-      scene: sc, camera: cam, restart, dispose() {},
-      getCurrency: () => collected, setCurrency: v => { collected = v; },
-      applyMapVariant: () => {}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-      update(dt) {
-        if (!run) return;
-        const { lx, ly } = getLookDelta(1.6);
-        yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.5, 0.5);
-        updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.2, 3.0);
-
-        const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv);
-        const { forward, right } = getCameraBasisXZ(cam, rig.position);
-        const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-        if (dir.lengthSq() > 0) dir.normalize();
-        rig.position.addScaledVector(dir, 8 * dt);
-
-        for (let i = crystals.length - 1; i >= 0; i--) {
-          const c = crystals[i];
-          if (c.position.distanceTo(rig.position) < 1.2) {
-            sc.remove(c); crystals.splice(i, 1); collected++;
-            hudSecondary.textContent = `Collected ${collected}/${levels[levelIndex]?.count || lvl.count}`;
-          }
-        }
-
-        if (crystals.length === 0) {
-          run = false; addScore('crystal', shared.name || 'Player', collected);
-          msgText.textContent = `Level ${levelIndex + 1} complete — advancing...`; msg.style.display = 'block';
-          setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-        }
-      }
-    };
-  }
-
-  // ————— Game 18 — Tower Climb (solid floor + spawn on first step) —————
-  function setupTowerTP(quality, skin, levelIndex, ownerFlag) {
-    const levels = simpleLevels(1601);
-    const lvl = levels[levelIndex] || levels[0];
-    const rand = makeRand(lvl.seed);
-
-    const sc = new THREE.Scene(); sc.background = new THREE.Color(0x1b1f2a);
-    const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-    sc.add(makeLights('day'));
-
-    // Solid floor under tower
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(2000, 2000),
-      new THREE.MeshStandardMaterial({ color: 0x444b66 })
-    );
-    floor.rotation.x = -Math.PI / 2; floor.position.y = 0; sc.add(floor);
-
-    // Tower steps
-    const steps = [];
-    const stepMat = new THREE.MeshStandardMaterial({ color: 0x6a86a6, roughness: 0.8 });
-    const radius = 18, heightStep = 3.2;
-    for (let i = 0; i < lvl.count + 18; i++) {
-      const angle = i * 0.35;
-      const s = new THREE.Mesh(new THREE.BoxGeometry(8, 1.6, 3.2), stepMat);
-      s.position.set(Math.cos(angle) * radius, 1 + i * heightStep, Math.sin(angle) * radius);
-      s.rotation.y = -angle + Math.PI / 2;
-      sc.add(s); steps.push(s);
-    }
-
-    const goal = new THREE.Mesh(new THREE.TorusGeometry(3, 0.6, 12, 24), new THREE.MeshStandardMaterial({ color: 0x88ffaa }));
-    const last = steps[steps.length - 1];
-    goal.position.set(last.position.x, last.position.y + 8, last.position.z); sc.add(goal);
-
-    const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-    const player = new THREE.Mesh(new THREE.CapsuleGeometry(0.6, 0.8, 8, 12), playerMat);
-    // Spawn on first step
-    const firstStep = steps[0];
-    const firstStepY = firstStep.position.y + 0.8; // top of step plus capsule radius
-    player.position.set(firstStep.position.x, firstStepY + 0.6, firstStep.position.z);
-    sc.add(player); if (ownerFlag) player.add(makeOwnerLabel());
-
-    let yaw = 0, pitch = 0, run = true, onGround = true;
-    const vel = new THREE.Vector3(0, 0, 0);
-    const gravity = 18, moveSpeed = 11, jumpVel = 16;
-    let jumpsLeft = 2;
-
-    hudPrimary.textContent = `Tower Climb — Level ${levelIndex + 1}`;
-    hudSecondary.textContent = `Reach the top (Double jump)`;
-
-    function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
-    function applyOwner(flag) { const s = player.children.find(ch => ch.isSprite); if (flag && !s) player.add(makeOwnerLabel()); if (!flag && s) player.remove(s); }
-
-    function tryJump() {
-      if (!run) return;
-      if (onGround) { vel.y = jumpVel; jumpsLeft = 1; onGround = false; }
-      else if (jumpsLeft > 0) { vel.y = jumpVel * 0.95; jumpsLeft--; }
-    }
-    jumpBtn.onclick = tryJump;
-    window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
-
-    function collide() {
-      onGround = false;
-      for (const s of steps) {
-        const top = s.position.y + 0.8;
-        const halfW = s.geometry.parameters.width / 2;
-        const halfD = s.geometry.parameters.depth / 2;
-        const withinX = (player.position.x > s.position.x - halfW - 0.6) && (player.position.x < s.position.x + halfW + 0.6);
-        const withinZ = (player.position.z > s.position.z - halfD - 0.6) && (player.position.z < s.position.z + halfD + 0.6);
-        const nearTop = Math.abs(player.position.y - (top + 0.6)) < 0.6 && vel.y <= 0;
-        if (withinX && withinZ && nearTop) {
-          player.position.y = top + 0.6; vel.y = 0; onGround = true; jumpsLeft = 2;
-        }
-      }
-      if (player.position.y < 0) {
-        run = false; msgText.textContent = `You fell — Tower Climb (Lvl ${levelIndex + 1})`; msg.style.display = 'block';
-        addScore('tower', shared.name || 'Player', 10);
-      }
-    }
-
-    function restart() {
-      const s = steps[0];
-      const ty = s.position.y + 0.8;
-      player.position.set(s.position.x, ty + 0.6, s.position.z);
-      vel.set(0, 0, 0); yaw = 0; pitch = 0; onGround = true; run = true; jumpsLeft = 2;
-      msg.style.display = 'none';
-    }
-
-    return {
-      scene: sc, camera: cam, restart, dispose() {},
-      getCurrency: () => 0, setCurrency: () => {},
-      applyMapVariant: () => {}, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-      update(dt) {
-        if (!run) return;
-        const { lx, ly } = getLookDelta(1.6);
-        yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.6, 0.6);
-        updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.2, 2.6);
-
-        const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv);
-        const { forward, right } = getCameraBasisXZ(cam, player.position);
-        const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-        if (dir.lengthSq() > 0) dir.normalize();
-
-        vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, (onGround ? 9 : 5) * dt);
-        vel.z = THREE.MathUtils.lerp(vel.z, dir.z * moveSpeed, (onGround ? 9 : 5) * dt);
-        vel.y -= gravity * dt;
-        player.position.addScaledVector(vel, dt);
-        collide();
-
-        if (player.position.distanceTo(goal.position) < 6) {
-          run = false; addScore('tower', shared.name || 'Player', 1000);
-          msgText.textContent = `Level ${levelIndex + 1} complete — advancing...`; msg.style.display = 'block';
-          setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-        }
-
-        hudSecondary.textContent = onGround ? 'On step (double jump ready)' : (jumpsLeft > 0 ? 'Air (double jump)' : 'Air');
-      }
-    };
-  }
-
-  // ————— Register remaining games —————
-  Object.assign(gameSetups, {
-    volcano: setupVolcanoTP,
-    asteroids: setupAsteroidsTP,
-    underwater: setupUnderwaterTP,
-    haunted: setupHauntedTP,
-    factory: setupFactoryTP,
-    glider: setupGliderTP,
-    sandstorm: setupSandstormTP,
-    crystal: setupCrystalTP,
-    tower: setupTowerTP
-  });
-
-  // ————— Hub control (start game, level progression, UI) —————
-  function showMenu() {
-    running = false;
-    menu.style.display = 'grid';
-    backBtn.style.display = 'none';
-    hud.style.display = 'none';
-    controls.style.display = 'none';
-    settingsBar.style.display = 'none';
-    msg.style.display = 'none';
-  }
-
-  function hideMenu() {
-    menu.style.display = 'none';
-    backBtn.style.display = 'inline-block';
-    hud.style.display = 'block';
-    controls.style.display = 'flex';
-    settingsBar.style.display = 'flex';
-  }
-
-  function startGame(setup, gameKey, levelIdx = 0) {
-    // Clean old scene
-    if (cleanup && cleanup.dispose) cleanup.dispose();
-    scene = null; camera = null;
-
-    // Build new game
-    const { scene: sc, camera: cam, restart, dispose, update, getCurrency, setCurrency, applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade } =
-      setup(quality, shared.skin, levelIdx, shared.owner);
-
-    scene = sc; camera = cam; running = true; shared.currentGame = gameKey;
-
-    // Prepare cleanup controller
-    cleanup = {
-      restart,
-      dispose,
-      update,
-      getCurrency,
-      setCurrency,
-      applyMapVariant,
-      applySkin,
-      applyOwner,
-      applyWeaponUpgrade,
-      nextLevel: () => advanceLevel(gameKey, levelIdx + 1)
-    };
-
-    hideMenu();
-  }
-
-  function advanceLevel(gameKey, nextIndex) {
-    // If within levels, restart the same game at next level
-    if (nextIndex < maxLevels) {
-      const setup = gameSetups[gameKey];
-      startGame(setup, gameKey, nextIndex);
-      return;
-    }
-    // Otherwise advance to next game in the order
-    const currentIdx = gameOrder.indexOf(gameKey);
-    const nextGameKey = gameOrder[(currentIdx + 1) % gameOrder.length];
-    startGame(gameSetups[nextGameKey], nextGameKey, 0);
-  }
-
-  // Bindings already attached in chunk 1 for menu buttons
-  backBtn.onclick = showMenu;
-  restartBtn.onclick = () => { if (cleanup && cleanup.restart) cleanup.restart(); };
-
-  // Apply skin/owner toggles to current game if changed via UI
-  if (shared.owner && cleanup && cleanup.applyOwner) cleanup.applyOwner(true);
-
-  // ————— Main loop —————
-  let sceneLast = performance.now();
-  function loop(now) {
-    const dt = Math.min((now - sceneLast) / 1000, 1 / 30);
-    sceneLast = now;
-
-    if (running && cleanup && cleanup.update) cleanup.update(dt, now);
-    if (scene && camera) renderer.render(scene, camera);
-
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
-
-  // Resize
-  window.addEventListener('resize', () => {
-    if (!camera) return;
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-
-  // Boot to menu
-  showMenu();
-</script>
-</body>
-</html>
+    // ————— Game 12 — Underwater —————
+    function setupUnderwaterTP(quality, skin, levelIndex, ownerFlag) {
+      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x003366);
+      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1500);
+      sc.add(makeLights('underwater'));
+      const diverMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const diver=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), diverMat);
+      diver.position.set(0,1,0); sc.add(diver);
+      if(ownerFlag) diver.add(makeOwnerLabel());
+      const bubbles=[]; for(let i=0;i<20;i++){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.3,8,8), new THREE.MeshStandardMaterial({ color:0x99ccff, transparent:true, opacity:0.6 })); b.position.set((Math.random()-0.5)*40,Math.random()*20,(Math.random()-0.5)*40); sc.add(b); bubbles.push(b); }
+      let yaw=0,pitch=0,score=0,run=true;
+      hudPrimary.textContent=`Underwater — Level ${levelIndex+1}`; hudSecondary.textContent='Collect bubbles';
+      return {
+        scene: sc, camera: cam,
+        restart(){ diver.position.set(0,1,0); score=0; run=true; msg.style.display='none';
