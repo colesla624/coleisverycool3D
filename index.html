@@ -20,10 +20,7 @@
     background: radial-gradient(circle at 30% 30%, #fff 0%, #f6b73c 35%, #e36c1b 60%, #ad3a0a 100%); box-shadow: 0 10px 25px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.5); }
   .btn:active { transform: scale(0.96); }
   #menu { position: fixed; left: 50%; transform: translateX(-50%); bottom: 70px; display: flex; gap: 8px; pointer-events: auto; }
-  #menu select, #menu button {
-    padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.35); color:#e6e6e6;
-    backdrop-filter: blur(3px);
-  }
+  #menu select, #menu button { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.35); color:#e6e6e6; backdrop-filter: blur(3px); }
   #pauseOverlay { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); color:#fff; font-size: 20px; font-weight:700; text-align:center; }
   #pauseOverlay .inner { background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.2); padding: 14px 18px; border-radius: 10px; }
   * { -webkit-tap-highlight-color: transparent; user-select: none; }
@@ -43,17 +40,14 @@
 <div id="msg">Collect stars and reach the glowing goal!</div>
 
 <div id="controls">
-  <!-- Movement joystick (inverted in code) -->
   <div class="stick-wrap" id="moveStick" style="left:20px; bottom:20px;">
     <div class="stick-base"></div>
     <div class="stick-thumb" id="moveThumb"></div>
   </div>
-  <!-- Look joystick -->
   <div class="stick-wrap" id="lookStick" style="right:20px; bottom:20px;">
     <div class="stick-base"></div>
     <div class="stick-thumb" id="lookThumb"></div>
   </div>
-  <!-- Jump button -->
   <button class="btn" id="jumpBtn" aria-label="Jump"></button>
 </div>
 
@@ -105,8 +99,8 @@
   const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.8, roughness: 0.4, metalness: 0.4 });
 
   // Player capsule
-  const playerRadius = 0.5;      // collider sphere radius approximation
-  const playerHeight = 1.2;      // capsule center-section height
+  const playerRadius = 0.5;
+  const playerHeight = 1.2;
   const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, playerHeight, 8, 16), matPlayer);
   player.castShadow = true;
   player.receiveShadow = false;
@@ -114,8 +108,8 @@
 
   // Camera rig / mode
   let cameraMode = 'third'; // 'third' | 'first'
-  let camYaw = 0;           // horizontal angle around player
-  let camPitch = 0.25;      // tilt
+  let camYaw = 0;
+  let camPitch = 0.25;
   const pitchMin = -0.3, pitchMax = 0.85;
   const orbitRadius = 7.5;
 
@@ -216,7 +210,7 @@
 
   // Input state
   const keys = { left: false, right: false, up: false, down: false, jump: false };
-  let moveDx = 0, moveDy = 0; // movement joystick values (inverted in callback)
+  let moveDx = 0, moveDy = 0; // inverted in callback
   let paused = false;
   let score = 0;
   const voidY = -20;
@@ -304,7 +298,7 @@
   // Toggle first/third person
   toggleViewBtn.addEventListener('click', () => {
     cameraMode = cameraMode === 'third' ? 'first' : 'third';
-    player.visible = cameraMode !== 'first'; // hide capsule in first person
+    player.visible = cameraMode !== 'first';
   });
 
   // Geometry helpers
@@ -445,19 +439,19 @@
     }
     updateHUD();
 
-    // Input vector: keyboard + inverted movement joystick (joystick Y is down; inverted in callback)
+    // Input vector: keyboard + inverted movement joystick (already inverted)
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + moveDx;
     const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy;
     const input = new THREE.Vector3(ix, 0, iz);
     if (input.lengthSq() > 1) input.normalize();
 
-    // Camera-based forward/right (forward on joystick = camera forward)
+    // Camera-based forward/right
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     forward.y = 0; forward.normalize();
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), forward).normalize();
 
-    // Movement vector relative to camera
+    // Movement vector relative to camera (forward on joystick = camera forward)
     const moveVec = new THREE.Vector3()
       .addScaledVector(forward, input.z)
       .addScaledVector(right, input.x);
@@ -562,6 +556,12 @@
       camera.lookAt(head.clone().add(dir));
     }
 
+    // Ambient dust drift (simple visual)
+    for (const d of dusts) {
+      d.position.x += Math.sin(tGoal + d.id) * 0.003;
+      d.position.y += Math.cos(tGoal + d.id) * 0.002;
+    }
+
     renderer.render(scene, camera);
   }
   animate();
@@ -576,6 +576,7 @@
   // Initialize UI and start
   let currentLevel = 0;
   levelSelect.value = String(currentLevel);
+
   function initUI() {
     levelSelect.addEventListener('change', (e) => {
       loadLevel(parseInt(e.target.value, 10));
@@ -598,7 +599,6 @@
     initUI();
   }
   startGame();
-
 })();
 </script>
 </body>
