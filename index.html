@@ -12,17 +12,12 @@
   #msg { position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; color:#fff; background: rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.15); border-radius: 10px; padding:8px 12px; pointer-events:none; }
   #controls { position: fixed; inset: 0; pointer-events: none; }
   .stick-wrap { position: absolute; width: 140px; height: 140px; pointer-events: auto; touch-action: none; }
-  .stick-base, .stick-thumb { position: absolute; border-radius: 50%; backdrop-filter: blur(4px); }
-  .stick-base { width: 140px; height: 140px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); }
-  .stick-thumb { width: 70px; height: 70px; left: 35px; top: 35px; background: rgba(255,255,255,0.22); border: 2px solid rgba(255,255,255,0.3); }
-  .btn { position: absolute; right: 20px; bottom: 120px; width: 90px; height: 90px; border-radius: 50%; pointer-events: auto; touch-action: manipulation;
-    background: radial-gradient(circle at 30% 30%, #fff 0%, #f6b73c 35%, #e36c1b 60%, #ad3a0a 100%); box-shadow: 0 10px 25px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.5); }
-  .btn:active { transform: scale(0.96); }
+  .stick-base, .stick-thumb { position: absolute; border-radius: 50%; }
+  .stick-base { width: 140px; height: 140px; background: rgba(255,255,255,0.08); }
+  .stick-thumb { width: 70px; height: 70px; left: 35px; top: 35px; background: rgba(255,255,255,0.2); }
+  .btn { position: absolute; right: 20px; bottom: 120px; width: 90px; height: 90px; border-radius: 50%; pointer-events: auto; background: radial-gradient(circle at 30% 30%, #fff 0%, #f6b73c 35%, #e36c1b 60%, #ad3a0a 100%); }
   #menu { position: fixed; left: 50%; transform: translateX(-50%); bottom: 70px; display: flex; gap: 8px; pointer-events: auto; }
-  #menu select, #menu button {
-    padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.35); color:#e6e6e6;
-    backdrop-filter: blur(3px);
-  }
+  #menu select, #menu button { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.35); color:#e6e6e6; }
   #pauseOverlay { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); color:#fff; font-size: 20px; font-weight:700; text-align:center; }
   #pauseOverlay .inner { background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.2); padding: 14px 18px; border-radius: 10px; }
   * { -webkit-tap-highlight-color: transparent; user-select: none; }
@@ -41,17 +36,14 @@
 <div id="msg">Collect stars and reach the glowing goal!</div>
 
 <div id="controls">
-  <!-- Movement joystick (inverted in code) -->
   <div class="stick-wrap" id="moveStick" style="left:20px; bottom:20px;">
     <div class="stick-base"></div>
     <div class="stick-thumb" id="moveThumb"></div>
   </div>
-  <!-- Look joystick -->
   <div class="stick-wrap" id="lookStick" style="right:20px; bottom:20px;">
     <div class="stick-base"></div>
     <div class="stick-thumb" id="lookThumb"></div>
   </div>
-  <!-- Jump button -->
   <button class="btn" id="jumpBtn" aria-label="Jump"></button>
 </div>
 
@@ -103,17 +95,16 @@
   const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.8, roughness: 0.4, metalness: 0.4 });
 
   // Player capsule
-  const playerRadius = 0.5;      // collider sphere radius approximation
-  const playerHeight = 1.2;      // capsule center-section height
+  const playerRadius = 0.5;
+  const playerHeight = 1.2;
   const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, playerHeight, 8, 16), matPlayer);
   player.castShadow = true;
-  player.receiveShadow = false;
   scene.add(player);
 
   // Camera rig / mode
   let cameraMode = 'third'; // 'third' | 'first'
-  let camYaw = 0;           // horizontal angle around player
-  let camPitch = 0.25;      // tilt
+  let camYaw = 0;
+  let camPitch = 0.25;
   const pitchMin = -0.3, pitchMax = 0.85;
   const orbitRadius = 7.5;
 
@@ -214,7 +205,7 @@
 
   // Input state
   const keys = { left: false, right: false, up: false, down: false, jump: false };
-  let moveDx = 0, moveDy = 0; // movement joystick values (inverted in callback below)
+  let moveDx = 0, moveDy = 0; // movement joystick values (inverted)
   let paused = false;
   let score = 0;
   const voidY = -20;
@@ -245,7 +236,11 @@
     const dx = (e.clientX - lastMouse.x) / window.innerWidth;
     const dy = (e.clientY - lastMouse.y) / window.innerHeight;
     camYaw -= dx * 3.0;
-    camPitch = THREE.MathUtils.clamp(camPitch - dy * 2.0, pitchMin, pitchMax);
+    // Flip vertical only in third-person for mouse too
+    camPitch = THREE.MathUtils.clamp(
+      camPitch + (cameraMode === 'third' ? dy * 2.0 : -dy * 2.0),
+      pitchMin, pitchMax
+    );
     lastMouse = { x: e.clientX, y: e.clientY };
   });
 
@@ -276,11 +271,25 @@
     stick.addEventListener('pointerup', () => { active = false; reset(); });
     stick.addEventListener('pointercancel', () => { active = false; reset(); });
   }
-  // Invert movement joystick (left→right, up→down)
+
+  // Movement joystick (inverted)
   setupStick('moveStick', 'moveThumb', (dx, dy) => { moveDx = -dx; moveDy = -dy; });
+
+  // Look joystick with deadzone and flipped vertical in third-person
   setupStick('lookStick', 'lookThumb', (dx, dy) => {
+    const deadzone = 0.15;
+    if (Math.abs(dx) < deadzone) dx = 0;
+    if (Math.abs(dy) < deadzone) dy = 0;
+
     camYaw -= dx * 2.2;
-    camPitch = THREE.MathUtils.clamp(camPitch - dy * 1.8, pitchMin, pitchMax);
+
+    if (cameraMode === 'third') {
+      // flip vertical in third-person
+      camPitch = THREE.MathUtils.clamp(camPitch + dy * 1.8, pitchMin, pitchMax);
+    } else {
+      // normal vertical in first-person
+      camPitch = THREE.MathUtils.clamp(camPitch - dy * 1.8, pitchMin, pitchMax);
+    }
   });
 
   // Jump button
@@ -296,13 +305,13 @@
   pauseOverlay.addEventListener('click', togglePause);
   pauseBtn.addEventListener('click', togglePause);
 
-  // Prevent scrolling on mobile during joystick use
+  // Prevent touch scrolling
   document.body.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive:false });
 
-  // Toggle first/third person
+  // Toggle view
   toggleViewBtn.addEventListener('click', () => {
     cameraMode = cameraMode === 'third' ? 'first' : 'third';
-    player.visible = cameraMode !== 'first'; // hide capsule in first person
+    player.visible = cameraMode !== 'first';
   });
 
   // Geometry helpers
@@ -373,7 +382,6 @@
     updateHUD();
   }
 
-  // Mode changes
   function applyMode(mode) {
     gameMode = mode;
     if (gameMode === 'time') timeLeft = 60.0;
@@ -391,7 +399,6 @@
     loadLevel(currentLevel);
   });
 
-  // Respawn
   function respawn(penalize = true) {
     const spawn = LEVELS[currentLevel].spawn;
     player.position.set(spawn[0], spawn[1], spawn[2]);
@@ -408,7 +415,7 @@
     updateHUD();
   }
 
-  // Decorative dust particles
+  // Decorative particles
   const dustGeo = new THREE.SphereGeometry(0.03, 8, 8);
   const dustMat = new THREE.MeshBasicMaterial({ color: 0x88aaff, transparent: true, opacity: 0.25 });
   const dusts = [];
@@ -418,7 +425,7 @@
     scene.add(d); dusts.push(d);
   }
 
-  // Initial level and mode
+  // Init
   loadLevel(0);
   applyMode('classic');
 
@@ -432,7 +439,7 @@
 
     const dt = Math.min(0.033, clock.getDelta());
 
-    // Time attack countdown
+    // Time attack
     if (gameMode === 'time') {
       timeLeft -= dt;
       if (timeLeft <= 0) {
@@ -443,46 +450,46 @@
     }
     updateHUD();
 
-    // Input vector: keyboard + inverted movement joystick (joystick Y inverted in callback)
+    // Input vector: keyboard + inverted movement joystick
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + moveDx;
     const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy;
     const input = new THREE.Vector3(ix, 0, iz);
     if (input.lengthSq() > 1) input.normalize();
 
-    // Camera-based forward/right (forward on joystick is camera forward)
+    // Camera forward/right
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     forward.y = 0; forward.normalize();
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), forward).normalize();
 
-    // Movement vector relative to camera
+    // Movement relative to camera
     const moveVec = new THREE.Vector3()
       .addScaledVector(forward, input.z)
       .addScaledVector(right, input.x);
 
     // Slower movement
-    const accelMag = onGround ? 16 : 16 * airControl;  // was 28
+    const accelMag = onGround ? 16 : 16 * 0.6;
     acceleration.set(moveVec.x * accelMag, 0, moveVec.z * accelMag);
     acceleration.add(gravity);
     velocity.addScaledVector(acceleration, dt);
 
-    // Ground friction if idle
+    // Ground friction when idle
     if (onGround && moveVec.lengthSq() < 1e-4) {
-      velocity.x = THREE.MathUtils.damp(velocity.x, 0, friction, dt);
-      velocity.z = THREE.MathUtils.damp(velocity.z, 0, friction, dt);
+      velocity.x = THREE.MathUtils.damp(velocity.x, 0, 8.5, dt);
+      velocity.z = THREE.MathUtils.damp(velocity.z, 0, 8.5, dt);
     }
 
-    // Jump (slower/lower)
+    // Jump (reduced)
     if (keys.jump && onGround) {
-      velocity.y = 8.5; // was ~10.8
+      velocity.y = 8.5;
       onGround = false;
       keys.jump = false;
     }
 
-    // Integrate position
+    // Integrate
     player.position.addScaledVector(velocity, dt);
 
-    // Collisions (sphere approximation for capsule base)
+    // Collisions
     onGround = false;
     for (const box of platforms) {
       const hit = aabbSphereCollision(box, player.position, playerRadius);
@@ -539,7 +546,7 @@
       respawn(gameMode === 'survival');
     }
 
-    // Camera placement (no lag — snap to position)
+    // Camera placement (snap, no lag)
     if (cameraMode === 'third') {
       const y = Math.sin(camPitch) * orbitRadius;
       const h = Math.cos(camPitch) * orbitRadius;
