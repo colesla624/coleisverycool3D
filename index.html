@@ -44,7 +44,7 @@
   <div class="panel" id="timer" style="display:none;">Time: 60.0s</div>
   <div class="panel" id="lives" style="display:none;">Lives: 3</div>
 </div>
-<div id="help">Desktop: WASD/Arrows to move, Mouse to look, Space to jump, P to pause</div>
+<div id="help">Desktop: WASD/Arrows to move, Mouse/right joystick to look, Space to jump, P to pause</div>
 <div id="msg">Collect stars and reach the glowing goal!</div>
 
 <div id="controls">
@@ -71,6 +71,7 @@
   </select>
   <button id="restartBtn">Restart</button>
   <button id="pauseBtn">Pause</button>
+  <button id="toggleViewBtn">Toggle View</button>
 </div>
 
 <div id="pauseOverlay"><div class="inner">Paused<br/><small>(Tap or press P to resume)</small></div></div>
@@ -116,11 +117,11 @@
   player.receiveShadow = false;
   scene.add(player);
 
-  // Camera rig
-  const camOffset = new THREE.Vector3(0, 4.5, 7.5);
-  let camYaw = 0;    // horizontal angle around player
-  let camPitch = 0.25; // tilt
-  const pitchMin = -0.1, pitchMax = 0.8;
+  // Camera rig / mode
+  let cameraMode = 'third'; // 'third' | 'first'
+  let camYaw = 0;           // horizontal angle around player
+  let camPitch = 0.25;      // tilt
+  const pitchMin = -0.3, pitchMax = 0.85;
 
   // Level data
   const LEVELS = [
@@ -130,10 +131,11 @@
         {x:0,y:0,z:0,w:20,d:20,alt:false},
         {x:8,y:2,z:-6,w:6,d:6,alt:true},
         {x:16,y:4,z:-12,w:6,d:6,alt:false},
-        {x:24,y:6,z:-18,w:6,d:6,alt:true}
+        {x:24,y:6,z:-18,w:6,d:6,alt:true},
+        {x:24,y:8,z:-26,w:8,d:6,alt:false}
       ],
-      stars: [[4,1.5,-3],[8,3.5,-6],[16,5.5,-12],[24,7.3,-18]],
-      goal: [24,7.5,-18],
+      stars: [[4,1.5,-3],[8,3.5,-6],[16,5.5,-12],[24,7.3,-18],[24,9.3,-26]],
+      goal: [24,9.5,-26],
       spawn: [0,2.5,5]
     },
     {
@@ -184,6 +186,7 @@
   const modeSelect = document.getElementById('modeSelect');
   const restartBtn = document.getElementById('restartBtn');
   const pauseBtn = document.getElementById('pauseBtn');
+  const toggleViewBtn = document.getElementById('toggleViewBtn');
 
   // Populate level dropdown
   LEVELS.forEach((l, i) => {
@@ -218,7 +221,6 @@
   // Input state
   const keys = { left: false, right: false, up: false, down: false, jump: false };
   let moveDx = 0, moveDy = 0;
-  let lookDx = 0, lookDy = 0;
   let paused = false;
   let score = 0;
   const voidY = -20;
@@ -282,10 +284,8 @@
   }
   setupStick('moveStick', 'moveThumb', (dx, dy) => { moveDx = dx; moveDy = dy; });
   setupStick('lookStick', 'lookThumb', (dx, dy) => {
-    // Horizontal drag rotates yaw; vertical drag adjusts pitch (invert y for typical feel)
     camYaw -= dx * 2.2;
     camPitch = THREE.MathUtils.clamp(camPitch - dy * 1.8, pitchMin, pitchMax);
-    lookDx = dx; lookDy = dy;
   });
 
   // Jump button
@@ -299,10 +299,16 @@
     pauseOverlay.style.display = paused ? 'flex' : 'none';
   }
   pauseOverlay.addEventListener('click', togglePause);
-  document.getElementById('pauseBtn').addEventListener('click', togglePause);
+  pauseBtn.addEventListener('click', togglePause);
 
   // Prevent scrolling on mobile during joystick use
   document.body.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive:false });
+
+  // Toggle first/third person
+  toggleViewBtn.addEventListener('click', () => {
+    cameraMode = cameraMode === 'third' ? 'first' : 'third';
+    player.visible = cameraMode !== 'first'; // hide body in first person
+  });
 
   // Geometry helpers
   function makePlatform(x, y, z, w, d, alt = false) {
@@ -367,6 +373,7 @@
     score = 0;
     player.position.set(lvl.spawn[0], lvl.spawn[1], lvl.spawn[2]);
     velocity.set(0,0,0);
+    onGround = false;
     msgEl.textContent = 'Collect stars and reach the glowing goal!';
     updateHUD();
   }
@@ -385,7 +392,7 @@
   modeSelect.addEventListener('change', (e) => {
     applyMode(e.target.value);
   });
-  document.getElementById('restartBtn').addEventListener('click', () => {
+  restartBtn.addEventListener('click', () => {
     loadLevel(currentLevel);
   });
 
@@ -416,7 +423,7 @@
     scene.add(d); dusts.push(d);
   }
 
-  // Initial level
+  // Initial level and mode
   loadLevel(0);
   applyMode('classic');
 
@@ -441,13 +448,13 @@
     }
     updateHUD();
 
-    // Input vector: keyboard + left joystick
+    // Input vector: keyboard + left joystick (y-down on joystick)
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + moveDx;
-    const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy; // joystick y-down -> forward
+    const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy;
     const input = new THREE.Vector3(ix, 0, iz);
     if (input.lengthSq() > 1) input.normalize();
 
-    // Convert input relative to camera yaw
+    // Convert input relative to camera yaw (movement is always where camera looks)
     const sinY = Math.sin(camYaw), cosY = Math.cos(camYaw);
     const move = new THREE.Vector3(
       input.x * cosY - input.z * sinY,
@@ -520,7 +527,6 @@
       if (player.position.distanceTo(goal.position) < 1.6) {
         if (score === stars.length) {
           msgEl.textContent = 'Level complete! Loading next...';
-          // Next level or loop back
           const next = (currentLevel + 1) % LEVELS.length;
           setTimeout(() => { loadLevel(next); }, 800);
         } else {
@@ -534,14 +540,26 @@
       respawn(gameMode === 'survival');
     }
 
-    // Camera follow with yaw/pitch orbit
-    const r = camOffset.length();
-    const y = Math.sin(camPitch) * r;
-    const h = Math.cos(camPitch) * r;
-    const camX = player.position.x + Math.sin(camYaw) * h;
-    const camZ = player.position.z + Math.cos(camYaw) * h;
-    camera.position.lerp(new THREE.Vector3(camX, player.position.y + y, camZ), 0.12);
-    camera.lookAt(player.position);
+    // Camera placement (third-person orbit vs first-person head)
+    if (cameraMode === 'third') {
+      const r = 7.5;
+      const y = Math.sin(camPitch) * r;
+      const h = Math.cos(camPitch) * r;
+      const camX = player.position.x + Math.sin(camYaw) * h;
+      const camZ = player.position.z + Math.cos(camYaw) * h;
+      const target = new THREE.Vector3(camX, player.position.y + y + 1.5, camZ);
+      camera.position.lerp(target, 0.12);
+      camera.lookAt(player.position);
+    } else {
+      const head = new THREE.Vector3(player.position.x, player.position.y + 1.2, player.position.z);
+      camera.position.lerp(head, 0.25);
+      const dir = new THREE.Vector3(
+        Math.sin(camYaw) * Math.cos(camPitch),
+        Math.sin(camPitch),
+        Math.cos(camYaw) * Math.cos(camPitch)
+      );
+      camera.lookAt(head.clone().add(dir));
+    }
 
     // Ambient particles drift
     for (const d of dusts) {
@@ -559,6 +577,28 @@
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   });
+
+  // Menu events done earlier; load initial state
+})();
+</script>
+
+<script>
+(() => {
+  // Hook level/mode select events to functions in the main script context
+  const levelSelect = document.getElementById('levelSelect');
+  const modeSelect = document.getElementById('modeSelect');
+  const restartBtn = document.getElementById('restartBtn');
+
+  // The functions are closures inside the previous IIFE; to keep single-file simplicity,
+  // we rebind by dispatching change/click and relying on existing listeners (already added).
+  // Populate level options if empty (fallback safety).
+  if (levelSelect.options.length === 0) {
+    ['Beginnings','Sky bridge','Zigzag canyon'].forEach((name, i) => {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = `${i+1}. ${name}`;
+      levelSelect.appendChild(opt);
+    });
+  }
 })();
 </script>
 </body>
