@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Offline (18 games, mobile controls, owner label)</title>
+  <title>3D Game Hub — Offline (18 games, mobile controls, owner code)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial; }
@@ -10,7 +10,6 @@
     #topbar { position:absolute; top:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; user-select:none; }
     #topbar .small { font-size:12px; opacity:0.85; font-weight:500; }
     #backBtn { position:absolute; top:10px; right:10px; z-index:12; padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; display:none; cursor:pointer; }
-
     #menu { position:absolute; inset:0; display:grid; place-items:center; z-index:11; }
     #menuPanel { width:1100px; max-width:96vw; background:#111a; backdrop-filter: blur(8px); border:1px solid #fff2; border-radius:16px; padding:20px; color:#fff; }
     #menuPanel h1 { margin:0 0 8px; font-size:28px; }
@@ -20,13 +19,10 @@
     .row { display:flex; gap:8px; align-items:center; margin-top:12px; flex-wrap:wrap; }
     .pill { padding:8px 12px; border-radius:999px; background:#fff1; border:1px solid #fff2; cursor:pointer; }
     .levelBtn { padding:8px 12px; border-radius:999px; background:#222a; border:1px solid #fff2; color:#fff; cursor:pointer; }
-
     #hud { position:absolute; bottom:10px; left:10px; z-index:12; color:#fff; font-weight:700; text-shadow:0 1px 2px #000; display:none; }
     #hud .line { margin-top:6px; font-weight:600; }
-
     #settingsBar { position:absolute; top:56px; right:10px; z-index:12; display:none; gap:8px; }
     .settingsBtn { padding:10px 14px; border-radius:12px; border:1px solid #fff2; background:#111a; color:#fff; cursor:pointer; }
-
     #skins, #shop, #leaderboard { position:absolute; left:50%; transform:translateX(-50%); background:#1e1e1e; color:#fff; padding:20px; border-radius:12px; display:none; z-index:13; border:1px solid #fff2; }
     #skins { top:16%; width:460px; }
     #shop { top:18%; width:380px; }
@@ -36,22 +32,19 @@
     #closeSkins, #closeShop, #closeLeaderboard { margin-top:12px; width:100%; padding:8px; border:none; border-radius:8px; background:#6a6a6a; color:#fff; cursor:pointer; }
     #leaderboard table { width:100%; border-collapse:collapse; }
     #leaderboard th, #leaderboard td { border-bottom:1px solid #444; padding:6px 8px; text-align:left; }
-
     #msg { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#fff; z-index:12; text-align:center; font-weight:800; font-size:22px; display:none; }
     #msg button { margin-top:12px; background:#ff6a00; border:none; color:#fff; font-weight:800; padding:10px 16px; border-radius:10px; cursor:pointer; }
-
     #controls { position:absolute; bottom:16px; left:16px; right:16px; z-index:12; display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; }
     .stick { width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); position:relative; pointer-events:auto; touch-action:none; }
     .knob { position:absolute; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.25); left:calc(50% - 32px); top:calc(50% - 32px); }
     #rightPanel { display:flex; flex-direction:column; align-items:center; gap:12px; pointer-events:auto; }
     .btn { pointer-events:auto; touch-action:none; width:84px; height:84px; border-radius:16px; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); color:#fff; display:grid; place-items:center; font-weight:800; }
-
     * { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — Offline (18 games, mobile controls, owner label)</div>
+    <div id="title">3D Game Hub — Offline (18 games, mobile controls, owner code)</div>
     <div class="small" id="hint">Left: move. Right: look. Jump/Action. Esc returns to menu.</div>
   </div>
 
@@ -69,7 +62,6 @@
         <button class="menuBtn" data-game="maze"><div style="font-weight:800">Crystal Maze</div><div class="small">Find the exit.</div></button>
         <button class="menuBtn" data-game="range"><div style="font-weight:800">Target Range</div><div class="small">Hit targets.</div></button>
         <button class="menuBtn" data-game="voxel"><div style="font-weight:800">Voxel Builder</div><div class="small">Build blocks.</div></button>
-        <!-- New 10 games -->
         <button class="menuBtn" data-game="icecavern"><div style="font-weight:800">Ice Cavern Escape</div><div class="small">Slippery platforms.</div></button>
         <button class="menuBtn" data-game="volcano"><div style="font-weight:800">Volcano Dash</div><div class="small">Rising magma.</div></button>
         <button class="menuBtn" data-game="asteroids"><div style="font-weight:800">Asteroid Field</div><div class="small">Dodge in space.</div></button>
@@ -259,6 +251,19 @@
     graphicsHigh.onclick = () => { quality = 'high'; graphicsHigh.style.background = '#44aa44'; graphicsLow.style.background = '#fff1'; };
     graphicsHigh.click();
 
+    // Owner cosmetic unlock
+    const OWNER_CODE = "12345"; // change this
+    let ownerUnlocked = false;
+    if (localStorage.getItem("ownerUnlocked") === "true") {
+      ownerUnlocked = true;
+    } else {
+      const entered = prompt("Enter owner code (or leave blank):");
+      if (entered === OWNER_CODE) {
+        ownerUnlocked = true;
+        localStorage.setItem("ownerUnlocked", "true");
+      }
+    }
+
     // Hub state
     let scene = null, camera = null, cleanup = null, running = false, selectedLevel = 0;
     const gameOrder = [
@@ -288,7 +293,7 @@
       skin: localStorage.getItem('skin') || 'blue',
       name: localStorage.getItem('name') || '',
       currentGame: null,
-      owner: true
+      owner: ownerUnlocked
     };
 
     // Owner label cosmetic
@@ -444,7 +449,7 @@
     // PRNG
     function makeRand(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return (s & 0xffffffff) / 0x100000000; }; }
 
-    // Level configs
+    // Level configs (base set)
     const jungleLevels = [
       { size: 160, trees: 24, coins: 12, kits: 4, lavaSpeed: 0.015, enemyRate: 1.2, seed: 101 },
       { size: 200, trees: 32, coins: 16, kits: 5, lavaSpeed: 0.020, enemyRate: 1.0, seed: 202 },
@@ -503,948 +508,348 @@
       tower: setupTowerTP
     };
 
-    // ——— Base 8 games ———
+    // ————— Base 8 game implementations —————
+    // Jungle
     function setupJungleTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = jungleLevels[levelIndex] || jungleLevels[0]; const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
       const lights = makeLights('day'); sc.add(lights);
-
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(lvl.size, lvl.size), new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.9 }));
       ground.rotation.x = -Math.PI / 2; sc.add(ground);
-
-      function addTree(x, z) {
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 2.2, 10), new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
-        trunk.position.set(x, 1.1, z);
-        const foliage = new THREE.Mesh(new THREE.SphereGeometry(1.3, 18, 18), new THREE.MeshStandardMaterial({ color: 0x006400 }));
-        foliage.position.set(x, 2.6, z);
-        sc.add(trunk, foliage);
-      }
+      function addTree(x, z) { const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 2.2, 10), new THREE.MeshStandardMaterial({ color: 0x8B4513 })); trunk.position.set(x, 1.1, z); const foliage = new THREE.Mesh(new THREE.SphereGeometry(1.3, 18, 18), new THREE.MeshStandardMaterial({ color: 0x006400 })); foliage.position.set(x, 2.6, z); sc.add(trunk, foliage); }
       for (let i = 0; i < lvl.trees; i++) { const a = rand() * Math.PI * 2, d = 18 + rand() * (lvl.size * 0.45); addTree(Math.cos(a) * d, Math.sin(a) * d); }
-
-      const playerRadius = 0.5;
-      const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16), playerMat);
-      player.position.set(0, playerRadius + 0.3, 0); sc.add(player); if (ownerFlag) player.add(makeOwnerLabel());
-
-      const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), new THREE.MeshStandardMaterial({ color: 0x885000 }));
-      weapon.position.set(0.45, 0.35, 0.0); player.add(weapon);
-
-      const lava = new THREE.Mesh(new THREE.CylinderGeometry(lvl.size*0.6, lvl.size*0.6, 0.3, 64, 1, true),
-        new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.95 }));
-      lava.position.y = -2.5; sc.add(lava);
-
-      const enemies = [];
-      function createMonkey() {
-        const g = new THREE.Group();
-        const m = new THREE.MeshStandardMaterial({ color: 0x7a4b2a });
-        const body = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), m);
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), m); head.position.set(0, 0.52, 0.02);
-        const earL = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), m); earL.position.set(-0.22, 0.58, 0.02);
-        const earR = earL.clone(); earR.position.x = 0.22;
-        g.add(body, head, earL, earR); return g;
-      }
-      function spawnEnemy() {
-        const e = createMonkey();
-        const a = rand() * Math.PI * 2, d = 16 + rand() * 22 + levelIndex * 3;
-        e.position.set(Math.cos(a) * d, 0.45, Math.sin(a) * d);
-        e.userData.speed = 5.8 + rand() * 1.2 + levelIndex * 0.2;
-        enemies.push(e); sc.add(e);
-      }
-      let run = true;
-      let spawnTimer = setInterval(() => { if (run) spawnEnemy(); }, 1000 * lvl.enemyRate);
-
+      const playerRadius = 0.5; const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.6, 8, 16), playerMat); player.position.set(0, playerRadius + 0.3, 0); sc.add(player); if (ownerFlag) player.add(makeOwnerLabel());
+      const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), new THREE.MeshStandardMaterial({ color: 0x885000 })); weapon.position.set(0.45, 0.35, 0.0); player.add(weapon);
+      const lava = new THREE.Mesh(new THREE.CylinderGeometry(lvl.size*0.6, lvl.size*0.6, 0.3, 64, 1, true), new THREE.MeshStandardMaterial({ color: 0xff3c00, emissive: 0xff2200, emissiveIntensity: 0.95 })); lava.position.y = -2.5; sc.add(lava);
+      const enemies = []; function createMonkey(){const g=new THREE.Group(); const m=new THREE.MeshStandardMaterial({color:0x7a4b2a}); const body=new THREE.Mesh(new THREE.SphereGeometry(0.45,16,16),m); const head=new THREE.Mesh(new THREE.SphereGeometry(0.28,16,16),m); head.position.set(0,0.52,0.02); const earL=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,8),m); earL.position.set(-0.22,0.58,0.02); const earR=earL.clone(); earR.position.x=0.22; g.add(body,head,earL,earR); return g;}
+      function spawnEnemy(){const e=createMonkey(); const a=rand()*Math.PI*2, d=16+rand()*22+levelIndex*3; e.position.set(Math.cos(a)*d,0.45,Math.sin(a)*d); e.userData.speed=5.8+rand()*1.2+levelIndex*0.2; enemies.push(e); sc.add(e);}
+      let run = true; let spawnTimer = setInterval(() => { if (run) spawnEnemy(); }, 1000 * lvl.enemyRate);
       const coins = [], medkits = []; let coinCount = 0;
-      function coin() {
-        const c = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 24), new THREE.MeshStandardMaterial({ color: 0xFFD700 }));
-        c.rotation.x = Math.PI / 2;
-        const a = rand() * Math.PI * 2, r = 30 + rand() * (lvl.size * 0.35);
-        c.position.set(Math.cos(a)*r, 0.15, Math.sin(a)*r);
-        coins.push(c); sc.add(c);
-      }
-      function medkit() {
-        const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: 0xFF0000 }));
-        const a = rand() * Math.PI * 2, r = 30 + rand() * (lvl.size * 0.35);
-        m.position.set(Math.cos(a)*r, 0.15, Math.sin(a)*r);
-        medkits.push(m); sc.add(m);
-      }
-      for (let i = 0; i < lvl.coins; i++) coin();
-      for (let i = 0; i < lvl.kits; i++) medkit();
-
-      let health = 100;
-      const velocity = new THREE.Vector3();
-      const accelGround = 16, accelAir = 6, friction = 12, maxSpeed = 7.4 + levelIndex * 0.2, gravity = 18, jumpStrength = 14.5;
-      let onGround = true;
-      let yaw = 0, pitch = 0;
-
-      hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`;
-      hudSecondary.textContent = 'Health 100 | Coins 0';
-
-      let attacking = false, attackStart = 0;
-      const attackDuration = 200;
-      let attackRange = 1.4;
-      const attackArcCos = Math.cos(Math.PI / 3);
-
-      function startAttack() {
-        if (attacking) return;
-        attacking = true; attackStart = performance.now();
-        weapon.rotation.z = -Math.PI * 0.35;
-        const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
-        const p = player.position.clone();
-        for (let i = enemies.length - 1; i >= 0; i--) {
-          const e = enemies[i];
-          const to = new THREE.Vector3().subVectors(e.position, p);
-          const dist = to.length(); if (dist > attackRange) continue;
-          to.normalize(); const dot = to.dot(forward);
-          if (dot >= attackArcCos) { sc.remove(e); enemies.splice(i, 1); }
-        }
-        setTimeout(() => { attacking = false; weapon.rotation.z = 0; }, attackDuration);
+      function coin(){const c=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.1,24), new THREE.MeshStandardMaterial({color:0xFFD700})); c.rotation.x=Math.PI/2; const a=rand()*Math.PI*2, r=30+rand()*(lvl.size*0.35); c.position.set(Math.cos(a)*r,0.15,Math.sin(a)*r); coins.push(c); sc.add(c);}
+      function medkit(){const m=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.3,0.5), new THREE.MeshStandardMaterial({color:0xFF0000})); const a=rand()*Math.PI*2, r=30+rand()*(lvl.size*0.35); m.position.set(Math.cos(a)*r,0.15,Math.sin(a)*r); medkits.push(m); sc.add(m);}
+      for (let i=0;i<lvl.coins;i++) coin(); for (let i=0;i<lvl.kits;i++) medkit();
+      let health=100; const velocity=new THREE.Vector3(); const accelGround=16, accelAir=6, friction=12, maxSpeed=7.4+levelIndex*0.2, gravity=18, jumpStrength=14.5; let onGround=true; let yaw=0, pitch=0;
+      hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`; hudSecondary.textContent = 'Health 100 | Coins 0';
+      let attacking=false; const attackDuration=200; let attackRange=1.4; const attackArcCos=Math.cos(Math.PI/3);
+      function startAttack(){ if(attacking) return; attacking=true; weapon.rotation.z=-Math.PI*0.35; const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)); const p=player.position.clone();
+        for(let i=enemies.length-1;i>=0;i--){const e=enemies[i]; const to=new THREE.Vector3().subVectors(e.position,p); const dist=to.length(); if(dist>attackRange) continue; to.normalize(); const dot=to.dot(forward); if(dot>=attackArcCos){ sc.remove(e); enemies.splice(i,1);} }
+        setTimeout(()=>{attacking=false; weapon.rotation.z=0;}, attackDuration);
       }
       actionBtn.onclick = startAttack;
       jumpBtn.onclick = () => { if (onGround) velocity.y = jumpStrength; };
       window.addEventListener('keydown', e => { if (e.code === 'Space') { if (onGround) velocity.y = jumpStrength; } });
-
-      function applyMapVariant(variant) {
-        const hemi = lights.children.find(l => l.isHemisphereLight);
-        const sun = lights.children.find(l => l.isDirectionalLight);
-        if (variant === 'night') {
-          sc.background = new THREE.Color(0x0a1020);
-          if (hemi) hemi.color.set(0xaaccff);
-          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
-          ground.material.color.set(0x1c3a1c);
-        } else {
-          sc.background = new THREE.Color(0x87ceeb);
-          if (hemi) hemi.color.set(0xffffff);
-          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
-          ground.material.color.set(0x228B22);
-        }
+      function applyMapVariant(variant){ const hemi=lights.children.find(l=>l.isHemisphereLight); const sun=lights.children.find(l=>l.isDirectionalLight);
+        if(variant==='night'){ sc.background=new THREE.Color(0x0a1020); if(hemi) hemi.color.set(0xaaccff); if(sun){sun.color.set(0x88aaff); sun.intensity=0.8;} ground.material.color.set(0x1c3a1c);}
+        else{ sc.background=new THREE.Color(0x87ceeb); if(hemi) hemi.color.set(0xffffff); if(sun){sun.color.set(0xffffff); sun.intensity=1.5;} ground.material.color.set(0x228B22);}
       }
       applyMapVariant('day');
-
-      function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag) {
-        const existing = player.children.find(ch => ch.isSprite);
-        if (flag && !existing) player.add(makeOwnerLabel());
-        if (!flag && existing) player.remove(existing);
-      }
-
-      function restart() {
-        health = 100; coinCount = 0;
-        velocity.set(0, 0, 0); player.position.set(0, playerRadius + 0.3, 0);
-        yaw = 0; pitch = 0; lava.position.y = -2.5;
-        enemies.forEach(e => sc.remove(e)); enemies.length = 0;
-        coins.forEach(c => sc.remove(c)); coins.length = 0;
-        medkits.forEach(m => sc.remove(m)); medkits.length = 0;
-        for (let i = 0; i < lvl.coins; i++) coin();
-        for (let i = 0; i < lvl.kits; i++) medkit();
-        run = true; msg.style.display = 'none';
-        hudSecondary.textContent = 'Health 100 | Coins 0';
-      }
-      function dispose() { clearInterval(spawnTimer); }
-
+      function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag){ const existing=player.children.find(ch=>ch.isSprite); if(flag && !existing) player.add(makeOwnerLabel()); if(!flag && existing) player.remove(existing); }
+      function restart(){ health=100; coinCount=0; velocity.set(0,0,0); player.position.set(0, playerRadius+0.3, 0); yaw=0; pitch=0; lava.position.y=-2.5; enemies.forEach(e=>sc.remove(e)); enemies.length=0; coins.forEach(c=>sc.remove(c)); coins.length=0; medkits.forEach(m=>sc.remove(m)); medkits.length=0; for(let i=0;i<lvl.coins;i++) coin(); for(let i=0;i<lvl.kits;i++) medkit(); run=true; msg.style.display='none'; hudSecondary.textContent='Health 100 | Coins 0'; }
+      function dispose(){ clearInterval(spawnTimer); }
       return {
         scene: sc, camera: cam, restart, dispose,
         getCurrency: () => coinCount, setCurrency: v => { coinCount = v; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`; },
-        applyMapVariant, applySkin, applyOwner,
-        applyWeaponUpgrade: () => { attackRange = 1.8; weapon.scale.set(1.1, 1.3, 1.1); },
-        update(dt, now) {
-          if (!run) return;
-          const { lx, ly } = getLookDelta(1.8);
-          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
+        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => { attackRange=1.8; weapon.scale.set(1.1,1.3,1.1); },
+        update(dt, now){
+          if(!run) return;
+          const {lx,ly} = getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.8,0.8);
           updateThirdPersonCamera(cam, player.position, yaw, pitch, 7.4, 2.6);
-
-          const mv = moveStick.get();
-          const { inputX, inputY } = getMoveInput(keys, mv);
-          const { forward, right } = getCameraBasisXZ(cam, player.position);
-          const wishdir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-          if (wishdir.lengthSq() > 0) wishdir.normalize();
-          const accel = onGround ? accelGround : accelAir;
-          velocity.addScaledVector(wishdir, accel * dt);
-
-          if (onGround && Math.hypot(inputX, inputY) < 0.05) {
-            const horiz = new THREE.Vector2(velocity.x, velocity.z);
-            const speed = horiz.length();
-            const drop = friction * dt;
-            const newSpeed = Math.max(speed - drop, 0);
-            if (speed > 0) { horiz.multiplyScalar(newSpeed / speed); velocity.x = horiz.x; velocity.z = horiz.y; }
-          }
-
-          const horiz = new THREE.Vector2(velocity.x, velocity.z);
-          const speed = horiz.length(); if (speed > maxSpeed) { horiz.multiplyScalar(maxSpeed / speed); velocity.x = horiz.x; velocity.z = horiz.y; }
-
-          velocity.y -= gravity * dt;
-          player.position.addScaledVector(velocity, dt);
-
-          const groundY = playerRadius + 0.3;
-          if (player.position.y < groundY) { player.position.y = groundY; velocity.y = 0; onGround = true; } else onGround = false;
-
+          const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv); const {forward, right} = getCameraBasisXZ(cam, player.position);
+          const wishdir = new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(wishdir.lengthSq()>0) wishdir.normalize();
+          const accel = onGround ? accelGround : accelAir; velocity.addScaledVector(wishdir, accel*dt);
+          if(onGround && Math.hypot(inputX,inputY)<0.05){ const horiz=new THREE.Vector2(velocity.x, velocity.z); const speed=horiz.length(); const drop=friction*dt; const newSpeed=Math.max(speed-drop,0); if(speed>0){ horiz.multiplyScalar(newSpeed/speed); velocity.x=horiz.x; velocity.z=horiz.y; } }
+          const horiz=new THREE.Vector2(velocity.x, velocity.z); const speed=horiz.length(); if(speed>maxSpeed){ horiz.multiplyScalar(maxSpeed/speed); velocity.x=horiz.x; velocity.z=horiz.y; }
+          velocity.y -= 18 * dt; player.position.addScaledVector(velocity, dt); const groundY=playerRadius+0.3; if(player.position.y < groundY){ player.position.y=groundY; velocity.y=0; onGround=true; } else onGround=false;
           lava.position.y += lvl.lavaSpeed * dt;
-
-          const bob = Math.sin(now * 0.004) * 0.02;
-          for (let i = enemies.length - 1; i >= 0; i--) {
-            const e = enemies[i];
-            e.position.y = 0.45 + bob;
-            const toP = new THREE.Vector3().subVectors(player.position, e.position);
-            const d = toP.length(); if (d > 0.0001) toP.normalize();
-            e.position.addScaledVector(toP, e.userData.speed * dt);
-            if (d < 0.85) { health -= 18 * dt; if (health < 0) health = 0; }
-          }
-
-          for (let i = coins.length - 1; i >= 0; i--) {
-            const c = coins[i];
-            if (c.position.distanceTo(player.position) < 0.8) { coinCount += 1; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`; sc.remove(c); coins.splice(i, 1); }
-          }
-          for (let i = medkits.length - 1; i >= 0; i--) {
-            const m = medkits[i];
-            if (m.position.distanceTo(player.position) < 0.9) { health = Math.min(100, health + 25); hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`; sc.remove(m); medkits.splice(i, 1); }
-          }
-
-          const feet = player.position.y - groundY;
-          const lavaTop = lava.position.y + 0.15;
-          if (feet <= lavaTop || health <= 0) {
-            run = false; msgText.textContent = `Game Over — Jungle (Lvl ${levelIndex+1})`; msg.style.display = 'block';
-            addScore('jungle', shared.name || 'Player', Math.round(coinCount));
-          }
-
-          if (coinCount >= lvl.coins) {
-            run = false;
-            addScore('jungle', shared.name || 'Player', coinCount);
-            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-          }
-
-          hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`;
-          hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
+          const bob = Math.sin(now * 0.004) * 0.02; for(const e of enemies){ e.position.y = 0.45 + bob; const toP = new THREE.Vector3().subVectors(player.position, e.position); const d = toP.length(); if(d>0.0001) toP.normalize(); e.position.addScaledVector(toP, e.userData.speed * dt); if(d < 0.85){ health -= 18 * dt; if(health < 0) health = 0; } }
+          for(let i=coins.length-1;i>=0;i--){ const c=coins[i]; if(c.position.distanceTo(player.position)<0.8){ coinCount += 1; hudSecondary.textContent=`Health ${Math.round(health)} | Coins ${coinCount}`; sc.remove(c); coins.splice(i,1);} }
+          for(let i=medkits.length-1;i>=0;i--){ const m=medkits[i]; if(m.position.distanceTo(player.position)<0.9){ health=Math.min(100, health+25); hudSecondary.textContent=`Health ${Math.round(health)} | Coins ${coinCount}`; sc.remove(m); medkits.splice(i,1);} }
+          const feet = player.position.y - groundY; const lavaTop = lava.position.y + 0.15;
+          if(feet <= lavaTop || health <= 0){ run=false; msgText.textContent = `Game Over — Jungle (Lvl ${levelIndex+1})`; msg.style.display='block'; addScore('jungle', shared.name||'Player', Math.round(coinCount)); }
+          if(coinCount >= lvl.coins){ run=false; addScore('jungle', shared.name||'Player', coinCount); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
+          hudPrimary.textContent = `Jungle — Level ${levelIndex+1}`; hudSecondary.textContent = `Health ${Math.round(health)} | Coins ${coinCount}`;
         }
       };
     }
 
+    // Platformer (spawns on first platform)
     function setupPlatformerTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = platformerLevels[levelIndex] || platformerLevels[0];
-      const rand = makeRand(lvl.seed);
+      const lvl = platformerLevels[levelIndex] || platformerLevels[0]; const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87b3ff);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
       const lights = makeLights('day'); sc.add(lights);
-
       const platMat = new THREE.MeshStandardMaterial({ color: 0x6aa86a, roughness: 0.8 });
-      const plats = [];
-      function platform(w, h, d, x, y, z) {
-        const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), platMat);
-        p.position.set(x, y, z); sc.add(p); plats.push(p);
-      }
-      let x = 0, y = 4, z = 0;
-      for (let i = 0; i < lvl.len; i++) {
-        const w = lvl.segment + rand()*8; const h = 2; const d = 12 + rand()*6;
-        platform(w, h, d, x, y, z);
-        x += w * 1.2;
-        y += (rand() < 0.5 ? 1 : -1) * lvl.heightStep * (0.6 + rand()*lvl.layoutVar);
-        z += (rand() - 0.5) * 12;
-      }
-      const goal = new THREE.Mesh(new THREE.TorusKnotGeometry(3, 1, 120, 16), new THREE.MeshStandardMaterial({ color: 0xffd54f }));
-      goal.position.set(x + 40, y + 10, z + 6); sc.add(goal);
-
-      const playerRadius = 0.6;
-      const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
+      const plats = []; function platform(w,h,d,x,y,z){ const p=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), platMat); p.position.set(x,y,z); sc.add(p); plats.push(p); }
+      let x=0,y=4,z=0; for(let i=0;i<lvl.len;i++){ const w=lvl.segment+rand()*8; const d=12+rand()*6; platform(w,2,d,x,y,z); x+=w*1.2; y+=(rand()<0.5?1:-1)*lvl.heightStep*(0.6+rand()*lvl.layoutVar); z+=(rand()-0.5)*12; }
+      const goal=new THREE.Mesh(new THREE.TorusKnotGeometry(3,1,120,16), new THREE.MeshStandardMaterial({ color: 0xffd54f })); goal.position.set(x+40,y+10,z+6); sc.add(goal);
+      const playerRadius = 0.6; const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
       const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, 0.8, 8, 12), playerMat);
-      player.position.set(-16, 6, 0); sc.add(player);
-      if (ownerFlag) player.add(makeOwnerLabel());
-
-      const vel = new THREE.Vector3(0, 0, 0);
-      const gravity = 18, moveSpeed = lvl.moveSpeed, jumpVel = lvl.jumpVel;
-      let onGround = false, run = true, won = false, yaw = 0, pitch = 0, jumpsLeft = 3; // triple jump
-
-      hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
-      hudSecondary.textContent = 'Reach the goal (Triple jump)';
-
-      function applyMapVariant(variant) {
-        const hemi = lights.children.find(l => l.isHemisphereLight);
-        const sun = lights.children.find(l => l.isDirectionalLight);
-        if (variant === 'night') {
-          sc.background = new THREE.Color(0x0a2030);
-          if (hemi) hemi.color.set(0xaaccff);
-          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
-          platMat.color.set(0x355a35);
-        } else {
-          sc.background = new THREE.Color(0x87b3ff);
-          if (hemi) hemi.color.set(0xffffff);
-          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
-          platMat.color.set(0x6aa86a);
-        }
+      // Spawn on top of first platform
+      const firstPlat = plats[0];
+      const topY = firstPlat.position.y + (firstPlat.geometry.parameters.height || 2) / 2;
+      player.position.set(firstPlat.position.x, topY + playerRadius, firstPlat.position.z);
+      sc.add(player); if (ownerFlag) player.add(makeOwnerLabel());
+      const vel = new THREE.Vector3(0,0,0); const gravity=18, moveSpeed=lvl.moveSpeed, jumpVel=lvl.jumpVel;
+      let onGround=false, run=true, won=false, yaw=0, pitch=0, jumpsLeft=3;
+      hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`; hudSecondary.textContent = 'Reach the goal (Triple jump)';
+      function applyMapVariant(variant){ const hemi=lights.children.find(l=>l.isHemisphereLight); const sun=lights.children.find(l=>l.isDirectionalLight);
+        if(variant==='night'){ sc.background=new THREE.Color(0x0a2030); if(hemi) hemi.color.set(0xaaccff); if(sun){sun.color.set(0x88aaff); sun.intensity=0.8;} platMat.color.set(0x355a35);}
+        else{ sc.background=new THREE.Color(0x87b3ff); if(hemi) hemi.color.set(0xffffff); if(sun){sun.color.set(0xffffff); sun.intensity=1.5;} platMat.color.set(0x6aa86a);}
       }
       applyMapVariant('day');
-      function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag) {
-        const existing = player.children.find(ch => ch.isSprite);
-        if (flag && !existing) player.add(makeOwnerLabel());
-        if (!flag && existing) player.remove(existing);
-      }
-
-      function tryJump() {
-        if (!run) return;
-        if (onGround) { vel.y = jumpVel; jumpsLeft = 2; onGround = false; }
-        else if (jumpsLeft > 0) { vel.y = jumpVel * 0.95; jumpsLeft--; }
-      }
-      jumpBtn.onclick = tryJump;
-      window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
-
+      function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag){ const existing=player.children.find(ch=>ch.isSprite); if(flag && !existing) player.add(makeOwnerLabel()); if(!flag && existing) player.remove(existing); }
+      function tryJump(){ if(!run) return; if(onGround){ vel.y=jumpVel; jumpsLeft=2; onGround=false; } else if(jumpsLeft>0){ vel.y=jumpVel*0.95; jumpsLeft--; } }
+      jumpBtn.onclick = tryJump; window.addEventListener('keydown', e => { if (e.code === 'Space') tryJump(); });
       actionBtn.onclick = () => {};
-
-      function collide() {
-        onGround = false;
-        for (const p of plats) {
-          const top = p.position.y + p.geometry.parameters.height / 2;
-          const halfW = p.geometry.parameters.width / 2;
-          const halfD = p.geometry.parameters.depth / 2;
-          const withinX = (player.position.x > p.position.x - halfW - playerRadius) && (player.position.x < p.position.x + halfW + playerRadius);
-          const withinZ = (player.position.z > p.position.z - halfD - playerRadius) && (player.position.z < p.position.z + halfD + playerRadius);
-          const nearTop = Math.abs(player.position.y - (top + playerRadius)) < 0.6 && vel.y <= 0;
-          if (withinX && withinZ && nearTop) {
-            player.position.y = top + playerRadius;
-            vel.y = 0; onGround = true; jumpsLeft = 3;
-          }
+      function collide(){ onGround=false;
+        for(const p of plats){ const top=p.position.y + ((p.geometry.parameters.height || 2)/2); const halfW=p.geometry.parameters.width/2; const halfD=p.geometry.parameters.depth/2;
+          const withinX=(player.position.x>p.position.x-halfW-playerRadius)&&(player.position.x<p.position.x+halfW+playerRadius);
+          const withinZ=(player.position.z>p.position.z-halfD-playerRadius)&&(player.position.z<p.position.z+halfD+playerRadius);
+          const nearTop=Math.abs(player.position.y-(top+playerRadius))<0.6 && vel.y<=0;
+          if(withinX && withinZ && nearTop){ player.position.y=top+playerRadius; vel.y=0; onGround=true; jumpsLeft=3; }
         }
-        if (player.position.y < -60) {
-          run = false;
-          msgText.textContent = `You fell — Platformer (Lvl ${levelIndex+1})`;
-          msg.style.display = 'block';
-          addScore('platformer', shared.name || 'Player', Math.max(1, 100 - levelIndex * 10));
-        }
+        if(player.position.y < -60){ run=false; msgText.textContent=`You fell — Platformer (Lvl ${levelIndex+1})`; msg.style.display='block'; addScore('platformer', shared.name||'Player', Math.max(1, 100 - levelIndex*10)); }
       }
-
-      function restart() { player.position.set(-16, 6, 0); vel.set(0, 0, 0); yaw = 0; pitch = 0; won = false; run = true; msg.style.display = 'none'; jumpsLeft = 3; }
-
+      function restart(){ const fp=plats[0]; const ty=fp.position.y + (fp.geometry.parameters.height || 2)/2; player.position.set(fp.position.x, ty + playerRadius, fp.position.z); vel.set(0,0,0); yaw=0; pitch=0; won=false; run=true; msg.style.display='none'; jumpsLeft=3; }
       return {
-        scene: sc, camera: cam, restart, dispose() {},
-        getCurrency: () => 0, setCurrency: () => {}, applyMapVariant, applySkin, applyOwner,
-        applyWeaponUpgrade: () => {}, update(dt) {
-          if (!run || won) return;
-          const { lx, ly } = getLookDelta(1.8); yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
+        scene: sc, camera: cam, restart, dispose(){},
+        getCurrency: () => 0, setCurrency: () => {}, applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        update(dt){
+          if(!run || won) return;
+          const {lx,ly} = getLookDelta(1.8); yaw += lx*dt; pitch = THREE.MathUtils.clamp(pitch + ly*dt, -0.8, 0.8);
           updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.0, 2.6);
-
-          const mv = moveStick.get();
-          const { inputX, inputY } = getMoveInput(keys, mv);
-          const { forward, right } = getCameraBasisXZ(cam, player.position);
-          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-          if (dir.lengthSq() > 0) dir.normalize();
-
+          const mv = moveStick.get(); const { inputX, inputY } = getMoveInput(keys, mv); const { forward, right } = getCameraBasisXZ(cam, player.position);
+          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY); if (dir.lengthSq()>0) dir.normalize();
           vel.x = THREE.MathUtils.lerp(vel.x, dir.x * moveSpeed, (onGround ? 10 : 6) * dt);
           vel.z = THREE.MathUtils.lerp(vel.z, dir.z * moveSpeed, (onGround ? 10 : 6) * dt);
           vel.y -= gravity * dt;
-
-          player.position.addScaledVector(vel, dt);
-          collide();
-
-          if (player.position.distanceTo(goal.position) < 6) {
-            won = true;
-            addScore('platformer', shared.name || 'Player', 1200 - levelIndex * 60);
-            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-          }
-
+          player.position.addScaledVector(vel, dt); collide();
+          if(player.position.distanceTo(goal.position) < 6){ won=true; addScore('platformer', shared.name||'Player', 1200 - levelIndex*60);
+            msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
           hudPrimary.textContent = `Sky Platforms — Level ${levelIndex+1}`;
-          hudSecondary.textContent = onGround ? 'On platform (Triple jump ready)' : (jumpsLeft > 0 ? `Air (${jumpsLeft} left)` : 'Air');
+          hudSecondary.textContent = onGround ? 'On platform (Triple jump ready)' : (jumpsLeft>0 ? `Air (${jumpsLeft} left)` : 'Air');
         }
       };
     }
 
+    // Racer
     function setupRacerTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = racerLevels[levelIndex] || racerLevels[0];
-      const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd0b38a);
-      const cam = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1600);
-      const lights = makeLights('day'); sc.add(lights);
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.MeshStandardMaterial({ color: 0xb5894a, roughness: 0.8 }));
-      ground.rotation.x = -Math.PI / 2; sc.add(ground);
-
-      const carMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const car = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5), carMat);
-      car.position.set(0, 0.6, 0); sc.add(car);
-      if (ownerFlag) car.add(makeOwnerLabel());
-
-      const gates = [];
-      function gate(x, z) {
-        const g = new THREE.Mesh(new THREE.TorusGeometry(4, 0.3, 12, 24), new THREE.MeshStandardMaterial({ color: 0xffee88 }));
-        g.position.set(x, 2.5, z); sc.add(g); gates.push(g);
-      }
-      for (let i = 0; i < lvl.gates; i++) {
-        const gx = i * 36;
-        const gz = Math.sin(i * lvl.freq) * lvl.amp + Math.sin(i * 0.35) * (lvl.amp * 0.25) * (rand() - 0.5);
-        gate(gx, gz);
-      }
-
-      let speed = 0, heading = 0, score = 0, run = true, yaw = 0, pitch = 0;
-
-      function applyMapVariant(variant) {
-        const hemi = lights.children.find(l => l.isHemisphereLight);
-        const sun = lights.children.find(l => l.isDirectionalLight);
-        if (variant === 'night') {
-          sc.background = new THREE.Color(0x302018);
-          if (hemi) hemi.color.set(0xaaccff);
-          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
-          ground.material.color.set(0x8b6a3a);
-        } else {
-          sc.background = new THREE.Color(0xd0b38a);
-          if (hemi) hemi.color.set(0xffffff);
-          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
-          ground.material.color.set(0xb5894a);
-        }
+      const lvl = racerLevels[levelIndex] || racerLevels[0]; const rand=makeRand(lvl.seed);
+      const sc=new THREE.Scene(); sc.background=new THREE.Color(0xd0b38a);
+      const cam=new THREE.PerspectiveCamera(80, window.innerWidth/window.innerHeight, 0.1, 1600);
+      const lights=makeLights('day'); sc.add(lights);
+      const ground=new THREE.Mesh(new THREE.PlaneGeometry(1400,1400), new THREE.MeshStandardMaterial({ color:0xb5894a, roughness:0.8 })); ground.rotation.x=-Math.PI/2; sc.add(ground);
+      const carMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const car=new THREE.Mesh(new THREE.BoxGeometry(2.6,1.2,5), carMat); car.position.set(0,0.6,0); sc.add(car); if(ownerFlag) car.add(makeOwnerLabel());
+      const gates=[]; function gate(x,z){ const g=new THREE.Mesh(new THREE.TorusGeometry(4,0.3,12,24), new THREE.MeshStandardMaterial({ color:0xffee88 })); g.position.set(x,2.5,z); sc.add(g); gates.push(g); }
+      for(let i=0;i<lvl.gates;i++){ const gx=i*36; const gz=Math.sin(i*lvl.freq)*lvl.amp + Math.sin(i*0.35)*(lvl.amp*0.25)*(rand()-0.5); gate(gx,gz); }
+      let speed=0, heading=0, score=0, run=true, yaw=0, pitch=0;
+      function applyMapVariant(variant){ const hemi=lights.children.find(l=>l.isHemisphereLight); const sun=lights.children.find(l=>l.isDirectionalLight);
+        if(variant==='night'){ sc.background=new THREE.Color(0x302018); if(hemi) hemi.color.set(0xaaccff); if(sun){ sun.color.set(0x88aaff); sun.intensity=0.8;} ground.material.color.set(0x8b6a3a); }
+        else{ sc.background=new THREE.Color(0xd0b38a); if(hemi) hemi.color.set(0xffffff); if(sun){ sun.color.set(0xffffff); sun.intensity=1.5;} ground.material.color.set(0xb5894a); }
       }
       applyMapVariant('day');
-      function applySkin(newSkin) { carMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag) { const existing = car.children.find(ch => ch.isSprite); if (flag && !existing) car.add(makeOwnerLabel()); if (!flag && existing) car.remove(existing); }
-
-      hudPrimary.textContent = `Desert Racer — Level ${levelIndex+1}`;
-      hudSecondary.textContent = `Gates 0/${lvl.gates}`;
-
-      function restart() {
-        car.position.set(0, 0.6, 0);
-        speed = 0; heading = 0; score = 0; run = true; msg.style.display = 'none';
-        gates.forEach(g => sc.remove(g)); gates.length = 0;
-        for (let i = 0; i < lvl.gates; i++) {
-          const gx = i * 36;
-          const gz = Math.sin(i * lvl.freq) * lvl.amp + Math.sin(i * 0.35) * (lvl.amp * 0.25) * (rand() - 0.5);
-          gate(gx, gz);
-        }
-        hudSecondary.textContent = `Gates 0/${lvl.gates}`;
-      }
-
+      function applySkin(newSkin){ carMat.color.setHex(skinToColor(newSkin)); }
+      function applyOwner(flag){ const existing=car.children.find(ch=>ch.isSprite); if(flag && !existing) car.add(makeOwnerLabel()); if(!flag && existing) car.remove(existing); }
+      hudPrimary.textContent=`Desert Racer — Level ${levelIndex+1}`; hudSecondary.textContent=`Gates 0/${lvl.gates}`;
+      function restart(){ car.position.set(0,0.6,0); speed=0; heading=0; score=0; run=true; msg.style.display='none'; gates.forEach(g=>sc.remove(g)); gates.length=0; for(let i=0;i<lvl.gates;i++){ const gx=i*36; const gz=Math.sin(i*lvl.freq)*lvl.amp + Math.sin(i*0.35)*(lvl.amp*0.25)*(rand()-0.5); gate(gx,gz); } hudSecondary.textContent=`Gates 0/${lvl.gates}`; }
       return {
-        scene: sc, camera: cam, restart, dispose() {},
-        getCurrency: () => score, setCurrency: v => { score = v; hudSecondary.textContent = `Gates ${score}/${lvl.gates}`; },
+        scene: sc, camera: cam, restart, dispose(){},
+        getCurrency: () => score, setCurrency: v => { score=v; hudSecondary.textContent=`Gates ${score}/${lvl.gates}`; },
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt) {
-          if (!run) return;
-          const { lx, ly } = getLookDelta(0.8); yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.5, 0.5);
-
-          const mv = moveStick.get();
-          const steer = mv.x;
-          const throttle = Math.max(0, -mv.y);
-          const brake = Math.max(0, mv.y);
-
-          speed += (throttle * 30 - brake * 40) * dt;
-          speed *= 0.985;
-          speed = Math.max(0, Math.min(speed, 42));
-
-          heading += steer * (racerLevels[levelIndex]?.turn || 2.0) * dt;
-
-          const dir = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
-          car.position.addScaledVector(dir, speed * dt);
-          car.rotation.y = heading;
-
+        update(dt){
+          if(!run) return;
+          const {lx,ly}=getLookDelta(0.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.5,0.5);
+          const mv=moveStick.get(); const steer=mv.x; const throttle=Math.max(0,-mv.y); const brake=Math.max(0,mv.y);
+          speed += (throttle*30 - brake*40)*dt; speed *= 0.985; speed = Math.max(0, Math.min(speed, 42)); heading += steer * (racerLevels[levelIndex]?.turn || 2.0) * dt;
+          const dir=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading)); car.position.addScaledVector(dir, speed*dt); car.rotation.y=heading;
           updateThirdPersonCamera(cam, car.position, heading, pitch, 11.0, 3.4);
-
-          for (let i = gates.length - 1; i >= 0; i--) {
-            const g = gates[i];
-            if (car.position.distanceTo(g.position) < 4) { score++; sc.remove(g); gates.splice(i, 1); hudSecondary.textContent = `Gates ${score}/${lvl.gates}`; }
-          }
-
-          if (gates.length === 0) {
-            run = false;
-            addScore('racer', shared.name || 'Player', Math.round(speed*10));
-            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-          }
-          hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
+          for(let i=gates.length-1;i>=0;i--){ const g=gates[i]; if(car.position.distanceTo(g.position)<4){ score++; sc.remove(g); gates.splice(i,1); hudSecondary.textContent=`Gates ${score}/${lvl.gates}`; } }
+          if(gates.length===0){ run=false; addScore('racer', shared.name||'Player', Math.round(speed*10)); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
+          hudPrimary.textContent=`Speed ${speed.toFixed(1)}`;
         }
       };
     }
 
+    // Arena
     function setupArenaTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = arenaLevels[levelIndex] || arenaLevels[0];
-      const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x080a12);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const lights = makeLights('space'); sc.add(lights);
-      const arena = new THREE.Mesh(new THREE.CylinderGeometry(100, 100, 2, 48), new THREE.MeshStandardMaterial({ color: 0x1c2233, metalness: 0.2, roughness: 0.7 }));
-      arena.position.y = -2; sc.add(arena);
-
-      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-      rig.position.set(0, 1, 0); sc.add(rig);
-      if (ownerFlag) rig.add(makeOwnerLabel());
-
-      const drones = [];
-      function drone() {
-        const d = new THREE.Mesh(new THREE.TetrahedronGeometry(1.2), new THREE.MeshStandardMaterial({ color: 0xff6666 }));
-        const a = rand() * Math.PI * 2, r = 60 + rand()*10;
-        d.position.set(Math.cos(a) * r, 1.2, Math.sin(a) * r);
-        d.userData.vel = new THREE.Vector3((rand() - 0.5) * lvl.waveSpeed, 0, (rand() - 0.5) * lvl.waveSpeed);
-        sc.add(d); drones.push(d);
-      }
-      for (let i = 0; i < lvl.drones; i++) drone();
-
-      const bullets = [];
-      const bulletSpeed = 42;
-      function shoot() {
-        const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
-        const dir = new THREE.Vector3().subVectors(rig.position, cam.position);
-        dir.y = 0; if (dir.lengthSq() < 1e-6) dir.set(0,0,-1); dir.normalize();
-        b.position.copy(cam.position);
-        b.userData.dir = dir.clone();
-        sc.add(b); bullets.push(b);
-      }
+      const lvl = arenaLevels[levelIndex] || arenaLevels[0]; const rand=makeRand(lvl.seed);
+      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x080a12);
+      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+      const lights=makeLights('space'); sc.add(lights);
+      const arena=new THREE.Mesh(new THREE.CylinderGeometry(100,100,2,48), new THREE.MeshStandardMaterial({ color:0x1c2233, metalness:0.2, roughness:0.7 })); arena.position.y=-2; sc.add(arena);
+      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat); rig.position.set(0,1,0); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
+      const drones=[]; function drone(){ const d=new THREE.Mesh(new THREE.TetrahedronGeometry(1.2), new THREE.MeshStandardMaterial({ color:0xff6666 })); const a=rand()*Math.PI*2, r=60+rand()*10; d.position.set(Math.cos(a)*r,1.2,Math.sin(a)*r); d.userData.vel=new THREE.Vector3((rand()-0.5)*lvl.waveSpeed,0,(rand()-0.5)*lvl.waveSpeed); sc.add(d); drones.push(d); }
+      for(let i=0;i<lvl.drones;i++) drone();
+      const bullets=[]; const bulletSpeed=42; function shoot(){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.18,10,10), new THREE.MeshStandardMaterial({ color:0xffffaa, emissive:0x444400 })); const dir=new THREE.Vector3().subVectors(rig.position, cam.position); dir.y=0; if(dir.lengthSq()<1e-6) dir.set(0,0,-1); dir.normalize(); b.position.copy(cam.position); b.userData.dir=dir.clone(); sc.add(b); bullets.push(b); }
       actionBtn.onclick = shoot;
-
-      let run = true, score = 0, yaw = 0, pitch = 0;
-
-      hudPrimary.textContent = `Space Arena — Level ${levelIndex+1}`;
-      hudSecondary.textContent = 'Score 0 | ACTION to shoot';
-
-      function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x04060c) : new THREE.Color(0x080a12); }
-      applyMapVariant('day');
-      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag) { const existing = rig.children.find(ch => ch.isSprite); if (flag && !existing) rig.add(makeOwnerLabel()); if (!flag && existing) rig.remove(existing); }
-
-      function restart() {
-        drones.forEach(d => sc.remove(d)); drones.length = 0;
-        bullets.forEach(b => sc.remove(b)); bullets.length = 0;
-        for (let i = 0; i < lvl.drones; i++) drone();
-        score = 0; hudSecondary.textContent = 'Score 0 | ACTION to shoot';
-        rig.position.set(0, 1, 0); yaw = 0; pitch = 0; run = true; msg.style.display = 'none';
-      }
-
+      let run=true, score=0, yaw=0, pitch=0;
+      hudPrimary.textContent=`Space Arena — Level ${levelIndex+1}`; hudSecondary.textContent='Score 0 | ACTION to shoot';
+      function applyMapVariant(variant){ sc.background=(variant==='night')?new THREE.Color(0x04060c):new THREE.Color(0x080a12); }
+      applyMapVariant('day'); function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=rig.children.find(ch=>ch.isSprite); if(flag && !existing) rig.add(makeOwnerLabel()); if(!flag && existing) rig.remove(existing); }
+      function restart(){ drones.forEach(d=>sc.remove(d)); drones.length=0; bullets.forEach(b=>sc.remove(b)); bullets.length=0; for(let i=0;i<lvl.drones;i++) drone(); score=0; hudSecondary.textContent='Score 0 | ACTION to shoot'; rig.position.set(0,1,0); yaw=0; pitch=0; run=true; msg.style.display='none'; }
       return {
-        scene: sc, camera: cam, restart, dispose() {},
-        getCurrency: () => score, setCurrency: v => { score = v; hudSecondary.textContent = `Score ${score} | ACTION to shoot`; },
+        scene: sc, camera: cam, restart, dispose(){},
+        getCurrency: () => score, setCurrency: v => { score=v; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; },
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt) {
-          if (!run) return;
-          const { lx, ly } = getLookDelta(1.8);
-          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
+        update(dt){
+          if(!run) return;
+          const {lx,ly}=getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.8,0.8);
           updateThirdPersonCamera(cam, rig.position, yaw, pitch, 9.0, 3.0);
-
-          const mv = moveStick.get();
-          const { inputX, inputY } = getMoveInput(keys, mv);
-          const { forward, right } = getCameraBasisXZ(cam, rig.position);
-          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-          if (dir.lengthSq() > 0) dir.normalize();
-          rig.position.addScaledVector(dir, 11 * dt);
-
-          for (const d of drones) {
-            d.position.addScaledVector(d.userData.vel, dt);
-            if (d.position.length() > 95) d.userData.vel.multiplyScalar(-1);
-          }
-
-          for (let i = bullets.length - 1; i >= 0; i--) {
-            const b = bullets[i];
-            b.position.addScaledVector(b.userData.dir, bulletSpeed * dt);
-            if (b.position.length() > 160) { sc.remove(b); bullets.splice(i, 1); continue; }
-            for (let j = drones.length - 1; j >= 0; j--) {
-              const d = drones[j];
-              if (b.position.distanceTo(d.position) < 1.4) {
-                sc.remove(d); drones.splice(j, 1);
-                sc.remove(b); bullets.splice(i, 1);
-                score++; hudSecondary.textContent = `Score ${score} | ACTION to shoot`;
-                break;
-              }
-            }
-          }
-
-          if (drones.length === 0) {
-            run = false;
-            addScore('arena', shared.name || 'Player', score);
-            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-          }
+          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys, mv); const {forward,right}=getCameraBasisXZ(cam, rig.position);
+          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize(); rig.position.addScaledVector(dir, 11*dt);
+          for(const d of drones){ d.position.addScaledVector(d.userData.vel, dt); if(d.position.length()>95) d.userData.vel.multiplyScalar(-1); }
+          for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.position.addScaledVector(b.userData.dir, bulletSpeed*dt); if(b.position.length()>160){ sc.remove(b); bullets.splice(i,1); continue; }
+            for(let j=drones.length-1;j>=0;j--){ const d=drones[j]; if(b.position.distanceTo(d.position)<1.4){ sc.remove(d); drones.splice(j,1); sc.remove(b); bullets.splice(i,1); score++; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; break; } } }
+          if(drones.length===0){ run=false; addScore('arena', shared.name||'Player', score); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
         }
       };
     }
 
+    // Runner
     function setupRunnerTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = runnerLevels[levelIndex] || runnerLevels[0];
-      const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const lights = makeLights('day'); sc.add(lights);
-
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(lvl.length, 60), new THREE.MeshStandardMaterial({ color: 0x228B22 }));
-      ground.rotation.x = -Math.PI / 2; ground.position.z = -lvl.length/6; sc.add(ground);
-
-      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-      rig.position.set(0, 1, 0); sc.add(rig);
-      if (ownerFlag) rig.add(makeOwnerLabel());
-
-      const obstacles = [];
-      function makeObs(z) {
-        const o = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshStandardMaterial({ color: 0x884444 }));
-        const lane = rand() < 0.33 ? -2 : (rand() < 0.5 ? 0 : 2);
-        o.position.set(lane + (rand() - 0.5) * 1.0, 0.6, -z);
-        sc.add(o); obstacles.push(o);
+      const lvl = runnerLevels[levelIndex] || runnerLevels[0]; const rand=makeRand(lvl.seed);
+      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x87ceeb);
+      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+      const lights=makeLights('day'); sc.add(lights);
+      const ground=new THREE.Mesh(new THREE.PlaneGeometry(lvl.length, 60), new THREE.MeshStandardMaterial({ color:0x228B22 })); ground.rotation.x=-Math.PI/2; ground.position.z=-lvl.length/6; sc.add(ground);
+      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat); rig.position.set(0,1,0); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
+      const obstacles=[]; function makeObs(z){ const o=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.2,1.2), new THREE.MeshStandardMaterial({ color:0x884444 })); const lane=rand()<0.33?-2:(rand()<0.5?0:2); o.position.set(lane+(rand()-0.5)*1.0,0.6,-z); sc.add(o); obstacles.push(o); }
+      for(let i=0;i<lvl.obstacles;i++) makeObs(6 + i*(lvl.length/lvl.obstacles));
+      let laneX=0, speed=8, time=0, run=true, rings=0, yaw=0, pitch=0;
+      function applyMapVariant(variant){ const hemi=lights.children.find(l=>l.isHemisphereLight); const sun=lights.children.find(l=>l.isDirectionalLight);
+        if(variant==='night'){ sc.background=new THREE.Color(0x102020); if(hemi) hemi.color.set(0xaaccff); if(sun){sun.color.set(0x88aaff); sun.intensity=0.8;} ground.material.color.set(0x1c3a1c);}
+        else{ sc.background=new THREE.Color(0x87ceeb); if(hemi) hemi.color.set(0xffffff); if(sun){sun.color.set(0xffffff); sun.intensity=1.5;} ground.material.color.set(0x228B22);}
       }
-      for (let i = 0; i < lvl.obstacles; i++) makeObs(6 + i * (lvl.length / lvl.obstacles));
-
-      let laneX = 0, speed = 8, time = 0, run = true, rings = 0, yaw = 0, pitch = 0;
-
-      function applyMapVariant(variant) {
-        const hemi = lights.children.find(l => l.isHemisphereLight);
-        const sun = lights.children.find(l => l.isDirectionalLight);
-        if (variant === 'night') {
-          sc.background = new THREE.Color(0x102020);
-          if (hemi) hemi.color.set(0xaaccff);
-          if (sun) { sun.color.set(0x88aaff); sun.intensity = 0.8; }
-          ground.material.color.set(0x1c3a1c);
-        } else {
-          sc.background = new THREE.Color(0x87ceeb);
-          if (hemi) hemi.color.set(0xffffff);
-          if (sun) { sun.color.set(0xffffff); sun.intensity = 1.5; }
-          ground.material.color.set(0x228B22);
-        }
-      }
-      applyMapVariant('day');
-      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag) { const existing = rig.children.find(ch => ch.isSprite); if (flag && !existing) rig.add(makeOwnerLabel()); if (!flag && existing) rig.remove(existing); }
-
-      hudPrimary.textContent = `Endless Runner — Level ${levelIndex+1}`;
-      hudSecondary.textContent = 'Rings 0';
-
+      applyMapVariant('day'); function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=rig.children.find(ch=>ch.isSprite); if(flag && !existing) rig.add(makeOwnerLabel()); if(!flag && existing) rig.remove(existing); }
+      hudPrimary.textContent=`Endless Runner — Level ${levelIndex+1}`; hudSecondary.textContent='Rings 0';
       return {
         scene: sc, camera: cam,
-        restart() {
-          obstacles.forEach(o => sc.remove(o)); obstacles.length = 0;
-          for (let i = 0; i < lvl.obstacles; i++) makeObs(6 + i * (lvl.length / lvl.obstacles));
-          laneX = 0; speed = 8; time = 0; rings = 0; run = true; msg.style.display = 'none';
-          rig.position.set(0, 1, 0);
-          hudSecondary.textContent = 'Rings 0';
-        },
-        dispose() {},
-        getCurrency: () => rings, setCurrency: v => { rings = v; hudSecondary.textContent = `Rings ${rings}`; },
+        restart(){ obstacles.forEach(o=>sc.remove(o)); obstacles.length=0; for(let i=0;i<lvl.obstacles;i++) makeObs(6 + i*(lvl.length/lvl.obstacles)); laneX=0; speed=8; time=0; rings=0; run=true; msg.style.display='none'; rig.position.set(0,1,0); hudSecondary.textContent='Rings 0'; },
+        dispose(){}, getCurrency:()=>rings, setCurrency:v=>{ rings=v; hudSecondary.textContent=`Rings ${rings}`; },
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt) {
-          if (!run) return;
-          time += dt;
-          speed = 8 + time * (runnerLevels[levelIndex]?.accel || 1.15);
-
-          const { lx, ly } = getLookDelta(1.5);
-          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.4, 0.4);
-
-          const mv = moveStick.get();
-          if (mv.x < -0.3) laneX = -2;
-          else if (mv.x > 0.3) laneX = 2;
-          else laneX = 0;
-
-          rig.position.x = THREE.MathUtils.lerp(rig.position.x, laneX, 6 * dt);
-
-          for (const o of obstacles) {
+        update(dt){
+          if(!run) return;
+          time += dt; speed = 8 + time * (runnerLevels[levelIndex]?.accel || 1.15);
+          const {lx,ly} = getLookDelta(1.5); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.4,0.4);
+          const mv=moveStick.get(); if(mv.x < -0.3) laneX=-2; else if(mv.x > 0.3) laneX=2; else laneX=0;
+          rig.position.x = THREE.MathUtils.lerp(rig.position.x, laneX, 6*dt);
+          for(const o of obstacles){
             o.position.z += speed * dt;
-            if (o.position.z > 4) {
-              o.position.z = -lvl.length - Math.random() * 60;
-              const lane = Math.random() < 0.5 ? -2 : 2;
-              o.position.x = lane + (Math.random() - 0.5) * 1.0;
-              rings++; hudSecondary.textContent = `Rings ${rings}`;
-            }
-            const dist = new THREE.Vector3(o.position.x - rig.position.x, 0, o.position.z).length();
-            if (dist < 1.0) {
-              run = false;
-              msgText.textContent = `Hit obstacle — Runner (Lvl ${levelIndex+1})`;
-              msg.style.display = 'block';
-              addScore('runner', shared.name || 'Player', rings);
-            }
+            if(o.position.z > 4){ o.position.z = -lvl.length - Math.random()*60; const lane=Math.random()<0.5?-2:2; o.position.x = lane + (Math.random()-0.5)*1.0; rings++; hudSecondary.textContent=`Rings ${rings}`; }
+            const dist = new THREE.Vector3(o.position.x - rig.position.x, 0, o.position.z).length(); if(dist < 1.0){ run=false; msgText.textContent=`Hit obstacle — Runner (Lvl ${levelIndex+1})`; msg.style.display='block'; addScore('runner', shared.name||'Player', rings); }
           }
-
-          if (rings >= Math.round(lvl.obstacles * 0.6)) {
-            run = false;
-            addScore('runner', shared.name || 'Player', rings);
-            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-          }
-
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
-          hudPrimary.textContent = `Speed ${speed.toFixed(1)}`;
+          if(rings >= Math.round(lvl.obstacles * 0.6)){ run=false; addScore('runner', shared.name||'Player', rings); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
+          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0); hudPrimary.textContent=`Speed ${speed.toFixed(1)}`;
         }
       };
     }
 
+    // Maze
     function setupMazeTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = mazeLevels[levelIndex] || mazeLevels[0];
-      const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x101424);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const lights = makeLights('maze'); sc.add(lights);
-
-      const cellSize = 10, cells = lvl.cells;
-      const half = (cells * cellSize) / 2;
-
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(cells*cellSize+20, cells*cellSize+20), new THREE.MeshStandardMaterial({ color: 0x222a44, roughness: 0.9 }));
-      floor.rotation.x = -Math.PI / 2; sc.add(floor);
-
-      const walls = [];
-      function wall(x, y, z, sx, sy, sz) {
-        const w = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), new THREE.MeshStandardMaterial({ color: 0x3a64a6, emissive: 0x0a1530, emissiveIntensity: 0.2 }));
-        w.position.set(x, y, z); sc.add(w); walls.push(w);
-      }
-      for (let i = 0; i < cells; i++) {
-        for (let j = 0; j < cells; j++) {
-          if (rand() < 0.35) wall(-half + i*cellSize, 1.5, -half + j*cellSize, cellSize-2, 3, 2);
-          if (rand() < 0.35) wall(-half + i*cellSize, 1.5, -half + j*cellSize, 2, 3, cellSize-2);
-        }
-      }
-
-      const exit = new THREE.Mesh(new THREE.TorusGeometry(3, 0.3, 12, 32), new THREE.MeshStandardMaterial({ color: 0x88ffcc }));
-      exit.position.set(half - 10, 2.5, half - 10); sc.add(exit);
-
-      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-      rig.position.set(-half + 10, 0.9, -half + 10); sc.add(rig);
-      if (ownerFlag) rig.add(makeOwnerLabel());
-
-      let yaw = 0, pitch = 0, run = true;
-
-      hudPrimary.textContent = `Crystal Maze — Level ${levelIndex+1}`;
-      hudSecondary.textContent = 'Find the exit ring';
-
-      function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x0a0d1a) : new THREE.Color(0x101424); }
-      applyMapVariant('day');
-      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag) { const existing = rig.children.find(ch => ch.isSprite); if (flag && !existing) rig.add(makeOwnerLabel()); if (!flag && existing) rig.remove(existing); }
-
-      function restart() { rig.position.set(-half + 10, 0.9, -half + 10); yaw = 0; pitch = 0; run = true; msg.style.display = 'none'; }
-
+      const lvl = mazeLevels[levelIndex] || mazeLevels[0]; const rand=makeRand(lvl.seed);
+      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x101424);
+      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+      const lights=makeLights('maze'); sc.add(lights);
+      const cellSize=10, cells=lvl.cells; const half=(cells*cellSize)/2;
+      const floor=new THREE.Mesh(new THREE.PlaneGeometry(cells*cellSize+20, cells*cellSize+20), new THREE.MeshStandardMaterial({ color:0x222a44, roughness:0.9 })); floor.rotation.x=-Math.PI/2; sc.add(floor);
+      const walls=[]; function wall(x,y,z,sx,sy,sz){ const w=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz), new THREE.MeshStandardMaterial({ color:0x3a64a6, emissive:0x0a1530, emissiveIntensity:0.2 })); w.position.set(x,y,z); sc.add(w); walls.push(w); }
+      for(let i=0;i<cells;i++){ for(let j=0;j<cells;j++){ if(rand()<0.35) wall(-half+i*cellSize, 1.5, -half+j*cellSize, cellSize-2, 3, 2); if(rand()<0.35) wall(-half+i*cellSize, 1.5, -half+j*cellSize, 2, 3, cellSize-2); } }
+      const exit=new THREE.Mesh(new THREE.TorusGeometry(3,0.3,12,32), new THREE.MeshStandardMaterial({ color:0x88ffcc })); exit.position.set(half-10, 2.5, half-10); sc.add(exit);
+      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat); rig.position.set(-half+10,0.9,-half+10); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
+      let yaw=0, pitch=0, run=true;
+      hudPrimary.textContent=`Crystal Maze — Level ${levelIndex+1}`; hudSecondary.textContent='Find the exit ring';
+      function applyMapVariant(variant){ sc.background=(variant==='night')?new THREE.Color(0x0a0d1a):new THREE.Color(0x101424); }
+      applyMapVariant('day'); function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=rig.children.find(ch=>ch.isSprite); if(flag && !existing) rig.add(makeOwnerLabel()); if(!flag && existing) rig.remove(existing); }
+      function restart(){ rig.position.set(-half+10,0.9,-half+10); yaw=0; pitch=0; run=true; msg.style.display='none'; }
       return {
-        scene: sc, camera: cam, restart, dispose() {},
-        getCurrency: () => 0, setCurrency: () => {}, applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt) {
-          if (!run) return;
-          const { lx, ly } = getLookDelta(1.8);
-          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.4, 0.4);
+        scene: sc, camera: cam, restart, dispose(){}, getCurrency:()=>0, setCurrency:()=>{},
+        applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
+        update(dt){
+          if(!run) return;
+          const {lx,ly} = getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.4,0.4);
           updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
-
-          const mv = moveStick.get();
-          const { inputX, inputY } = getMoveInput(keys, mv);
-          const { forward, right } = getCameraBasisXZ(cam, rig.position);
-          const next = rig.position.clone().addScaledVector(right, inputX * 8 * dt).addScaledVector(forward, inputY * 8 * dt);
-
-          let blocked = false;
-          for (const w of walls) {
-            const dx = Math.abs(next.x - w.position.x) - w.geometry.parameters.width / 2 - 0.5;
-            const dz = Math.abs(next.z - w.position.z) - w.geometry.parameters.depth / 2 - 0.5;
-            if (dx < 0 && dz < 0) { blocked = true; break; }
-          }
-          if (!blocked) rig.position.copy(next);
-
-          if (rig.position.distanceTo(exit.position) < 5) {
-            run = false;
-            addScore('maze', shared.name || 'Player', 1200 - levelIndex * 60);
-            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-          }
+          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys, mv); const {forward,right}=getCameraBasisXZ(cam, rig.position);
+          const next=rig.position.clone().addScaledVector(right, inputX*8*dt).addScaledVector(forward, inputY*8*dt);
+          let blocked=false; for(const w of walls){ const dx=Math.abs(next.x - w.position.x) - w.geometry.parameters.width/2 - 0.5; const dz=Math.abs(next.z - w.position.z) - w.geometry.parameters.depth/2 - 0.5; if(dx<0 && dz<0){ blocked=true; break; } }
+          if(!blocked) rig.position.copy(next);
+          if(rig.position.distanceTo(exit.position) < 5){ run=false; addScore('maze', shared.name||'Player', 1200 - levelIndex*60); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
         }
       };
     }
 
+    // Range
     function setupRangeTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = rangeLevels[levelIndex] || rangeLevels[0];
-      const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x223344);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
-      const lights = makeLights('day'); sc.add(lights);
-
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(lvl.spread*2, lvl.spread*2), new THREE.MeshStandardMaterial({ color: 0x335577 }));
-      floor.rotation.x = -Math.PI / 2; sc.add(floor);
-
-      const rigMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const rig = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), rigMat);
-      rig.position.set(0, 1, 40); sc.add(rig);
-      if (ownerFlag) rig.add(makeOwnerLabel());
-
-      const targets = [];
-      function spawnTarget() {
-        const t = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.25, 10, 20), new THREE.MeshStandardMaterial({ color: 0xffcc55, emissive: 0x553300, emissiveIntensity: 0.2 }));
-        t.position.set((rand() - 0.5) * lvl.spread, 2 + rand() * 6, -20 - rand() * lvl.spread);
-        sc.add(t); targets.push(t);
-      }
-      for (let i = 0; i < lvl.targets; i++) spawnTarget();
-
-      const bullets = [];
-      const bulletSpeed = 42;
-      function shoot() {
-        const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0x444400 }));
-        const dir = new THREE.Vector3().subVectors(rig.position, cam.position);
-        dir.y = 0; if (dir.lengthSq() < 1e-6) dir.set(0,0,-1); dir.normalize();
-        b.position.copy(cam.position);
-        b.userData.dir = dir.clone();
-        sc.add(b); bullets.push(b);
-      }
+      const lvl = rangeLevels[levelIndex] || rangeLevels[0]; const rand=makeRand(lvl.seed);
+      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x223344);
+      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1200);
+      const lights=makeLights('day'); sc.add(lights);
+      const floor=new THREE.Mesh(new THREE.PlaneGeometry(lvl.spread*2, lvl.spread*2), new THREE.MeshStandardMaterial({ color:0x335577 })); floor.rotation.x=-Math.PI/2; sc.add(floor);
+      const rigMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const rig=new THREE.Mesh(new THREE.CapsuleGeometry(0.5,0.8,8,12), rigMat); rig.position.set(0,1,40); sc.add(rig); if(ownerFlag) rig.add(makeOwnerLabel());
+      const targets=[]; function spawnTarget(){ const t=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.25,10,20), new THREE.MeshStandardMaterial({ color:0xffcc55, emissive:0x553300, emissiveIntensity:0.2 })); t.position.set((rand()-0.5)*lvl.spread, 2+rand()*6, -20-rand()*lvl.spread); sc.add(t); targets.push(t); }
+      for(let i=0;i<lvl.targets;i++) spawnTarget();
+      const bullets=[]; const bulletSpeed=42; function shoot(){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.18,10,10), new THREE.MeshStandardMaterial({ color:0xffffaa, emissive:0x444400 })); const dir=new THREE.Vector3().subVectors(rig.position, cam.position); dir.y=0; if(dir.lengthSq()<1e-6) dir.set(0,0,-1); dir.normalize(); b.position.copy(cam.position); b.userData.dir=dir.clone(); sc.add(b); bullets.push(b); }
       actionBtn.onclick = shoot;
-
-      let yaw = 0, pitch = 0, run = true, score = 0;
-
-      hudPrimary.textContent = `Target Range — Level ${levelIndex+1}`;
-      hudSecondary.textContent = 'Score 0 | ACTION to shoot';
-
-      function applyMapVariant(variant) { sc.background = (variant === 'night') ? new THREE.Color(0x162238) : new THREE.Color(0x223344); }
-      applyMapVariant('day');
-      function applySkin(newSkin) { rigMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag) { const existing = rig.children.find(ch => ch.isSprite); if (flag && !existing) rig.add(makeOwnerLabel()); if (!flag && existing) rig.remove(existing); }
-
-      function restart() {
-        bullets.forEach(b => sc.remove(b)); bullets.length = 0;
-        targets.forEach(t => sc.remove(t)); targets.length = 0;
-        for (let i = 0; i < lvl.targets; i++) spawnTarget();
-        rig.position.set(0, 1, 40);
-        yaw = 0; pitch = 0; score = 0; hudSecondary.textContent = 'Score 0 | ACTION to shoot';
-        run = true; msg.style.display = 'none';
-      }
-
+      let yaw=0,pitch=0,run=true,score=0;
+      hudPrimary.textContent=`Target Range — Level ${levelIndex+1}`; hudSecondary.textContent='Score 0 | ACTION to shoot';
+      function applyMapVariant(variant){ sc.background=(variant==='night')?new THREE.Color(0x162238):new THREE.Color(0x223344); }
+      applyMapVariant('day'); function applySkin(newSkin){ rigMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=rig.children.find(ch=>ch.isSprite); if(flag && !existing) rig.add(makeOwnerLabel()); if(!flag && existing) rig.remove(existing); }
+      function restart(){ bullets.forEach(b=>sc.remove(b)); bullets.length=0; targets.forEach(t=>sc.remove(t)); targets.length=0; for(let i=0;i<lvl.targets;i++) spawnTarget(); rig.position.set(0,1,40); yaw=0; pitch=0; score=0; hudSecondary.textContent='Score 0 | ACTION to shoot'; run=true; msg.style.display='none'; }
       return {
-        scene: sc, camera: cam, restart, dispose() {},
-        getCurrency: () => score, setCurrency: v => { score = v; hudSecondary.textContent = `Score ${score} | ACTION to shoot`; },
+        scene: sc, camera: cam, restart, dispose(){}, getCurrency:()=>score, setCurrency:v=>{ score=v; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; },
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt) {
-          if (!run) return;
-          const { lx, ly } = getLookDelta(1.8);
-          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.8, 0.8);
-          updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
-
-          const mv = moveStick.get();
-          rig.position.x += mv.x * 6 * dt;
-          rig.position.z += -mv.y * 6 * dt;
-
-          for (let i = bullets.length - 1; i >= 0; i--) {
-            const b = bullets[i];
-            b.position.addScaledVector(b.userData.dir, bulletSpeed * dt);
-            if (b.position.length() > 200) { sc.remove(b); bullets.splice(i, 1); continue; }
-            for (let j = targets.length - 1; j >= 0; j--) {
-              const t = targets[j];
-              if (b.position.distanceTo(t.position) < 1.2) {
-                sc.remove(t); targets.splice(j, 1);
-                sc.remove(b); bullets.splice(i, 1);
-                score++; hudSecondary.textContent = `Score ${score} | ACTION to shoot`;
-                setTimeout(spawnTarget, (rangeLevels[levelIndex]?.respawn || 0.8) * 1000);
-                break;
-              }
-            }
-          }
-
-          if (score >= Math.round(lvl.targets * 0.7)) {
-            run = false;
-            addScore('range', shared.name || 'Player', score);
-            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-          }
+        update(dt){
+          if(!run) return;
+          const {lx,ly}=getLookDelta(1.8); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.8,0.8); updateThirdPersonCamera(cam, rig.position, yaw, pitch, 8.0, 3.0);
+          const mv=moveStick.get(); rig.position.x += mv.x * 6 * dt; rig.position.z += -mv.y * 6 * dt;
+          for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.position.addScaledVector(b.userData.dir, bulletSpeed*dt); if(b.position.length()>200){ sc.remove(b); bullets.splice(i,1); continue; }
+            for(let j=targets.length-1;j>=0;j--){ const t=targets[j]; if(b.position.distanceTo(t.position)<1.2){ sc.remove(t); targets.splice(j,1); sc.remove(b); bullets.splice(i,1); score++; hudSecondary.textContent=`Score ${score} | ACTION to shoot`; setTimeout(spawnTarget, (rangeLevels[levelIndex]?.respawn || 0.8)*1000); break; } } }
+          if(score >= Math.round(lvl.targets * 0.7)){ run=false; addScore('range', shared.name||'Player', score); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
         }
       };
     }
 
+    // Voxel
     function setupVoxelTP(quality, skin, levelIndex, ownerFlag) {
-      const lvl = voxelLevels[levelIndex] || voxelLevels[0];
-      const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x87ceeb);
-      const cam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1600);
-      const lights = makeLights('day'); sc.add(lights);
-
-      const size = lvl.size;
-      const blockSize = 1;
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(size*blockSize, size*blockSize), new THREE.MeshStandardMaterial({ color: 0x88b36a }));
-      ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0, 0); sc.add(ground);
-
-      const playerMat = new THREE.MeshStandardMaterial({ color: skinToColor(skin) });
-      const player = new THREE.Mesh(new THREE.BoxGeometry(1, 1.8, 1), playerMat);
-      player.position.set(0, 1, 0); sc.add(player);
-      if (ownerFlag) player.add(makeOwnerLabel());
-
-      const palettes = [0x8B4513, 0xaaaaaa, 0x228B22, 0x3366ff, 0xffd84d];
-      let paletteIndex = 0;
-
-      const blocks = new Map();
-      function key(x,y,z){return `${x},${y},${z}`;}
-      function addBlock(x,y,z,color=null){
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(blockSize, blockSize, blockSize), new THREE.MeshStandardMaterial({ color: color ?? palettes[paletteIndex] }));
-        mesh.position.set(x, y, z); sc.add(mesh); blocks.set(key(x,y,z), mesh);
-      }
-      for (let i = 0; i < lvl.startBlocks; i++) {
-        const x = Math.floor((rand()-0.5)*size), z = Math.floor((rand()-0.5)*size), y = 0.5;
-        addBlock(x, y, z, 0x88b36a);
-      }
-
-      function rayFromCamera() { const dir = new THREE.Vector3().subVectors(player.position, cam.position).normalize(); const origin = cam.position.clone(); return { origin, dir }; }
-      function findNearestGridHit(maxDist=8) {
-        const { origin, dir } = rayFromCamera();
-        let best = null, bestDist = Infinity;
-        for (const [, mesh] of blocks) {
-          const to = new THREE.Vector3().subVectors(mesh.position, origin);
-          const proj = to.dot(dir);
-          if (proj > 0 && proj < maxDist) {
-            const closestPoint = origin.clone().addScaledVector(dir, proj);
-            const d = closestPoint.distanceTo(mesh.position);
-            if (d < 0.9 && proj < bestDist) { best = mesh; bestDist = proj; }
-          }
-        }
-        return best;
-      }
-      actionBtn.onclick = () => {
-        const hit = findNearestGridHit(8);
-        const pos = hit ? hit.position.clone().add(new THREE.Vector3(0, blockSize, 0)) : player.position.clone().add(new THREE.Vector3(0, 0, -2)).round();
-        const snap = new THREE.Vector3(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z));
-        const k = key(snap.x, snap.y, snap.z);
-        if (!blocks.has(k)) addBlock(snap.x, snap.y, snap.z);
-      };
-      jumpBtn.onclick = () => {
-        const hit = findNearestGridHit(8);
-        if (hit) { blocks.delete(key(hit.position.x, hit.position.y, hit.position.z)); sc.remove(hit); }
-      };
-      window.addEventListener('keydown', e => {
-        if (e.code === 'KeyQ') { paletteIndex = (paletteIndex + 1) % palettes.length; }
-        if (e.code === 'KeyE') { paletteIndex = (paletteIndex + palettes.length - 1) % palettes.length; }
-      });
-
-      let yaw = 0, pitch = 0;
-      let speed = 6.5;
-
-      hudPrimary.textContent = `Voxel Builder — Level ${levelIndex+1}`;
-      hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
-
-      function applyMapVariant(v) { sc.background = (v === 'night') ? new THREE.Color(0x10202a) : new THREE.Color(0x87ceeb); }
-      applyMapVariant('day');
-      function applySkin(newSkin) { playerMat.color.setHex(skinToColor(newSkin)); }
-      function applyOwner(flag) { const existing = player.children.find(ch => ch.isSprite); if (flag && !existing) player.add(makeOwnerLabel()); if (!flag && existing) player.remove(existing); }
-
-      function restart() {
-        for (const [,mesh] of blocks) sc.remove(mesh);
-        blocks.clear();
-        for (let i = 0; i < lvl.startBlocks; i++) {
-          const x = Math.floor((rand()-0.5)*size), z = Math.floor((rand()-0.5)*size), y = 0.5;
-          addBlock(x, y, z, 0x88b36a);
-        }
-        player.position.set(0,1,0); yaw=0; pitch=0; msg.style.display='none';
-      }
-
+      const lvl = voxelLevels[levelIndex] || voxelLevels[0]; const rand=makeRand(lvl.seed);
+      const sc=new THREE.Scene(); sc.background=new THREE.Color(0x87ceeb);
+      const cam=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
+      const lights=makeLights('day'); sc.add(lights);
+      const size=lvl.size; const blockSize=1;
+      const ground=new THREE.Mesh(new THREE.PlaneGeometry(size*blockSize, size*blockSize), new THREE.MeshStandardMaterial({ color:0x88b36a })); ground.rotation.x=-Math.PI/2; sc.add(ground);
+      const playerMat=new THREE.MeshStandardMaterial({ color: skinToColor(skin) }); const player=new THREE.Mesh(new THREE.BoxGeometry(1,1.8,1), playerMat); player.position.set(0,1,0); sc.add(player); if(ownerFlag) player.add(makeOwnerLabel());
+      const palettes=[0x8B4513,0xaaaaaa,0x228B22,0x3366ff,0xffd84d]; let paletteIndex=0;
+      const blocks=new Map(); function key(x,y,z){return `${x},${y},${z}`;}
+      function addBlock(x,y,z,color=null){ const mesh=new THREE.Mesh(new THREE.BoxGeometry(blockSize,blockSize,blockSize), new THREE.MeshStandardMaterial({ color: color ?? palettes[paletteIndex] })); mesh.position.set(x,y,z); sc.add(mesh); blocks.set(key(x,y,z), mesh); }
+      for(let i=0;i<lvl.startBlocks;i++){ const x=Math.floor((rand()-0.5)*size), z=Math.floor((rand()-0.5)*size), y=0.5; addBlock(x,y,z,0x88b36a); }
+      function rayFromCamera(){ const dir=new THREE.Vector3().subVectors(player.position, cam.position).normalize(); const origin=cam.position.clone(); return { origin, dir }; }
+      function findNearestGridHit(maxDist=8){ const {origin,dir}=rayFromCamera(); let best=null, bestDist=Infinity; for(const [,mesh] of blocks){ const to=new THREE.Vector3().subVectors(mesh.position, origin); const proj=to.dot(dir); if(proj>0 && proj<maxDist){ const closest=origin.clone().addScaledVector(dir, proj); const d=closest.distanceTo(mesh.position); if(d<0.9 && proj<bestDist){ best=mesh; bestDist=proj; } } } return best; }
+      actionBtn.onclick = () => { const hit=findNearestGridHit(8); const pos=hit?hit.position.clone().add(new THREE.Vector3(0,blockSize,0)):player.position.clone().add(new THREE.Vector3(0,0,-2)).round(); const snap=new THREE.Vector3(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)); const k=key(snap.x,snap.y,snap.z); if(!blocks.has(k)) addBlock(snap.x,snap.y,snap.z); };
+      jumpBtn.onclick = () => { const hit=findNearestGridHit(8); if(hit){ blocks.delete(key(hit.position.x, hit.position.y, hit.position.z)); sc.remove(hit); } };
+      window.addEventListener('keydown', e => { if(e.code==='KeyQ'){ paletteIndex=(paletteIndex+1)%palettes.length; } if(e.code==='KeyE'){ paletteIndex=(paletteIndex+palettes.length-1)%palettes.length; } });
+      let yaw=0,pitch=0; let speed=6.5;
+      hudPrimary.textContent=`Voxel Builder — Level ${levelIndex+1}`; hudSecondary.textContent=`Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
+      function applyMapVariant(v){ sc.background=(v==='night')?new THREE.Color(0x10202a):new THREE.Color(0x87ceeb); }
+      applyMapVariant('day'); function applySkin(newSkin){ playerMat.color.setHex(skinToColor(newSkin)); } function applyOwner(flag){ const existing=player.children.find(ch=>ch.isSprite); if(flag && !existing) player.add(makeOwnerLabel()); if(!flag && existing) player.remove(existing); }
+      function restart(){ for(const [,mesh] of blocks) sc.remove(mesh); blocks.clear(); for(let i=0;i<lvl.startBlocks;i++){ const x=Math.floor((rand()-0.5)*size), z=Math.floor((rand()-0.5)*size), y=0.5; addBlock(x,y,z,0x88b36a); } player.position.set(0,1,0); yaw=0; pitch=0; msg.style.display='none'; }
       return {
-        scene: sc, camera: cam, restart, dispose() {},
-        getCurrency: () => blocks.size, setCurrency: () => {},
+        scene: sc, camera: cam, restart, dispose(){}, getCurrency:()=>blocks.size, setCurrency:()=>{},
         applyMapVariant, applySkin, applyOwner, applyWeaponUpgrade: () => {},
-        update(dt) {
-          const { lx, ly } = getLookDelta(1.6);
-          yaw += lx * dt; pitch = THREE.MathUtils.clamp(pitch + ly * dt, -0.7, 0.7);
+        update(dt){
+          const {lx,ly}=getLookDelta(1.6); yaw+=lx*dt; pitch=THREE.MathUtils.clamp(pitch+ly*dt,-0.7,0.7);
           updateThirdPersonCamera(cam, player.position, yaw, pitch, 8.5, 3.0);
-
-          const mv = moveStick.get();
-          const { inputX, inputY } = getMoveInput(keys, mv);
-          const { forward, right } = getCameraBasisXZ(cam, player.position);
-          const dir = new THREE.Vector3().addScaledVector(right, inputX).addScaledVector(forward, inputY);
-          if (dir.lengthSq() > 0) dir.normalize();
-          player.position.addScaledVector(dir, speed * dt);
-
-          hudSecondary.textContent = `Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
-
-          if (blocks.size >= lvl.startBlocks + lvl.goalDelta) {
-            addScore('voxel', shared.name || 'Player', blocks.size);
-            msgText.textContent = `Level ${levelIndex+1} complete — advancing...`;
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; if (cleanup.nextLevel) cleanup.nextLevel(); }, 1200);
-          }
+          const mv=moveStick.get(); const {inputX,inputY}=getMoveInput(keys, mv); const {forward,right}=getCameraBasisXZ(cam, player.position);
+          const dir=new THREE.Vector3().addScaledVector(right,inputX).addScaledVector(forward,inputY); if(dir.lengthSq()>0) dir.normalize(); player.position.addScaledVector(dir, speed*dt);
+          hudSecondary.textContent=`Blocks ${blocks.size} | Palette #${paletteIndex+1} (Q/E cycle)`;
+          if(blocks.size >= lvl.startBlocks + lvl.goalDelta){ addScore('voxel', shared.name||'Player', blocks.size); msgText.textContent=`Level ${levelIndex+1} complete — advancing...`; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; if(cleanup.nextLevel) cleanup.nextLevel(); }, 1200); }
         }
       };
     }
 
-    // ——— Helper for new games ———
+    // ————— 10 new 3D game implementations —————
     function makePlayerCapsule(color=0x4da3ff, owner=false){
       const mat = new THREE.MeshStandardMaterial({ color });
       const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), mat);
@@ -1452,8 +857,6 @@
       if (owner) mesh.add(makeOwnerLabel());
       return { mesh, mat };
     }
-
-    // ——— New 10 games ———
 
     // Ice Cavern Escape
     function setupIceCavernTP(quality, skin, levelIndex, ownerFlag) {
@@ -1610,7 +1013,7 @@
     // Haunted Mansion
     function setupHauntedTP(quality, skin, levelIndex, ownerFlag) {
       const levels = simpleLevels(781); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x0c0c14);
+      const sc = new THREE.Scene(); sc.background = new THREE Color(0x0c0c14);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
       sc.add(makeLights('haunted'));
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshStandardMaterial({ color: 0x222233 })); floor.rotation.x=-Math.PI/2; sc.add(floor);
@@ -1649,7 +1052,7 @@
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 600), new THREE.MeshStandardMaterial({ color: 0x333333 })); floor.rotation.x=-Math.PI/2; sc.add(floor);
       const belts=[]; for(let i=0;i<4;i++){ const b=new THREE.Mesh(new THREE.BoxGeometry(220,1,8), new THREE.MeshStandardMaterial({ color: 0x555555 })); b.position.set(-400+i*260, 2, (rand()-0.5)*300); sc.add(b); belts.push(b); }
       const pistons=[]; for(let i=0;i<lvl.count;i++){ const p=new THREE.Mesh(new THREE.CylinderGeometry(2,2,14,12), new THREE.MeshStandardMaterial({ color: 0x888888 })); p.position.set((rand()-0.5)*900, 8, (rand()-0.5)*540); sc.add(p); pistons.push(p); }
-      const goal = new THREE.Mesh(new THREE.TorusGeometry(3,0.5,12,28), new THREE.MeshStandardMaterial({ color:0x66ff99 })); goal.position.set(450, 3, 250); sc.add(goal);
+      const goal = new THREE Mesh(new THREE.TorusGeometry(3,0.5,12,28), new THREE.MeshStandardMaterial({ color:0x66ff99 })); goal.position.set(450, 3, 250); sc.add(goal);
       const { mesh: bot, mat: botMat } = makePlayerCapsule(skinToColor(skin), ownerFlag); sc.add(bot);
       let yaw=0,pitch=0, run=true;
       hudPrimary.textContent=`Robot Factory — Level ${levelIndex+1}`; hudSecondary.textContent='Avoid pistons, ride belts';
@@ -1705,7 +1108,7 @@
     // Sandstorm Survival
     function setupSandstormTP(quality, skin, levelIndex, ownerFlag) {
       const levels = simpleLevels(841); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0xc9a76e);
+      const sc = new THREE.Scene(); sc.background = new THREE Color(0xc9a76e);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
       sc.add(makeLights('sand'));
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.MeshStandardMaterial({ color: 0xd8b37a })); floor.rotation.x=-Math.PI/2; sc.add(floor);
@@ -1737,7 +1140,7 @@
     // Crystal Collector
     function setupCrystalTP(quality, skin, levelIndex, ownerFlag) {
       const levels = simpleLevels(861); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x14243a);
+      const sc = new THREE Scene(); sc.background = new THREE.Color(0x14243a);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
       sc.add(makeLights('maze'));
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.MeshStandardMaterial({ color: 0x1a2e4c })); floor.rotation.x=-Math.PI/2; sc.add(floor);
@@ -1767,7 +1170,7 @@
     // Tower Climb
     function setupTowerTP(quality, skin, levelIndex, ownerFlag) {
       const levels = simpleLevels(881); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x1b1f2a);
+      const sc = new THREE.Scene(); sc.background = new THREE Color(0x1b1f2a);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1800);
       sc.add(makeLights('day'));
       const tower = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 600, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0x444b66, side: THREE.DoubleSide })); tower.position.set(0,300,0); sc.add(tower);
@@ -1809,7 +1212,7 @@
       };
     }
 
-    // ——— HUB CONTROL ———
+    // HUB CONTROL
     function showMenu() {
       running = false;
       hud.style.display = 'none';
