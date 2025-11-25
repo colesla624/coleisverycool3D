@@ -8,29 +8,29 @@
   html, body { margin:0; height:100%; background:#101318; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
   #game { position:fixed; inset:0; }
   #hud {
-    position: fixed; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; padding: 10px; pointer-events: none;
+    position: fixed; left: 0; right: 0; top: 0; display: flex; gap: 8px; justify-content: space-between; padding: 10px; pointer-events: none;
     color:#e6e6e6; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.7);
   }
   .panel { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 12px; }
-  #msg { position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px; color:#fff; background: rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15); border-radius: 10px; padding:8px 12px; pointer-events:none; }
-  /* Virtual joystick */
+  #msg { position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; color:#fff; background: rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.15); border-radius: 10px; padding:8px 12px; pointer-events:none; }
+  #help { position: fixed; left: 50%; transform: translateX(-50%); top: 10px; color:#a7b0c0; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
   #controls { position: fixed; inset: 0; pointer-events: none; }
-  .stick-wrap { position: absolute; left: 20px; bottom: 20px; width: 140px; height: 140px; pointer-events: auto; touch-action: none; }
-  .stick-base, .stick-thumb {
-    position: absolute; border-radius: 50%; backdrop-filter: blur(4px);
-  }
+  .stick-wrap { position: absolute; width: 140px; height: 140px; pointer-events: auto; touch-action: none; }
+  .stick-base, .stick-thumb { position: absolute; border-radius: 50%; backdrop-filter: blur(4px); }
   .stick-base { width: 140px; height: 140px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); }
-  .stick-thumb { width: 70px; height: 70px; left: 35px; top: 35px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); }
-  /* Jump button */
-  .btn { position: absolute; right: 20px; bottom: 30px; width: 90px; height: 90px; border-radius: 50%; pointer-events: auto; touch-action: manipulation;
+  .stick-thumb { width: 70px; height: 70px; left: 35px; top: 35px; background: rgba(255,255,255,0.22); border: 2px solid rgba(255,255,255,0.3); }
+  .btn { position: absolute; right: 20px; bottom: 120px; width: 90px; height: 90px; border-radius: 50%; pointer-events: auto; touch-action: manipulation;
     background: radial-gradient(circle at 30% 30%, #fff 0%, #f6b73c 35%, #e36c1b 60%, #ad3a0a 100%); box-shadow: 0 10px 25px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.5); }
   .btn:active { transform: scale(0.96); }
-  /* Desktop help */
-  #help { position: fixed; left: 50%; transform: translateX(-50%); top: 10px; color:#a7b0c0; font-size: 13px; }
-  /* Pause overlay */
+  #menu {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 70px; display: flex; gap: 8px; pointer-events: auto;
+  }
+  #menu select, #menu button {
+    padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.35); color:#e6e6e6;
+    backdrop-filter: blur(3px);
+  }
   #pauseOverlay { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); color:#fff; font-size: 20px; font-weight:700; text-align:center; }
   #pauseOverlay .inner { background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.2); padding: 14px 18px; border-radius: 10px; }
-  /* Prevent long-press selection */
   * { -webkit-tap-highlight-color: transparent; user-select: none; }
 </style>
 </head>
@@ -38,26 +38,47 @@
 <canvas id="game"></canvas>
 
 <div id="hud">
-  <div class="panel" id="score">Stars: 0 / 10</div>
+  <div class="panel" id="score">Stars: 0 / 0</div>
   <div class="panel" id="level">Level 1</div>
+  <div class="panel" id="mode">Mode: Classic</div>
+  <div class="panel" id="timer" style="display:none;">Time: 60.0s</div>
+  <div class="panel" id="lives" style="display:none;">Lives: 3</div>
 </div>
-<div id="help">Desktop: WASD/Arrows to move, Space to jump, P to pause</div>
-<div id="msg">Reach the glowing goal. Collect stars!</div>
+<div id="help">Desktop: WASD/Arrows to move, Mouse to look, Space to jump, P to pause</div>
+<div id="msg">Collect stars and reach the glowing goal!</div>
 
 <div id="controls">
-  <div class="stick-wrap" id="stick">
+  <!-- Movement joystick -->
+  <div class="stick-wrap" id="moveStick" style="left:20px; bottom:20px;">
     <div class="stick-base"></div>
-    <div class="stick-thumb" id="thumb"></div>
+    <div class="stick-thumb" id="moveThumb"></div>
   </div>
+  <!-- Look joystick -->
+  <div class="stick-wrap" id="lookStick" style="right:20px; bottom:20px;">
+    <div class="stick-base"></div>
+    <div class="stick-thumb" id="lookThumb"></div>
+  </div>
+  <!-- Jump button -->
   <button class="btn" id="jumpBtn" aria-label="Jump"></button>
+</div>
+
+<div id="menu">
+  <select id="levelSelect"></select>
+  <select id="modeSelect">
+    <option value="classic">Classic</option>
+    <option value="time">Time Attack</option>
+    <option value="survival">Survival</option>
+  </select>
+  <button id="restartBtn">Restart</button>
+  <button id="pauseBtn">Pause</button>
 </div>
 
 <div id="pauseOverlay"><div class="inner">Paused<br/><small>(Tap or press P to resume)</small></div></div>
 
 <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.157.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 (() => {
+  // Renderer, scene, camera
   const canvas = document.getElementById('game');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -66,6 +87,8 @@
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0f1220);
+  const fogColor = new THREE.Color(0x0f1220);
+  scene.fog = new THREE.Fog(fogColor, 40, 120);
 
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, 6, 10);
@@ -79,10 +102,6 @@
   sun.shadow.mapSize.set(1024, 1024);
   scene.add(sun);
 
-  // Sky glow
-  const fogColor = new THREE.Color(0x0f1220);
-  scene.fog = new THREE.Fog(fogColor, 40, 120);
-
   // Materials
   const matPlatform = new THREE.MeshStandardMaterial({ color: 0x2b5c4b, roughness: 0.8, metalness: 0.1 });
   const matPlatformAlt = new THREE.MeshStandardMaterial({ color: 0x3a2b5c, roughness: 0.85, metalness: 0.1 });
@@ -92,90 +111,119 @@
 
   // Player
   const playerRadius = 0.5;
-  const playerGeo = new THREE.SphereGeometry(playerRadius, 24, 16);
-  const player = new THREE.Mesh(playerGeo, matPlayer);
+  const player = new THREE.Mesh(new THREE.SphereGeometry(playerRadius, 24, 16), matPlayer);
   player.castShadow = true;
   player.receiveShadow = false;
   scene.add(player);
 
-  // Ground / platforms
-  const platforms = [];
-  const platformGeo = new THREE.BoxGeometry(6, 0.5, 6);
-  function makePlatform(x, y, z, w = 6, d = 6, mat = matPlatform) {
-    const geo = new THREE.BoxGeometry(w, 0.5, d);
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(x, y, z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    scene.add(mesh);
-    platforms.push(mesh);
-    return mesh;
-  }
-
-  // Level layout
-  const base = makePlatform(0, 0, 0, 20, 20, matPlatform);
-  const p1 = makePlatform(8, 2, -6, 6, 6, matPlatformAlt);
-  const p2 = makePlatform(16, 4, -12, 6, 6);
-  const p3 = makePlatform(24, 6, -18, 6, 6, matPlatformAlt);
-  const p4 = makePlatform(18, 8, -26, 8, 6);
-  const p5 = makePlatform(10, 10, -34, 6, 6, matPlatformAlt);
-  const p6 = makePlatform(0, 12, -42, 10, 6);
-  const p7 = makePlatform(-10, 14, -52, 10, 6, matPlatformAlt);
-  const p8 = makePlatform(-18, 16, -62, 8, 6);
-  const p9 = makePlatform(-26, 18, -72, 6, 6, matPlatformAlt);
-
-  // Collectibles
-  const stars = [];
-  const starGeo = new THREE.IcosahedronGeometry(0.35, 0);
-  function makeStar(x, y, z) {
-    const s = new THREE.Mesh(starGeo, matStar);
-    s.position.set(x, y, z);
-    s.castShadow = true;
-    scene.add(s);
-    stars.push(s);
-  }
-  const starPositions = [
-    [4, 1.5, -3], [8, 3.5, -6], [16, 5.5, -12], [24, 7.3, -18], [18, 9.5, -26],
-    [10, 11.8, -34], [0, 13.5, -42], [-10, 15.4, -52], [-18, 17.2, -62], [-26, 19.0, -72]
-  ];
-  starPositions.forEach(([x,y,z]) => makeStar(x,y,z));
-
-  // Goal
-  const goalGeo = new THREE.TorusGeometry(1.2, 0.25, 16, 64);
-  const goal = new THREE.Mesh(goalGeo, matGoal);
-  goal.position.copy(p9.position).add(new THREE.Vector3(0, 1.5, 0));
-  goal.castShadow = true;
-  scene.add(goal);
-
-  // Simple bounds (void)
-  const voidY = -20;
-
-  // Camera follow rig
-  const camTarget = new THREE.Vector3();
+  // Camera rig
   const camOffset = new THREE.Vector3(0, 4.5, 7.5);
+  let camYaw = 0;    // horizontal angle around player
+  let camPitch = 0.25; // tilt
+  const pitchMin = -0.1, pitchMax = 0.8;
+
+  // Level data
+  const LEVELS = [
+    {
+      name: "Beginnings",
+      platforms: [
+        {x:0,y:0,z:0,w:20,d:20,alt:false},
+        {x:8,y:2,z:-6,w:6,d:6,alt:true},
+        {x:16,y:4,z:-12,w:6,d:6,alt:false},
+        {x:24,y:6,z:-18,w:6,d:6,alt:true}
+      ],
+      stars: [[4,1.5,-3],[8,3.5,-6],[16,5.5,-12],[24,7.3,-18]],
+      goal: [24,7.5,-18],
+      spawn: [0,2.5,5]
+    },
+    {
+      name: "Sky bridge",
+      platforms: [
+        {x:0,y:0,z:0,w:20,d:20,alt:false},
+        {x:0,y:6,z:-10,w:8,d:4,alt:true},
+        {x:10,y:10,z:-20,w:6,d:6,alt:false},
+        {x:2,y:14,z:-30,w:10,d:4,alt:true},
+        {x:-8,y:18,z:-40,w:6,d:6,alt:false}
+      ],
+      stars: [[0,7,-10],[10,11,-20],[2,15,-30],[-8,19,-40]],
+      goal: [-8,19.2,-40],
+      spawn: [0,2.5,5]
+    },
+    {
+      name: "Zigzag canyon",
+      platforms: [
+        {x:0,y:0,z:0,w:20,d:20,alt:false},
+        {x:6,y:2,z:-6,w:8,d:4,alt:true},
+        {x:-6,y:4,z:-12,w:8,d:4,alt:true},
+        {x:6,y:6,z:-18,w:8,d:4,alt:true},
+        {x:-6,y:8,z:-24,w:8,d:4,alt:true},
+        {x:0,y:10,z:-30,w:6,d:6,alt:false}
+      ],
+      stars: [[6,3,-6],[-6,5,-12],[6,7,-18],[-6,9,-24],[0,11,-30]],
+      goal: [0,11.5,-30],
+      spawn: [0,2.5,5]
+    }
+  ];
+
+  // Gameplay containers
+  let platforms = [];
+  let stars = [];
+  let goal = null;
+
+  // HUD elements
+  const scoreEl = document.getElementById('score');
+  const levelEl = document.getElementById('level');
+  const modeEl = document.getElementById('mode');
+  const timerEl = document.getElementById('timer');
+  const livesEl = document.getElementById('lives');
+  const msgEl = document.getElementById('msg');
+  const pauseOverlay = document.getElementById('pauseOverlay');
+
+  // Menus
+  const levelSelect = document.getElementById('levelSelect');
+  const modeSelect = document.getElementById('modeSelect');
+  const restartBtn = document.getElementById('restartBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+
+  // Populate level dropdown
+  LEVELS.forEach((l, i) => {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = `${i+1}. ${l.name}`;
+    levelSelect.appendChild(opt);
+  });
+
+  // Game mode state
+  let gameMode = 'classic'; // 'classic' | 'time' | 'survival'
+  let timeLeft = 60.0;
+  let lives = 3;
+
+  function updateHUD() {
+    scoreEl.textContent = `Stars: ${score} / ${stars.length}`;
+    levelEl.textContent = LEVELS[currentLevel].name;
+    modeEl.textContent = `Mode: ${gameMode === 'classic' ? 'Classic' : gameMode === 'time' ? 'Time Attack' : 'Survival'}`;
+    timerEl.style.display = gameMode === 'time' ? 'block' : 'none';
+    livesEl.style.display = gameMode === 'survival' ? 'block' : 'none';
+    if (gameMode === 'time') timerEl.textContent = `Time: ${timeLeft.toFixed(1)}s`;
+    if (gameMode === 'survival') livesEl.textContent = `Lives: ${lives}`;
+  }
 
   // Physics
   const velocity = new THREE.Vector3(0, 0, 0);
   const acceleration = new THREE.Vector3(0, 0, 0);
   const gravity = new THREE.Vector3(0, -24, 0);
-  const friction = 7.5; // ground horizontal damping
+  const friction = 7.5;
   const airControl = 0.7;
-
   let onGround = false;
+
+  // Input state
+  const keys = { left: false, right: false, up: false, down: false, jump: false };
+  let moveDx = 0, moveDy = 0;
+  let lookDx = 0, lookDy = 0;
   let paused = false;
   let score = 0;
-  const scoreEl = document.getElementById('score');
-  const levelEl = document.getElementById('level');
-  const msgEl = document.getElementById('msg');
-  const pauseOverlay = document.getElementById('pauseOverlay');
+  const voidY = -20;
 
-  function updateScore() {
-    scoreEl.textContent = `Stars: ${score} / ${stars.length}`;
-  }
-  updateScore();
-
-  // Controls: keyboard
-  const keys = { left: false, right: false, up: false, down: false, jump: false };
+  // Keyboard controls
   window.addEventListener('keydown', (e) => {
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
     if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
@@ -192,135 +240,228 @@
     if (e.code === 'Space') keys.jump = false;
   });
 
-  // Controls: virtual joystick
-  const stick = document.getElementById('stick');
-  const thumb = document.getElementById('thumb');
-  const stickRect = () => stick.getBoundingClientRect();
-  let stickActive = false, stickDx = 0, stickDy = 0;
-
-  function setThumb(x, y) {
-    const r = 70; // radius to limit thumb travel
-    const len = Math.hypot(x, y);
-    const k = len > r ? r / len : 1;
-    const tx = x * k, ty = y * k;
-    thumb.style.transform = `translate(${tx}px, ${ty}px)`;
-    stickDx = tx / r;
-    stickDy = ty / r;
-  }
-
-  function resetThumb() {
-    thumb.style.transform = `translate(0px,0px)`;
-    stickDx = 0; stickDy = 0;
-  }
-
-  stick.addEventListener('pointerdown', (e) => {
-    stickActive = true;
-    const rect = stickRect();
-    setThumb(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.height/2));
-    stick.setPointerCapture(e.pointerId);
+  // Mouse look (desktop)
+  let lastMouse = null;
+  window.addEventListener('pointerdown', (e) => { lastMouse = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointerup', () => { lastMouse = null; });
+  window.addEventListener('pointermove', (e) => {
+    if (!lastMouse) return;
+    const dx = (e.clientX - lastMouse.x) / window.innerWidth;
+    const dy = (e.clientY - lastMouse.y) / window.innerHeight;
+    camYaw -= dx * 3.0;
+    camPitch = THREE.MathUtils.clamp(camPitch - dy * 2.0, pitchMin, pitchMax);
+    lastMouse = { x: e.clientX, y: e.clientY };
   });
-  stick.addEventListener('pointermove', (e) => {
-    if (!stickActive) return;
-    const rect = stickRect();
-    setThumb(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.height/2));
+
+  // Virtual joysticks
+  function setupStick(stickId, thumbId, cb) {
+    const stick = document.getElementById(stickId);
+    const thumb = document.getElementById(thumbId);
+    let active = false;
+    const rect = () => stick.getBoundingClientRect();
+    function setThumb(x, y) {
+      const r = 70;
+      const len = Math.hypot(x, y);
+      const k = len > r ? r / len : 1;
+      const tx = x * k, ty = y * k;
+      thumb.style.transform = `translate(${tx}px,${ty}px)`;
+      cb(tx / r, ty / r);
+    }
+    function reset() { thumb.style.transform = `translate(0px,0px)`; cb(0, 0); }
+    stick.addEventListener('pointerdown', (e) => {
+      active = true; const rc = rect();
+      setThumb(e.clientX - (rc.left + rc.width/2), e.clientY - (rc.top + rc.height/2));
+      stick.setPointerCapture(e.pointerId);
+    });
+    stick.addEventListener('pointermove', (e) => {
+      if (!active) return; const rc = rect();
+      setThumb(e.clientX - (rc.left + rc.width/2), e.clientY - (rc.top + rc.height/2));
+    });
+    stick.addEventListener('pointerup', () => { active = false; reset(); });
+    stick.addEventListener('pointercancel', () => { active = false; reset(); });
+  }
+  setupStick('moveStick', 'moveThumb', (dx, dy) => { moveDx = dx; moveDy = dy; });
+  setupStick('lookStick', 'lookThumb', (dx, dy) => {
+    // Horizontal drag rotates yaw; vertical drag adjusts pitch (invert y for typical feel)
+    camYaw -= dx * 2.2;
+    camPitch = THREE.MathUtils.clamp(camPitch - dy * 1.8, pitchMin, pitchMax);
+    lookDx = dx; lookDy = dy;
   });
-  stick.addEventListener('pointerup', (e) => { stickActive = false; resetThumb(); });
-  stick.addEventListener('pointercancel', () => { stickActive = false; resetThumb(); });
 
   // Jump button
   const jumpBtn = document.getElementById('jumpBtn');
   jumpBtn.addEventListener('pointerdown', () => keys.jump = true);
   jumpBtn.addEventListener('pointerup', () => keys.jump = false);
 
-  // Pause overlay click to resume
-  pauseOverlay.addEventListener('click', togglePause);
+  // Pause/resume
   function togglePause() {
     paused = !paused;
     pauseOverlay.style.display = paused ? 'flex' : 'none';
   }
+  pauseOverlay.addEventListener('click', togglePause);
+  document.getElementById('pauseBtn').addEventListener('click', togglePause);
 
-  // Helpers
+  // Prevent scrolling on mobile during joystick use
+  document.body.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive:false });
+
+  // Geometry helpers
+  function makePlatform(x, y, z, w, d, alt = false) {
+    const geo = new THREE.BoxGeometry(w, 0.5, d);
+    const mesh = new THREE.Mesh(geo, alt ? matPlatformAlt : matPlatform);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+    platforms.push(mesh);
+    return mesh;
+  }
+
+  function makeStar(x, y, z) {
+    const s = new THREE.Mesh(new THREE.IcosahedronGeometry(0.35, 0), matStar);
+    s.position.set(x, y, z);
+    s.castShadow = true;
+    scene.add(s);
+    stars.push(s);
+    return s;
+  }
+
   function aabbSphereCollision(box, spherePos, sphereR) {
-    // Clamp sphere center to box bounds
     const bPos = box.position;
-    const half = new THREE.Vector3();
     box.geometry.computeBoundingBox();
     const bb = box.geometry.boundingBox;
-    half.set((bb.max.x - bb.min.x)/2, (bb.max.y - bb.min.y)/2, (bb.max.z - bb.min.z)/2);
-    const min = new THREE.Vector3(bPos.x - half.x, bPos.y - half.y, bPos.z - half.z);
-    const max = new THREE.Vector3(bPos.x + half.x, bPos.y + half.y, bPos.z + half.z);
-    const cx = Math.max(min.x, Math.min(spherePos.x, max.x));
-    const cy = Math.max(min.y, Math.min(spherePos.y, max.y));
-    const cz = Math.max(min.z, Math.min(spherePos.z, max.z));
+    const halfX = (bb.max.x - bb.min.x)/2, halfY = (bb.max.y - bb.min.y)/2, halfZ = (bb.max.z - bb.min.z)/2;
+    const minX = bPos.x - halfX, minY = bPos.y - halfY, minZ = bPos.z - halfZ;
+    const maxX = bPos.x + halfX, maxY = bPos.y + halfY, maxZ = bPos.z + halfZ;
+    const cx = Math.max(minX, Math.min(spherePos.x, maxX));
+    const cy = Math.max(minY, Math.min(spherePos.y, maxY));
+    const cz = Math.max(minZ, Math.min(spherePos.z, maxZ));
     const dx = spherePos.x - cx, dy = spherePos.y - cy, dz = spherePos.z - cz;
     const dist2 = dx*dx + dy*dy + dz*dz;
-    if (dist2 <= sphereR*sphereR) {
-      return new THREE.Vector3(dx, dy, dz);
-    }
+    if (dist2 <= sphereR*sphereR) return new THREE.Vector3(dx, dy, dz);
     return null;
   }
 
-  function respawn() {
-    velocity.set(0,0,0);
-    player.position.set(0, 2.5, 5);
-    score = 0;
-    stars.forEach(s => s.visible = true);
-    updateScore();
-    msgEl.textContent = 'Try again! Reach the glowing goal.';
+  // Level management
+  let currentLevel = 0;
+  levelSelect.value = String(currentLevel);
+
+  function clearLevel() {
+    platforms.forEach(m => scene.remove(m));
+    stars.forEach(s => scene.remove(s));
+    platforms = []; stars = [];
+    if (goal) { scene.remove(goal); goal = null; }
   }
 
-  // Init player position
-  respawn();
+  function loadLevel(i) {
+    clearLevel();
+    currentLevel = i;
+    const lvl = LEVELS[i];
 
-  // Decorative ambient particles
+    lvl.platforms.forEach(p => makePlatform(p.x, p.y, p.z, p.w, p.d, p.alt));
+    lvl.stars.forEach(([x,y,z]) => makeStar(x, y, z));
+    goal = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.25, 16, 64), matGoal);
+    goal.position.set(lvl.goal[0], lvl.goal[1], lvl.goal[2]);
+    goal.castShadow = true;
+    scene.add(goal);
+
+    score = 0;
+    player.position.set(lvl.spawn[0], lvl.spawn[1], lvl.spawn[2]);
+    velocity.set(0,0,0);
+    msgEl.textContent = 'Collect stars and reach the glowing goal!';
+    updateHUD();
+  }
+
+  // Mode changes
+  function applyMode(mode) {
+    gameMode = mode;
+    if (gameMode === 'time') timeLeft = 60.0;
+    if (gameMode === 'survival') lives = 3;
+    updateHUD();
+  }
+
+  levelSelect.addEventListener('change', (e) => {
+    loadLevel(parseInt(e.target.value, 10));
+  });
+  modeSelect.addEventListener('change', (e) => {
+    applyMode(e.target.value);
+  });
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    loadLevel(currentLevel);
+  });
+
+  // Respawn
+  function respawn(penalize = true) {
+    const spawn = LEVELS[currentLevel].spawn;
+    player.position.set(spawn[0], spawn[1], spawn[2]);
+    velocity.set(0,0,0);
+    onGround = false;
+
+    if (gameMode === 'survival' && penalize) {
+      lives -= 1;
+      msgEl.textContent = lives > 0 ? `Oops! Lives left: ${lives}` : 'Game over. Restart or change level.';
+      if (lives <= 0) paused = true;
+    } else {
+      msgEl.textContent = 'Try again! Reach the glowing goal.';
+    }
+    updateHUD();
+  }
+
+  // Decorative dust particles
   const dustGeo = new THREE.SphereGeometry(0.03, 8, 8);
-  const dustMat = new THREE.MeshBasicMaterial({ color: 0x88aaff });
+  const dustMat = new THREE.MeshBasicMaterial({ color: 0x88aaff, transparent: true, opacity: 0.25 });
   const dusts = [];
   for (let i=0;i<80;i++){
     const d = new THREE.Mesh(dustGeo, dustMat);
     d.position.set((Math.random()-0.5)*60, 2+Math.random()*12, (Math.random()-0.5)*100);
-    d.material.opacity = 0.25; d.material.transparent = true;
     scene.add(d); dusts.push(d);
   }
 
-  // Goal pulse
-  let tGoal = 0;
+  // Initial level
+  loadLevel(0);
+  applyMode('classic');
 
   // Main loop
   const clock = new THREE.Clock();
+  let tGoal = 0;
+
   function animate() {
     requestAnimationFrame(animate);
     if (paused) return;
 
-    const dt = Math.min(0.033, clock.getDelta()); // clamp delta for stability
+    const dt = Math.min(0.033, clock.getDelta());
 
-    // Input vector: keyboard + joystick
-    const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + stickDx;
-    const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + stickDy; // joystick is y-down, map to forward
+    // Time attack countdown
+    if (gameMode === 'time') {
+      timeLeft -= dt;
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        msgEl.textContent = 'Time up! Restart or switch mode.';
+        paused = true;
+      }
+    }
+    updateHUD();
+
+    // Input vector: keyboard + left joystick
+    const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + moveDx;
+    const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy; // joystick y-down -> forward
     const input = new THREE.Vector3(ix, 0, iz);
     if (input.lengthSq() > 1) input.normalize();
 
-    // Rotate input by camera yaw so movement is relative to camera
-    const camYaw = Math.atan2(camera.position.x - player.position.x, camera.position.z - player.position.z);
-    const sin = Math.sin(camYaw), cos = Math.cos(camYaw);
+    // Convert input relative to camera yaw
+    const sinY = Math.sin(camYaw), cosY = Math.cos(camYaw);
     const move = new THREE.Vector3(
-      input.x * cos - input.z * sin,
+      input.x * cosY - input.z * sinY,
       0,
-      input.x * sin + input.z * cos
+      input.x * sinY + input.z * cosY
     );
 
-    // Acceleration
     const accelMag = onGround ? 28 : 28 * airControl;
     acceleration.set(move.x * accelMag, 0, move.z * accelMag);
-
-    // Gravity
     acceleration.add(gravity);
-
-    // Integrate velocity
     velocity.addScaledVector(acceleration, dt);
 
-    // Ground friction damping (horizontal)
-    if (onGround && move.lengthSq() < 0.0001) {
+    // Ground friction if idle
+    if (onGround && move.lengthSq() < 1e-4) {
       velocity.x = THREE.MathUtils.damp(velocity.x, 0, friction, dt);
       velocity.z = THREE.MathUtils.damp(velocity.z, 0, friction, dt);
     }
@@ -335,70 +476,72 @@
     // Integrate position
     player.position.addScaledVector(velocity, dt);
 
-    // Collisions with platforms (simple sphere-box)
+    // Collisions
     onGround = false;
     for (const box of platforms) {
       const hit = aabbSphereCollision(box, player.position, playerRadius);
       if (hit) {
-        // Push sphere out along collision normal approximation
         const len = Math.hypot(hit.x, hit.y, hit.z) || 1;
         const nx = hit.x / len, ny = hit.y / len, nz = hit.z / len;
-        player.position.x += nx * (playerRadius - len);
-        player.position.y += ny * (playerRadius - len);
-        player.position.z += nz * (playerRadius - len);
+        const push = (playerRadius - len);
+        player.position.x += nx * push;
+        player.position.y += ny * push;
+        player.position.z += nz * push;
 
-        // If normal indicates top face contact, mark onGround and zero Y velocity downward
         if (ny > 0.5) {
           onGround = true;
           if (velocity.y < 0) velocity.y = 0;
         } else {
-          // Wall/edge collision: damp horizontal a bit
-          velocity.x *= 0.8;
-          velocity.z *= 0.8;
+          velocity.x *= 0.82;
+          velocity.z *= 0.82;
         }
       }
     }
 
-    // Collect stars
+    // Stars
     for (const s of stars) {
       if (!s.visible) continue;
       const d = s.position.distanceTo(player.position);
       if (d < playerRadius + 0.6) {
         s.visible = false;
         score += 1;
-        updateScore();
         msgEl.textContent = score === stars.length ? 'All stars collected! Head to the goal.' : 'Star collected!';
+        updateHUD();
       } else {
-        // idle spin
         s.rotation.y += dt * 1.6;
       }
     }
 
-    // Goal check
+    // Goal
     tGoal += dt;
-    goal.rotation.x = Math.sin(tGoal * 1.2) * 0.2;
-    goal.rotation.y += dt * 0.8;
-
-    if (player.position.distanceTo(goal.position) < 1.5) {
-      if (score === stars.length) {
-        msgEl.textContent = 'You win! Tap to replay.';
-        // Tiny celebration pulse
-        velocity.multiplyScalar(0.5);
-        // Auto respawn on tap
-        window.onclick = () => { respawn(); window.onclick = null; };
-      } else {
-        msgEl.textContent = 'Reach all stars first!';
+    if (goal) {
+      goal.rotation.x = Math.sin(tGoal * 1.2) * 0.2;
+      goal.rotation.y += dt * 0.8;
+      if (player.position.distanceTo(goal.position) < 1.6) {
+        if (score === stars.length) {
+          msgEl.textContent = 'Level complete! Loading next...';
+          // Next level or loop back
+          const next = (currentLevel + 1) % LEVELS.length;
+          setTimeout(() => { loadLevel(next); }, 800);
+        } else {
+          msgEl.textContent = 'Collect all stars first!';
+        }
       }
     }
 
-    // Void fall respawn
-    if (player.position.y < voidY) respawn();
+    // Void fall
+    if (player.position.y < voidY) {
+      respawn(gameMode === 'survival');
+    }
 
-    // Camera follow
-    camTarget.copy(player.position);
-    const desired = camTarget.clone().add(camOffset);
-    camera.position.lerp(desired, 0.12);
-    camera.lookAt(camTarget);
+    // Camera follow with yaw/pitch orbit
+    const r = camOffset.length();
+    const y = Math.sin(camPitch) * r;
+    const h = Math.cos(camPitch) * r;
+    const camX = player.position.x + Math.sin(camYaw) * h;
+    const camZ = player.position.z + Math.cos(camYaw) * h;
+    camera.position.lerp(new THREE.Vector3(camX, player.position.y + y, camZ), 0.12);
+    camera.lookAt(player.position);
 
     // Ambient particles drift
     for (const d of dusts) {
@@ -416,12 +559,6 @@
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   });
-
-  // Prevent scrolling on mobile during gameplay
-  document.body.addEventListener('touchmove', (e) => { if (stickActive) e.preventDefault(); }, { passive:false });
-
-  // First-time hint auto fade
-  setTimeout(() => { msgEl.style.opacity = '0.85'; }, 4000);
 })();
 </script>
 </body>
