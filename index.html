@@ -917,7 +917,6 @@
       sc.background = new THREE.Color(0x330000);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1500);
       sc.add(makeLights('volcano'));
-      // Solid floor
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000,2000), new THREE.MeshStandardMaterial({ color: 0x552222 }));
       floor.rotation.x = -Math.PI/2; floor.position.y = -2; sc.add(floor);
       const platMat = new THREE.MeshStandardMaterial({ color: 0x883333 });
@@ -1006,4 +1005,5 @@
       hudPrimary.textContent=`Underwater — Level ${levelIndex+1}`; hudSecondary.textContent='Collect bubbles';
       return {
         scene: sc, camera: cam,
-        restart(){ diver.position.set(0,1,0); score=0; run=true; msg.style.display='none';
+        restart(){ diver.position.set(0,1,0); score=0; run=true; msg.style.display='none'; },
+        dispose(){}, getCurrency:()=>score, setCurrency:v
