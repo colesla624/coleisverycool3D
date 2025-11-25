@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D Game Hub — Offline (18 games, mobile controls, owner code)</title>
+  <title>3D Game Hub — 18 Games</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial; }
@@ -44,7 +44,7 @@
 </head>
 <body>
   <div id="topbar">
-    <div id="title">3D Game Hub — Offline (18 games, mobile controls, owner code)</div>
+    <div id="title">3D Game Hub — 18 Games</div>
     <div class="small" id="hint">Left: move. Right: look. Jump/Action. Esc returns to menu.</div>
   </div>
 
@@ -449,7 +449,7 @@
     // PRNG
     function makeRand(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return (s & 0xffffffff) / 0x100000000; }; }
 
-    // Level configs (base set)
+    // Level configs
     const jungleLevels = [
       { size: 160, trees: 24, coins: 12, kits: 4, lavaSpeed: 0.015, enemyRate: 1.2, seed: 101 },
       { size: 200, trees: 32, coins: 16, kits: 5, lavaSpeed: 0.020, enemyRate: 1.0, seed: 202 },
@@ -508,7 +508,7 @@
       tower: setupTowerTP
     };
 
-    // ————— Base 8 game implementations —————
+    // ————— Games 1–8 —————
     // Jungle
     function setupJungleTP(quality, skin, levelIndex, ownerFlag) {
       const lvl = jungleLevels[levelIndex] || jungleLevels[0]; const rand = makeRand(lvl.seed);
@@ -849,7 +849,7 @@
       };
     }
 
-    // ————— 10 new 3D game implementations —————
+    // ————— Game 9 — Ice Cavern Escape —————
     function makePlayerCapsule(color=0x4da3ff, owner=false){
       const mat = new THREE.MeshStandardMaterial({ color });
       const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 8, 12), mat);
@@ -858,7 +858,6 @@
       return { mesh, mat };
     }
 
-    // Ice Cavern Escape
     function setupIceCavernTP(quality, skin, levelIndex, ownerFlag) {
       const levels = simpleLevels(701); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
       const sc = new THREE.Scene(); sc.background = new THREE.Color(0x102033);
@@ -901,6 +900,7 @@
         }
       };
     }
+    // ————— Games 10–18 —————
 
     // Volcano Dash
     function setupVolcanoTP(quality, skin, levelIndex, ownerFlag) {
@@ -909,7 +909,7 @@
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
       sc.add(makeLights('volcano'));
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(1800, 800), new THREE.MeshStandardMaterial({ color: 0x5a3a2a })); ground.rotation.x = -Math.PI/2; sc.add(ground);
-      const bridges=[]; let x=0; for(let i=0;i<lvl.count;i++){ const w=24+rand()*12, d=10; const b=new THREE.Mesh(new THREE.BoxGeometry(w,2,d), new THREE.MeshStandardMaterial({ color:0x8b4f2b })); b.position.set(x,4,(rand()-0.5)*60); sc.add(b); bridges.push(b); x+=w*1.15; }
+      const bridges=[]; let x=0; for(let i=0;i<lvl.count;i++){ const w=24+rand()*12, d=10; const b=new THREE.Mesh(new THREE.BoxGeometry(w,2,d), new THREE.MeshStandardMaterial({ color: 0x8b4f2b })); b.position.set(x,4,(rand()-0.5)*60); sc.add(b); bridges.push(b); x+=w*1.15; }
       const lava = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshStandardMaterial({ color:0xff3c00, emissive:0xff2200, emissiveIntensity:0.9 })); lava.rotation.x=-Math.PI/2; lava.position.y=-6; sc.add(lava);
       const goal = new THREE.Mesh(new THREE.TorusGeometry(3,0.5,12,28), new THREE.MeshStandardMaterial({ color:0xffff66 })); goal.position.set(x+40, 14, 0); sc.add(goal);
       const { mesh: player, mat: playerMat } = makePlayerCapsule(skinToColor(skin), ownerFlag); sc.add(player);
@@ -1013,7 +1013,7 @@
     // Haunted Mansion
     function setupHauntedTP(quality, skin, levelIndex, ownerFlag) {
       const levels = simpleLevels(781); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE Color(0x0c0c14);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x0c0c14);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
       sc.add(makeLights('haunted'));
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshStandardMaterial({ color: 0x222233 })); floor.rotation.x=-Math.PI/2; sc.add(floor);
@@ -1052,7 +1052,7 @@
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 600), new THREE.MeshStandardMaterial({ color: 0x333333 })); floor.rotation.x=-Math.PI/2; sc.add(floor);
       const belts=[]; for(let i=0;i<4;i++){ const b=new THREE.Mesh(new THREE.BoxGeometry(220,1,8), new THREE.MeshStandardMaterial({ color: 0x555555 })); b.position.set(-400+i*260, 2, (rand()-0.5)*300); sc.add(b); belts.push(b); }
       const pistons=[]; for(let i=0;i<lvl.count;i++){ const p=new THREE.Mesh(new THREE.CylinderGeometry(2,2,14,12), new THREE.MeshStandardMaterial({ color: 0x888888 })); p.position.set((rand()-0.5)*900, 8, (rand()-0.5)*540); sc.add(p); pistons.push(p); }
-      const goal = new THREE Mesh(new THREE.TorusGeometry(3,0.5,12,28), new THREE.MeshStandardMaterial({ color:0x66ff99 })); goal.position.set(450, 3, 250); sc.add(goal);
+      const goal = new THREE.Mesh(new THREE.TorusGeometry(3,0.5,12,28), new THREE.MeshStandardMaterial({ color:0x66ff99 })); goal.position.set(450, 3, 250); sc.add(goal);
       const { mesh: bot, mat: botMat } = makePlayerCapsule(skinToColor(skin), ownerFlag); sc.add(bot);
       let yaw=0,pitch=0, run=true;
       hudPrimary.textContent=`Robot Factory — Level ${levelIndex+1}`; hudSecondary.textContent='Avoid pistons, ride belts';
@@ -1108,7 +1108,7 @@
     // Sandstorm Survival
     function setupSandstormTP(quality, skin, levelIndex, ownerFlag) {
       const levels = simpleLevels(841); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE Color(0xc9a76e);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0xc9a76e);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
       sc.add(makeLights('sand'));
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.MeshStandardMaterial({ color: 0xd8b37a })); floor.rotation.x=-Math.PI/2; sc.add(floor);
@@ -1140,7 +1140,7 @@
     // Crystal Collector
     function setupCrystalTP(quality, skin, levelIndex, ownerFlag) {
       const levels = simpleLevels(861); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE Scene(); sc.background = new THREE.Color(0x14243a);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x14243a);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1600);
       sc.add(makeLights('maze'));
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.MeshStandardMaterial({ color: 0x1a2e4c })); floor.rotation.x=-Math.PI/2; sc.add(floor);
@@ -1170,7 +1170,7 @@
     // Tower Climb
     function setupTowerTP(quality, skin, levelIndex, ownerFlag) {
       const levels = simpleLevels(881); const lvl = levels[levelIndex] || levels[0]; const rand = makeRand(lvl.seed);
-      const sc = new THREE.Scene(); sc.background = new THREE Color(0x1b1f2a);
+      const sc = new THREE.Scene(); sc.background = new THREE.Color(0x1b1f2a);
       const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1800);
       sc.add(makeLights('day'));
       const tower = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 600, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0x444b66, side: THREE.DoubleSide })); tower.position.set(0,300,0); sc.add(tower);
