@@ -103,8 +103,8 @@
   const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.8, roughness: 0.4, metalness: 0.4 });
 
   // Player capsule
-  const playerRadius = 0.5;
-  const playerHeight = 1.2;
+  const playerRadius = 0.5;      // collider sphere radius approximation
+  const playerHeight = 1.2;      // capsule center-section height
   const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, playerHeight, 8, 16), matPlayer);
   player.castShadow = true;
   player.receiveShadow = false;
@@ -195,8 +195,7 @@
   let lives = 3;
 
   function updateHUD() {
-    scoreEl.textContent = `Stars: ${score} / ${stars.filter(s=>s.visible).length + (stars.length - stars.filter(s=>s.visible).length)}`
-      .replace(/\/ \d+$/, `/ ${stars.length}`);
+    scoreEl.textContent = `Stars: ${score} / ${stars.length}`;
     levelEl.textContent = LEVELS[currentLevel].name;
     modeEl.textContent = `Mode: ${gameMode === 'classic' ? 'Classic' : gameMode === 'time' ? 'Time Attack' : 'Survival'}`;
     timerEl.style.display = gameMode === 'time' ? 'block' : 'none';
@@ -209,8 +208,8 @@
   const velocity = new THREE.Vector3(0, 0, 0);
   const acceleration = new THREE.Vector3(0, 0, 0);
   const gravity = new THREE.Vector3(0, -24, 0);
-  const friction = 7.5;
-  const airControl = 0.7;
+  const friction = 8.5;
+  const airControl = 0.6;
   let onGround = false;
 
   // Input state
@@ -382,6 +381,12 @@
     updateHUD();
   }
 
+  levelSelect.addEventListener('change', (e) => {
+    loadLevel(parseInt(e.target.value, 10));
+  });
+  modeSelect.addEventListener('change', (e) => {
+    applyMode(e.target.value);
+  });
   restartBtn.addEventListener('click', () => {
     loadLevel(currentLevel);
   });
@@ -403,7 +408,7 @@
     updateHUD();
   }
 
-  // Decorative dust particles (ambient)
+  // Decorative dust particles
   const dustGeo = new THREE.SphereGeometry(0.03, 8, 8);
   const dustMat = new THREE.MeshBasicMaterial({ color: 0x88aaff, transparent: true, opacity: 0.25 });
   const dusts = [];
@@ -413,13 +418,9 @@
     scene.add(d); dusts.push(d);
   }
 
-  // Initialize first level and default mode
+  // Initial level and mode
   loadLevel(0);
   applyMode('classic');
-
-  // Hook dropdowns AFTER load so UI is ready
-  levelSelect.addEventListener('change', (e) => loadLevel(parseInt(e.target.value, 10)));
-  modeSelect.addEventListener('change', (e) => applyMode(e.target.value));
 
   // Main loop
   const clock = new THREE.Clock();
@@ -442,13 +443,13 @@
     }
     updateHUD();
 
-    // Input vector: keyboard + inverted movement joystick (already inverted in callback)
+    // Input vector: keyboard + inverted movement joystick (joystick Y inverted in callback)
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + moveDx;
     const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy;
     const input = new THREE.Vector3(ix, 0, iz);
     if (input.lengthSq() > 1) input.normalize();
 
-    // Camera-based forward/right (forward on joystick = camera forward)
+    // Camera-based forward/right (forward on joystick is camera forward)
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     forward.y = 0; forward.normalize();
@@ -459,7 +460,8 @@
       .addScaledVector(forward, input.z)
       .addScaledVector(right, input.x);
 
-    const accelMag = onGround ? 28 : 28 * airControl;
+    // Slower movement
+    const accelMag = onGround ? 16 : 16 * airControl;  // was 28
     acceleration.set(moveVec.x * accelMag, 0, moveVec.z * accelMag);
     acceleration.add(gravity);
     velocity.addScaledVector(acceleration, dt);
@@ -470,9 +472,9 @@
       velocity.z = THREE.MathUtils.damp(velocity.z, 0, friction, dt);
     }
 
-    // Jump
+    // Jump (slower/lower)
     if (keys.jump && onGround) {
-      velocity.y = 10.8;
+      velocity.y = 8.5; // was ~10.8
       onGround = false;
       keys.jump = false;
     }
@@ -503,14 +505,14 @@
     }
 
     // Stars
-    let collectedCount = 0;
     for (const s of stars) {
-      if (!s.visible) { collectedCount++; continue; }
+      if (!s.visible) continue;
       const d = s.position.distanceTo(player.position);
       if (d < playerRadius + 0.6) {
         s.visible = false;
         score += 1;
         msgEl.textContent = score === stars.length ? 'All stars collected! Head to the goal.' : 'Star collected!';
+        updateHUD();
       } else {
         s.rotation.y += dt * 1.6;
       }
@@ -537,20 +539,18 @@
       respawn(gameMode === 'survival');
     }
 
-    // Camera placement
+    // Camera placement (no lag — snap to position)
     if (cameraMode === 'third') {
-      // Orbit behind player based on yaw/pitch
       const y = Math.sin(camPitch) * orbitRadius;
       const h = Math.cos(camPitch) * orbitRadius;
       const camX = player.position.x + Math.sin(camYaw) * h;
       const camZ = player.position.z + Math.cos(camYaw) * h;
       const target = new THREE.Vector3(camX, player.position.y + y + 1.5, camZ);
-      camera.position.lerp(target, 0.12);
+      camera.position.copy(target);
       camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 0.8, player.position.z));
     } else {
-      // First person: camera at capsule head
       const head = new THREE.Vector3(player.position.x, player.position.y + playerHeight * 0.5 + 0.5, player.position.z);
-      camera.position.lerp(head, 0.25);
+      camera.position.copy(head);
       const dir = new THREE.Vector3(
         Math.sin(camYaw) * Math.cos(camPitch),
         Math.sin(camPitch),
