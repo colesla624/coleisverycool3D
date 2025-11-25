@@ -32,10 +32,10 @@
 
   /* Main menu overlay */
   #mainMenu { position: fixed; inset: 0; display: none; background: rgba(0,0,0,0.7); color: #e6e6e6; }
-  #mainMenu .wrap { position: absolute; left:50%; top:50%; transform: translate(-50%,-50%); width: min(720px, 92vw); max-height: 80vh; overflow:auto;
+  #mainMenu .wrap { position: absolute; left:50%; top:50%; transform: translate(-50%,-50%); width: min(820px, 92vw); max-height: 80vh; overflow:auto;
     background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; }
   #mainMenu h2 { margin: 0 0 10px; font-weight: 700; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
   .tab { padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); cursor: pointer; }
   .tab.active { background: rgba(255,255,255,0.18); }
   .tabpane { display: none; }
@@ -70,6 +70,7 @@
 </div>
 
 <div id="menu">
+  <select id="sceneSelect"></select>
   <select id="levelSelect"></select>
   <select id="modeSelect">
     <option value="classic">Classic</option>
@@ -80,7 +81,6 @@
   <button id="pauseBtn">Pause</button>
   <button id="toggleViewBtn">Toggle View</button>
   <button id="openMenuBtn">Main Menu</button>
-  <!-- Code input for owner cosmetic -->
   <input id="codeInput" placeholder="Enter code" />
   <button id="codeApplyBtn">Apply</button>
 </div>
@@ -150,21 +150,17 @@
   const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, 6, 10);
 
-  // Lighting (richer scene)
+  // Lighting
   const hemi = new THREE.HemisphereLight(0x9bd4ff, 0x12131a, 0.9);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff1e4, 1.0);
   sun.position.set(12, 16, 10);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -40;
-  sun.shadow.camera.right = 40;
-  sun.shadow.camera.top = 40;
-  sun.shadow.camera.bottom = -40;
   scene.add(sun);
 
-  // Ground plane and distant props for visual richness
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0x182235, roughness: 0.95, metalness: 0.0 });
+  // Ground + props (visual richness)
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x182235, roughness: 0.95 });
   const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 64), groundMat);
   ground.rotation.x = -Math.PI/2;
   ground.receiveShadow = true;
@@ -180,23 +176,37 @@
     scene.add(p);
   }
 
-  // Materials
-  const matPlatform = new THREE.MeshStandardMaterial({ color: 0x2b5c4b, roughness: 0.78, metalness: 0.12 });
-  const matPlatformAlt = new THREE.MeshStandardMaterial({ color: 0x3a2b5c, roughness: 0.82, metalness: 0.12 });
+  // Materials (themes)
+  const THEMES = {
+    forest: {
+      platform: new THREE.MeshStandardMaterial({ color: 0x2b5c4b, roughness: 0.78, metalness: 0.12 }),
+      platformAlt: new THREE.MeshStandardMaterial({ color: 0x3a2b5c, roughness: 0.82, metalness: 0.12 }),
+      sky: 0x0c1326, fog: [50,140], lightColor: 0xfff1e4
+    },
+    crystal: {
+      platform: new THREE.MeshStandardMaterial({ color: 0x3dc8ff, roughness: 0.4, metalness: 0.6 }),
+      platformAlt: new THREE.MeshStandardMaterial({ color: 0x7bd8ff, roughness: 0.45, metalness: 0.6 }),
+      sky: 0x0a0f1f, fog: [40,120], lightColor: 0xcfe7ff
+    },
+    skyisles: {
+      platform: new THREE.MeshStandardMaterial({ color: 0xe3d5a4, roughness: 0.7, metalness: 0.2 }),
+      platformAlt: new THREE.MeshStandardMaterial({ color: 0xc8b68f, roughness: 0.75, metalness: 0.2 }),
+      sky: 0x10172b, fog: [60,160], lightColor: 0xfff9d6
+    }
+  };
   const matStar = new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0xffa000, emissiveIntensity: 1.0, roughness: 0.2, metalness: 0.6 });
   const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.9, roughness: 0.4, metalness: 0.4 });
 
-  // Player capsule + customization
+  // Player + customization
   const playerRadius = 0.5;
   const playerHeight = 1.2;
   let playerColor = 0xf0f3f8;
   const matPlayer = new THREE.MeshStandardMaterial({ color: playerColor, roughness: 0.35, metalness: 0.22, emissive: 0x141414, emissiveIntensity: 0.28 });
-
   const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, playerHeight, 8, 16), matPlayer);
   player.castShadow = true;
   scene.add(player);
 
-  // "OWNER" cosmetic label (sprite above head)
+  // Owner cosmetic label
   let ownerSprite = null;
   function makeOwnerSprite() {
     const c = document.createElement('canvas');
@@ -212,135 +222,63 @@
     ctx.strokeText('OWNER', c.width/2, c.height/2);
     ctx.fillText('OWNER', c.width/2, c.height/2);
     const tex = new THREE.CanvasTexture(c);
-    tex.needsUpdate = true;
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
     const sprite = new THREE.Sprite(mat);
     sprite.scale.set(2.8, 1.4, 1);
     scene.add(sprite);
     return sprite;
   }
-
   let ownerUnlocked = false;
 
   // Accessories
   const hat = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xff6f61, roughness: 0.5 }));
-  hat.rotation.x = Math.PI;
-  hat.visible = false;
-  scene.add(hat);
+  hat.rotation.x = Math.PI; hat.visible = false; scene.add(hat);
 
   const trailGeom = new THREE.TorusGeometry(0.25, 0.05, 8, 24);
   const trailMat = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x88aaff, emissiveIntensity: 0.7, roughness: 0.2, metalness: 0.2 });
   const trail = new THREE.Mesh(trailGeom, trailMat);
-  trail.visible = false;
-  scene.add(trail);
+  trail.visible = false; scene.add(trail);
 
-  // Camera rig / mode
-  let cameraMode = 'third'; // 'third' | 'first'
+  // Camera rig + smoothing
+  let cameraMode = 'third';
   let camYaw = 0;
   let camPitch = 0.25;
   const pitchMin = -0.3, pitchMax = 0.85;
   let camSensitivity = 3.5;
   const orbitRadius = 8.5;
+  const camPosSmooth = new THREE.Vector3().copy(camera.position);
+  const camLookSmooth = new THREE.Vector3();
 
-  // Level data (expanded with more maps)
-  const LEVELS = [
-    { name: "Beginnings",
-      platforms: [
-        {x:0,y:0,z:0,w:20,d:20,alt:false},
-        {x:8,y:2,z:-6,w:6,d:6,alt:true},
-        {x:16,y:4,z:-12,w:6,d:6,alt:false},
-        {x:24,y:6,z:-18,w:6,d:6,alt:true},
-        {x:24,y:8,z:-26,w:8,d:6,alt:false}
-      ],
-      stars: [[4,1.5,-3],[8,3.5,-6],[16,5.5,-12],[24,7.3,-18],[24,9.3,-26]],
-      goal: [24,9.5,-26],
-      spawn: [0,2.5,5]
-    },
-    { name: "Sky bridge",
-      platforms: [
-        {x:0,y:0,z:0,w:20,d:20,alt:false},
-        {x:0,y:6,z:-10,w:8,d:4,alt:true},
-        {x:10,y:10,z:-20,w:6,d:6,alt:false},
-        {x:2,y:14,z:-30,w:10,d:4,alt:true},
-        {x:-8,y:18,z:-40,w:6,d:6,alt:false}
-      ],
-      stars: [[0,7,-10],[10,11,-20],[2,15,-30],[-8,19,-40]],
-      goal: [-8,19.2,-40],
-      spawn: [0,2.5,5]
-    },
-    { name: "Zigzag canyon",
-      platforms: [
-        {x:0,y:0,z:0,w:20,d:20,alt:false},
-        {x:6,y:2,z:-6,w:8,d:4,alt:true},
-        {x:-6,y:4,z:-12,w:8,d:4,alt:true},
-        {x:6,y:6,z:-18,w:8,d:4,alt:true},
-        {x:-6,y:8,z:-24,w:8,d:4,alt:true},
-        {x:0,y:10,z:-30,w:6,d:6,alt:false}
-      ],
-      stars: [[6,3,-6],[-6,5,-12],[6,7,-18],[-6,9,-24],[0,11,-30]],
-      goal: [0,11.5,-30],
-      spawn: [0,2.5,5]
-    },
-    { name: "Crystal steps",
-      platforms: [
-        {x:0,y:0,z:0,w:22,d:22,alt:false},
-        {x:4,y:2,z:-6,w:4,d:4,alt:true},
-        {x:8,y:4,z:-12,w:4,d:4,alt:true},
-        {x:12,y:6,z:-18,w:4,d:4,alt:true},
-        {x:16,y:8,z:-24,w:4,d:4,alt:true}
-      ],
-      stars: [[4,3,-6],[8,5,-12],[12,7,-18],[16,9,-24]],
-      goal: [18,9.5,-26],
-      spawn: [0,2.5,6]
-    },
-    { name: "Rolling plains",
-      platforms: [
-        {x:0,y:0,z:0,w:26,d:26,alt:false},
-        {x:-10,y:2,z:-10,w:8,d:6,alt:true},
-        {x:10,y:2,z:-10,w:8,d:6,alt:true},
-        {x:0,y:4,z:-22,w:10,d:6,alt:false}
-      ],
-      stars: [[-10,3,-10],[10,3,-10],[0,5,-22],[0,1,0]],
-      goal: [0,5.5,-26],
-      spawn: [0,2.5,8]
-    },
-    { name: "Twin towers",
-      platforms: [
-        {x:0,y:0,z:0,w:22,d:22,alt:false},
-        {x:-4,y:4,z:-8,w:4,d:4,alt:true},
-        {x:-4,y:8,z:-12,w:4,d:4,alt:true},
-        {x:6,y:4,z:-10,w:4,d:4,alt:false},
-        {x:6,y:8,z:-14,w:4,d:4,alt:false},
-        {x:1,y:12,z:-20,w:6,d:6,alt:true}
-      ],
-      stars: [[-4,5,-8],[6,5,-10],[-4,9,-12],[6,9,-14],[1,13,-20]],
-      goal: [1,13.2,-20],
-      spawn: [0,2.5,6]
-    },
-    { name: "Nebula run",
-      platforms: [
-        {x:0,y:0,z:0,w:24,d:24,alt:false},
-        {x:6,y:3,z:-8,w:6,d:4,alt:true},
-        {x:12,y:6,z:-16,w:6,d:4,alt:false},
-        {x:18,y:9,z:-24,w:6,d:4,alt:true},
-        {x:26,y:12,z:-30,w:10,d:6,alt:false}
-      ],
-      stars: [[6,4,-8],[12,7,-16],[18,10,-24],[24,12.5,-28],[26,13,-30]],
-      goal: [28,13.5,-32],
-      spawn: [0,2.5,6]
-    },
-    { name: "Aurora ridge",
-      platforms: [
-        {x:0,y:0,z:0,w:24,d:24,alt:false},
-        {x:-6,y:3,z:-8,w:6,d:4,alt:true},
-        {x:-12,y:6,z:-16,w:6,d:4,alt:false},
-        {x:-18,y:9,z:-24,w:6,d:4,alt:true},
-        {x:-26,y:12,z:-30,w:10,d:6,alt:false}
-      ],
-      stars: [[-6,4,-8],[-12,7,-16],[-18,10,-24],[-24,12.5,-28],[-26,13,-30]],
-      goal: [-28,13.5,-32],
-      spawn: [0,2.5,6]
+  // Scenes with 20 levels each (procedural variety)
+  function createSceneLevels(count, cfg) {
+    const levels = [];
+    for (let i=1; i<=count; i++) {
+      const baseW = 20 + (i % 5) * 2;
+      const baseD = 20 + ((i+2) % 5) * 2;
+      const platforms = [{ x:0, y:0, z:0, w:baseW, d:baseD, alt:false }];
+      const steps = 5 + (i % 4);
+      for (let s=1; s<=steps; s++) {
+        const alt = s % 2 === 0;
+        const x = ((i * 3 + s * 4) % 2 === 0 ? s*3 : -s*3);
+        const y = s * (1.8 + (i%3)*0.2);
+        const z = -s * (6 + (i%4));
+        const w = 4 + (s%3);
+        const d = 4 + ((i+s)%3);
+        platforms.push({ x, y, z, w, d, alt });
+      }
+      const stars = platforms.slice(1, Math.min(platforms.length, 7)).map(p => [p.x, p.y + 1.5, p.z]);
+      const goalP = platforms[platforms.length - 1];
+      const goal = [goalP.x, goalP.y + 1.5, goalP.z];
+      const spawn = [0, 2.5, 6];
+      levels.push({ name: `Level ${i}`, platforms, stars, goal, spawn, theme: cfg });
     }
+    return levels;
+  }
+
+  const SCENES = [
+    { name: "Forest Realm", theme: 'forest', levels: createSceneLevels(20, 'forest') },
+    { name: "Crystal Caverns", theme: 'crystal', levels: createSceneLevels(20, 'crystal') },
+    { name: "Sky Isles", theme: 'skyisles', levels: createSceneLevels(20, 'skyisles') }
   ];
 
   // Gameplay containers
@@ -358,6 +296,7 @@
   const pauseOverlay = document.getElementById('pauseOverlay');
 
   // Menus
+  const sceneSelect = document.getElementById('sceneSelect');
   const levelSelect = document.getElementById('levelSelect');
   const modeSelect = document.getElementById('modeSelect');
   const restartBtn = document.getElementById('restartBtn');
@@ -382,23 +321,45 @@
   const doubleJumpToggle = document.getElementById('doubleJumpToggle');
   const camSensInput = document.getElementById('camSens');
 
-  // Populate level dropdown and menu grid
-  LEVELS.forEach((l, i) => {
+  // Populate scene and level dropdowns + menu grid
+  SCENES.forEach((s, si) => {
     const opt = document.createElement('option');
-    opt.value = i; opt.textContent = `${i+1}. ${l.name}`;
-    levelSelect.appendChild(opt);
-
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `<strong>${i+1}. ${l.name}</strong><br/><button data-level="${i}">Play</button>`;
-    levelsGrid.appendChild(card);
+    opt.value = si; opt.textContent = `${si+1}. ${s.name}`;
+    sceneSelect.appendChild(opt);
   });
+  function populateLevelsDropdown(sceneIndex) {
+    levelSelect.innerHTML = '';
+    const lvls = SCENES[sceneIndex].levels;
+    lvls.forEach((l, li) => {
+      const opt = document.createElement('option');
+      opt.value = li; opt.textContent = l.name;
+      levelSelect.appendChild(opt);
+    });
+    levelsGrid.innerHTML = '';
+    lvls.forEach((l, li) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<strong>${SCENES[sceneIndex].name}</strong><br/>${l.name}<br/><button data-scene="${sceneIndex}" data-level="${li}">Play</button>`;
+      levelsGrid.appendChild(card);
+    });
+  }
+  sceneSelect.value = '0';
+  populateLevelsDropdown(0);
   levelsGrid.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-level]');
     if (!btn) return;
-    const idx = parseInt(btn.getAttribute('data-level'), 10);
-    loadLevel(idx);
+    const si = parseInt(btn.getAttribute('data-scene'), 10);
+    const li = parseInt(btn.getAttribute('data-level'), 10);
+    loadLevel(si, li);
     mainMenu.style.display = 'none';
+  });
+
+  sceneSelect.addEventListener('change', (e) => {
+    populateLevelsDropdown(parseInt(e.target.value, 10));
+    loadLevel(parseInt(e.target.value, 10), 0);
+  });
+  levelSelect.addEventListener('change', (e) => {
+    loadLevel(parseInt(sceneSelect.value, 10), parseInt(e.target.value, 10));
   });
 
   // Tab behavior
@@ -417,7 +378,6 @@
       matPlayer.color.setHex(playerColor);
     });
   });
-
   hatToggle.addEventListener('change', () => { hat.visible = hatToggle.checked; });
   trailToggle.addEventListener('change', () => { trail.visible = trailToggle.checked; });
   camSensInput.addEventListener('input', () => { camSensitivity = parseFloat(camSensInput.value); });
@@ -433,15 +393,16 @@
     }
     codeInput.value = '';
   });
+  codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') codeApplyBtn.click(); });
 
   // Game mode state
-  let gameMode = 'classic'; // 'classic' | 'time' | 'survival'
+  let gameMode = 'classic';
   let timeLeft = 60.0;
   let lives = 3;
 
   function updateHUD() {
     scoreEl.textContent = `Stars: ${score} / ${stars.length}`;
-    levelEl.textContent = LEVELS[currentLevel].name;
+    levelEl.textContent = `${SCENES[currentScene].name} — ${SCENES[currentScene].levels[currentLevel].name}`;
     modeEl.textContent = `Mode: ${gameMode === 'classic' ? 'Classic' : gameMode === 'time' ? 'Time Attack' : 'Survival'}`;
     timerEl.style.display = gameMode === 'time' ? 'block' : 'none';
     livesEl.style.display = gameMode === 'survival' ? 'block' : 'none';
@@ -457,7 +418,7 @@
   const airControl = 0.6;
   let onGround = false;
 
-  // Double jump state
+  // Double jump
   let canDoubleJump = true;
   let doubleJumpEnabled = true;
 
@@ -486,35 +447,27 @@
     if (e.code === 'Space') keys.jump = false;
   });
 
-  // Camera look via pointer drag, with larger deadzones near controls
+  // Camera look with large deadzones around controls
   const moveStickEl = document.getElementById('moveStick');
   const jumpBtnEl = document.getElementById('jumpBtn');
-
-  function inExpandedRect(e, rect, pad=50) {
+  function inExpandedRect(e, rect, pad=60) {
     return e.clientX >= rect.left - pad && e.clientX <= rect.right + pad &&
            e.clientY >= rect.top - pad && e.clientY <= rect.bottom + pad;
   }
-
   let lastMouse = null;
   window.addEventListener('pointerdown', (e) => { lastMouse = { x: e.clientX, y: e.clientY }; });
   window.addEventListener('pointerup', () => { lastMouse = null; });
   window.addEventListener('pointermove', (e) => {
     if (!lastMouse) return;
-
     const moveRect = moveStickEl.getBoundingClientRect();
     const jumpRect = jumpBtnEl.getBoundingClientRect();
-    const overMove = inExpandedRect(e, moveRect, 60); // bigger deadzone
-    const overJump = inExpandedRect(e, jumpRect, 60); // bigger deadzone
-
-    if (overMove || overJump) {
-      lastMouse = { x: e.clientX, y: e.clientY };
-      return; // camera deadzone when interacting near controls
-    }
+    const overMove = inExpandedRect(e, moveRect, 70);
+    const overJump = inExpandedRect(e, jumpRect, 70);
+    if (overMove || overJump) { lastMouse = { x: e.clientX, y: e.clientY }; return; }
 
     const dx = (e.clientX - lastMouse.x) / window.innerWidth;
     const dy = (e.clientY - lastMouse.y) / window.innerHeight;
-    const jitterDeadzone = 0.02; // slightly larger jitter filter
-
+    const jitterDeadzone = 0.02;
     if (Math.abs(dx) > jitterDeadzone) camYaw -= dx * camSensitivity;
     if (Math.abs(dy) > jitterDeadzone) {
       camPitch = THREE.MathUtils.clamp(
@@ -525,14 +478,14 @@
     lastMouse = { x: e.clientX, y: e.clientY };
   });
 
-  // Virtual joystick setup (movement only, larger radius)
+  // Virtual joystick setup
   function setupStick(stickId, thumbId, cb) {
     const stick = document.getElementById(stickId);
     const thumb = document.getElementById(thumbId);
     let active = false;
     const rect = () => stick.getBoundingClientRect();
     function setThumb(x, y) {
-      const r = 80; // larger stick radius
+      const r = 80;
       const len = Math.hypot(x, y);
       const k = len > r ? r / len : 1;
       const tx = x * k, ty = y * k;
@@ -552,7 +505,6 @@
     stick.addEventListener('pointerup', () => { active = false; reset(); });
     stick.addEventListener('pointercancel', () => { active = false; reset(); });
   }
-
   setupStick('moveStick', 'moveThumb', (dx, dy) => { moveDx = -dx; moveDy = -dy; });
 
   // Jump button
@@ -561,10 +513,7 @@
   jumpBtn.addEventListener('pointerup', () => keys.jump = false);
 
   // Pause/resume
-  function togglePause() {
-    paused = !paused;
-    pauseOverlay.style.display = paused ? 'flex' : 'none';
-  }
+  function togglePause() { paused = !paused; pauseOverlay.style.display = paused ? 'flex' : 'none'; }
   pauseOverlay.addEventListener('click', togglePause);
   pauseBtn.addEventListener('click', togglePause);
 
@@ -574,7 +523,7 @@
   // Toggle first/third person
   toggleViewBtn.addEventListener('click', () => {
     cameraMode = cameraMode === 'third' ? 'first' : 'third';
-    player.visible = cameraMode !== 'first'; // hide capsule in first person
+    player.visible = cameraMode !== 'first';
   });
 
   // Open/close main menu
@@ -582,19 +531,14 @@
   closeMenuBtn.addEventListener('click', () => { mainMenu.style.display = 'none'; });
   doubleJumpToggle.addEventListener('change', (e) => { doubleJumpEnabled = e.target.checked; });
 
-  // Owner code via Enter key in input
-  codeInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') codeApplyBtn.click();
-  });
-
   // Geometry helpers
-  function makePlatform(x, y, z, w, d, alt = false) {
+  function makePlatform(x, y, z, w, d, alt, themeKey) {
+    const theme = THEMES[themeKey] || THEMES.forest;
+    const mat = alt ? theme.platformAlt : theme.platform;
     const geo = new THREE.BoxGeometry(w, 0.6, d);
-    const mesh = new THREE.Mesh(geo, alt ? matPlatformAlt : matPlatform);
+    const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x, y, z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    // subtle bevel look by scaling edges visually (decor rim)
+    mesh.castShadow = true; mesh.receiveShadow = true;
     const rim = new THREE.Mesh(new THREE.BoxGeometry(w+0.2, 0.05, d+0.2), new THREE.MeshStandardMaterial({ color: 0x1b2a45, roughness: 0.9 }));
     rim.position.set(0, 0.325, 0);
     mesh.add(rim);
@@ -602,13 +546,11 @@
     platforms.push(mesh);
     return mesh;
   }
-
   function makeStar(x, y, z) {
     const s = new THREE.Mesh(new THREE.IcosahedronGeometry(0.38, 0), matStar);
     s.position.set(x, y, z);
     s.castShadow = true;
     scene.add(s);
-    // glow-ish point light near star
     const pl = new THREE.PointLight(0xffa000, 0.5, 6);
     pl.position.copy(s.position).add(new THREE.Vector3(0,0.2,0));
     scene.add(pl);
@@ -616,7 +558,6 @@
     stars.push(s);
     return s;
   }
-
   function aabbSphereCollision(box, spherePos, sphereR) {
     const bPos = box.position;
     box.geometry.computeBoundingBox();
@@ -634,8 +575,17 @@
   }
 
   // Level management
+  let currentScene = 0;
   let currentLevel = 0;
-  levelSelect.value = String(currentLevel);
+
+  function applyTheme(themeKey) {
+    const theme = THEMES[themeKey] || THEMES.forest;
+    scene.background = new THREE.Color(theme.sky);
+    scene.fog.color = new THREE.Color(theme.sky);
+    scene.fog.near = theme.fog[0];
+    scene.fog.far = theme.fog[1];
+    sun.color = new THREE.Color(theme.lightColor);
+  }
 
   function clearLevel() {
     platforms.forEach(m => scene.remove(m));
@@ -644,12 +594,14 @@
     if (goal) { scene.remove(goal); goal = null; }
   }
 
-  function loadLevel(i) {
+  function loadLevel(sceneIndex, levelIndex) {
     clearLevel();
-    currentLevel = i;
-    const lvl = LEVELS[i];
+    currentScene = sceneIndex;
+    currentLevel = levelIndex;
+    const lvl = SCENES[sceneIndex].levels[levelIndex];
+    applyTheme(lvl.theme);
 
-    lvl.platforms.forEach(p => makePlatform(p.x, p.y, p.z, p.w, p.d, p.alt));
+    lvl.platforms.forEach(p => makePlatform(p.x, p.y, p.z, p.w, p.d, p.alt, lvl.theme));
     lvl.stars.forEach(([x,y,z]) => makeStar(x, y, z));
     goal = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.28, 16, 64), matGoal);
     goal.position.set(lvl.goal[0], lvl.goal[1], lvl.goal[2]);
@@ -667,23 +619,21 @@
 
   function applyMode(mode) {
     gameMode = mode;
-    if (gameMode === 'time') timeLeft = 70.0; // slightly longer for bigger maps
-    if (gameMode === 'survival') lives = 3;
+    timeLeft = gameMode === 'time' ? 75.0 : 60.0;
+    lives = 3;
     updateHUD();
   }
 
-  levelSelect.addEventListener('change', (e) => loadLevel(parseInt(e.target.value, 10)));
   modeSelect.addEventListener('change', (e) => applyMode(e.target.value));
-  restartBtn.addEventListener('click', () => loadLevel(currentLevel));
+  restartBtn.addEventListener('click', () => loadLevel(currentScene, currentLevel));
 
   // Respawn
   function respawn(penalize = true) {
-    const spawn = LEVELS[currentLevel].spawn;
+    const spawn = SCENES[currentScene].levels[currentLevel].spawn;
     player.position.set(spawn[0], spawn[1], spawn[2]);
     velocity.set(0,0,0);
     onGround = false;
     canDoubleJump = true;
-
     if (gameMode === 'survival' && penalize) {
       lives -= 1;
       msgEl.textContent = lives > 0 ? `Oops! Lives left: ${lives}` : 'Game over. Restart or change level.';
@@ -705,7 +655,7 @@
   }
 
   // Init
-  loadLevel(0);
+  loadLevel(0, 0);
   applyMode('classic');
 
   // Main loop
@@ -718,11 +668,10 @@
 
     const dt = Math.min(0.033, clock.getDelta());
 
-    // Accessories & owner label follow player
+    // Accessories & owner label
     hat.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 0.4, player.position.z);
     trail.position.set(player.position.x, player.position.y + 0.2, player.position.z);
     trail.rotation.y += dt * 2.0;
-
     if (ownerUnlocked && ownerSprite) {
       ownerSprite.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 1.8, player.position.z);
     }
@@ -730,15 +679,11 @@
     // Time attack
     if (gameMode === 'time') {
       timeLeft -= dt;
-      if (timeLeft <= 0) {
-        timeLeft = 0;
-        msgEl.textContent = 'Time up! Restart or switch mode.';
-        paused = true;
-      }
+      if (timeLeft <= 0) { timeLeft = 0; msgEl.textContent = 'Time up! Restart or switch mode.'; paused = true; }
     }
     updateHUD();
 
-    // Input vector: keyboard + inverted movement joystick
+    // Input vector: keyboard + movement joystick
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + moveDx;
     const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy;
     const input = new THREE.Vector3(ix, 0, iz);
@@ -751,9 +696,7 @@
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), forward).normalize();
 
     // Movement relative to camera
-    const moveVec = new THREE.Vector3()
-      .addScaledVector(forward, input.z)
-      .addScaledVector(right, input.x);
+    const moveVec = new THREE.Vector3().addScaledVector(forward, input.z).addScaledVector(right, input.x);
 
     // Movement params
     const accelMag = onGround ? 17 : 17 * airControl;
@@ -767,16 +710,16 @@
       velocity.z = THREE.MathUtils.damp(velocity.z, 0, friction, dt);
     }
 
-    // Jump handling: stronger jump + double jump
+    // Jump handling: stronger + double jump
     if (keys.jump) {
       if (onGround) {
-        velocity.y = 14.5;            // stronger first jump
+        velocity.y = 14.5;
         onGround = false;
-        canDoubleJump = true;         // allow a double jump after leaving ground
+        canDoubleJump = true;
         keys.jump = false;
       } else if (doubleJumpEnabled && canDoubleJump) {
-        velocity.y = 11.8;            // second jump slightly weaker
-        canDoubleJump = false;        // consume double jump
+        velocity.y = 11.8;
+        canDoubleJump = false;
         msgEl.textContent = 'Double jump!';
         keys.jump = false;
       }
@@ -807,10 +750,7 @@
         }
       }
     }
-    // Reset double jump when we land
-    if (!wasGrounded && onGround) {
-      canDoubleJump = true;
-    }
+    if (!wasGrounded && onGround) canDoubleJump = true;
 
     // Stars
     for (const s of stars) {
@@ -835,8 +775,8 @@
       if (player.position.distanceTo(goal.position) < 1.6) {
         if (score === stars.length) {
           msgEl.textContent = 'Level complete! Loading next...';
-          const next = (currentLevel + 1) % LEVELS.length;
-          setTimeout(() => { loadLevel(next); }, 900);
+          const nextLevel = (currentLevel + 1) % SCENES[currentScene].levels.length;
+          setTimeout(() => { loadLevel(currentScene, nextLevel); }, 900);
         } else {
           msgEl.textContent = 'Collect all stars first!';
         }
@@ -844,28 +784,36 @@
     }
 
     // Void fall
-    if (player.position.y < voidY) {
-      respawn(gameMode === 'survival');
-    }
+    if (player.position.y < voidY) respawn(gameMode === 'survival');
 
-    // Camera placement (snap, no lag)
+    // Smooth camera
     if (cameraMode === 'third') {
       const y = Math.sin(camPitch) * orbitRadius;
       const h = Math.cos(camPitch) * orbitRadius;
-      const camX = player.position.x + Math.sin(camYaw) * h;
-      const camZ = player.position.z + Math.cos(camYaw) * h;
-      const target = new THREE.Vector3(camX, player.position.y + y + 1.6, camZ);
-      camera.position.copy(target);
-      camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 0.9, player.position.z));
+      const desiredPos = new THREE.Vector3(
+        player.position.x + Math.sin(camYaw) * h,
+        player.position.y + y + 1.6,
+        player.position.z + Math.cos(camYaw) * h
+      );
+      camPosSmooth.lerp(desiredPos, 0.12); // smoothing factor
+      camera.position.copy(camPosSmooth);
+
+      const lookTarget = new THREE.Vector3(player.position.x, player.position.y + 0.9, player.position.z);
+      camLookSmooth.lerp(lookTarget, 0.18);
+      camera.lookAt(camLookSmooth);
     } else {
       const head = new THREE.Vector3(player.position.x, player.position.y + playerHeight * 0.5 + 0.5, player.position.z);
-      camera.position.copy(head);
       const dir = new THREE.Vector3(
         Math.sin(camYaw) * Math.cos(camPitch),
         Math.sin(camPitch),
         Math.cos(camYaw) * Math.cos(camPitch)
       );
-      camera.lookAt(head.clone().add(dir));
+      const desiredPos = head.clone();
+      camPosSmooth.lerp(desiredPos, 0.15);
+      camera.position.copy(camPosSmooth);
+      const lookTarget = head.clone().add(dir);
+      camLookSmooth.lerp(lookTarget, 0.18);
+      camera.lookAt(camLookSmooth);
     }
 
     // Ambient particles drift
@@ -884,7 +832,6 @@
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   });
-
 })();
 </script>
 </body>
