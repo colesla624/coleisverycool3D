@@ -52,7 +52,7 @@
 
 <div id="hud">
   <div class="panel" id="score">Stars: 0 / 0</div>
-  <div class="panel" id="level">Level 1</div>
+  <div class="panel" id="level">Level</div>
   <div class="panel" id="mode">Mode: Classic</div>
   <div class="panel" id="timer" style="display:none;">Time: 60.0s</div>
   <div class="panel" id="lives" style="display:none;">Lives: 3</div>
@@ -60,12 +60,10 @@
 <div id="msg">Collect stars and reach the glowing goal!</div>
 
 <div id="controls">
-  <!-- Movement joystick -->
   <div class="stick-wrap" id="moveStick" style="left:24px; bottom:24px;">
     <div class="stick-base"></div>
     <div class="stick-thumb" id="moveThumb"></div>
   </div>
-  <!-- Jump button (camera deadzone underneath this area) -->
   <button class="btn" id="jumpBtn" aria-label="Jump"></button>
 </div>
 
@@ -87,7 +85,6 @@
 
 <div id="pauseOverlay"><div class="inner">Paused<br/><small>(Tap or press P to resume)</small></div></div>
 
-<!-- Main Menu Overlay -->
 <div id="mainMenu">
   <div class="wrap">
     <button class="closeMenu" id="closeMenuBtn">Close</button>
@@ -136,7 +133,6 @@
 <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
 <script>
 (() => {
-  // Renderer, scene, camera
   const canvas = document.getElementById('game');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -150,7 +146,6 @@
   const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, 6, 10);
 
-  // Lighting
   const hemi = new THREE.HemisphereLight(0x9bd4ff, 0x12131a, 0.9);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff1e4, 1.0);
@@ -159,7 +154,6 @@
   sun.shadow.mapSize.set(2048, 2048);
   scene.add(sun);
 
-  // Ground + props (visual richness)
   const groundMat = new THREE.MeshStandardMaterial({ color: 0x182235, roughness: 0.95 });
   const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 64), groundMat);
   ground.rotation.x = -Math.PI/2;
@@ -176,22 +170,51 @@
     scene.add(p);
   }
 
-  // Materials (themes)
   const THEMES = {
     forest: {
       platform: new THREE.MeshStandardMaterial({ color: 0x2b5c4b, roughness: 0.78, metalness: 0.12 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0x3a2b5c, roughness: 0.82, metalness: 0.12 }),
-      sky: 0x0c1326, fog: [50,140], lightColor: 0xfff1e4
+      sky: 0x0c1326, fog: [50,140], lightColor: 0xfff1e4, hemiTop: 0x9bd4ff, hemiBottom: 0x12131a
     },
     crystal: {
       platform: new THREE.MeshStandardMaterial({ color: 0x3dc8ff, roughness: 0.4, metalness: 0.6 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0x7bd8ff, roughness: 0.45, metalness: 0.6 }),
-      sky: 0x0a0f1f, fog: [40,120], lightColor: 0xcfe7ff
+      sky: 0x0a0f1f, fog: [40,120], lightColor: 0xcfe7ff, hemiTop: 0xbadfff, hemiBottom: 0x0b1020
     },
     skyisles: {
       platform: new THREE.MeshStandardMaterial({ color: 0xe3d5a4, roughness: 0.7, metalness: 0.2 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0xc8b68f, roughness: 0.75, metalness: 0.2 }),
-      sky: 0x10172b, fog: [60,160], lightColor: 0xfff9d6
+      sky: 0x10172b, fog: [60,160], lightColor: 0xfff9d6, hemiTop: 0xfff4c7, hemiBottom: 0x0f1220
+    },
+    desert: {
+      platform: new THREE.MeshStandardMaterial({ color: 0xd2a679, roughness: 0.85, metalness: 0.1 }),
+      platformAlt: new THREE.MeshStandardMaterial({ color: 0xc19a6b, roughness: 0.9, metalness: 0.08 }),
+      sky: 0xffe0b3, fog: [40,120], lightColor: 0xffd27f, hemiTop: 0xfff0c2, hemiBottom: 0x705030
+    },
+    lava: {
+      platform: new THREE.MeshStandardMaterial({ color: 0x802020, emissive: 0x300000, emissiveIntensity: 0.25, roughness: 0.65 }),
+      platformAlt: new THREE.MeshStandardMaterial({ color: 0x993333, emissive: 0x400000, emissiveIntensity: 0.25, roughness: 0.6 }),
+      sky: 0x1a0000, fog: [25,95], lightColor: 0xff3300, hemiTop: 0x661111, hemiBottom: 0x0a0000
+    },
+    ice: {
+      platform: new THREE.MeshStandardMaterial({ color: 0xa3d5ff, roughness: 0.25, metalness: 0.5 }),
+      platformAlt: new THREE.MeshStandardMaterial({ color: 0x7bbcff, roughness: 0.3, metalness: 0.5 }),
+      sky: 0xe6f7ff, fog: [50,140], lightColor: 0xb3e5ff, hemiTop: 0xdff2ff, hemiBottom: 0xaad4ff
+    },
+    neon: {
+      platform: new THREE.MeshStandardMaterial({ color: 0x2b2b2b, emissive: 0x00e5ff, emissiveIntensity: 0.4, metalness: 0.3 }),
+      platformAlt: new THREE.MeshStandardMaterial({ color: 0x2b2b2b, emissive: 0xff00aa, emissiveIntensity: 0.4, metalness: 0.3 }),
+      sky: 0x0a0a12, fog: [40,130], lightColor: 0x99f0ff, hemiTop: 0x44ffee, hemiBottom: 0x00141a
+    },
+    ocean: {
+      platform: new THREE.MeshStandardMaterial({ color: 0x2e6f8e, roughness: 0.8 }),
+      platformAlt: new THREE.MeshStandardMaterial({ color: 0x1b4e66, roughness: 0.85 }),
+      sky: 0x0c1f2b, fog: [45,135], lightColor: 0xb0e4ff, hemiTop: 0x78c7ff, hemiBottom: 0x072231
+    },
+    garden: {
+      platform: new THREE.MeshStandardMaterial({ color: 0x5aa35a, roughness: 0.8 }),
+      platformAlt: new THREE.MeshStandardMaterial({ color: 0x3f803f, roughness: 0.85 }),
+      sky: 0x122012, fog: [50,150], lightColor: 0xfff7cf, hemiTop: 0xcde8a7, hemiBottom: 0x0a170a
     }
   };
   const matStar = new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0xffa000, emissiveIntensity: 1.0, roughness: 0.2, metalness: 0.6 });
@@ -239,18 +262,16 @@
   const trail = new THREE.Mesh(trailGeom, trailMat);
   trail.visible = false; scene.add(trail);
 
-  // Camera rig + smoothing
+  // Camera rig (snap, no lerp)
   let cameraMode = 'third';
   let camYaw = 0;
   let camPitch = 0.25;
   const pitchMin = -0.3, pitchMax = 0.85;
   let camSensitivity = 3.5;
   const orbitRadius = 8.5;
-  const camPosSmooth = new THREE.Vector3().copy(camera.position);
-  const camLookSmooth = new THREE.Vector3();
 
-  // Scenes with 20 levels each (procedural variety)
-  function createSceneLevels(count, cfg) {
+  // Procedural scenes with 20 levels each
+  function createSceneLevels(count, themeKey) {
     const levels = [];
     for (let i=1; i<=count; i++) {
       const baseW = 20 + (i % 5) * 2;
@@ -270,7 +291,7 @@
       const goalP = platforms[platforms.length - 1];
       const goal = [goalP.x, goalP.y + 1.5, goalP.z];
       const spawn = [0, 2.5, 6];
-      levels.push({ name: `Level ${i}`, platforms, stars, goal, spawn, theme: cfg });
+      levels.push({ name: `Level ${i}`, platforms, stars, goal, spawn, theme: themeKey });
     }
     return levels;
   }
@@ -278,7 +299,13 @@
   const SCENES = [
     { name: "Forest Realm", theme: 'forest', levels: createSceneLevels(20, 'forest') },
     { name: "Crystal Caverns", theme: 'crystal', levels: createSceneLevels(20, 'crystal') },
-    { name: "Sky Isles", theme: 'skyisles', levels: createSceneLevels(20, 'skyisles') }
+    { name: "Sky Isles", theme: 'skyisles', levels: createSceneLevels(20, 'skyisles') },
+    { name: "Desert Dunes", theme: 'desert', levels: createSceneLevels(20, 'desert') },
+    { name: "Molten Core", theme: 'lava', levels: createSceneLevels(20, 'lava') },
+    { name: "Frozen Wastes", theme: 'ice', levels: createSceneLevels(20, 'ice') },
+    { name: "Neon City", theme: 'neon', levels: createSceneLevels(20, 'neon') },
+    { name: "Ocean Ruins", theme: 'ocean', levels: createSceneLevels(20, 'ocean') },
+    { name: "Midnight Garden", theme: 'garden', levels: createSceneLevels(20, 'garden') }
   ];
 
   // Gameplay containers
@@ -321,7 +348,7 @@
   const doubleJumpToggle = document.getElementById('doubleJumpToggle');
   const camSensInput = document.getElementById('camSens');
 
-  // Populate scene and level dropdowns + menu grid
+  // Populate scene + level dropdowns and grid
   SCENES.forEach((s, si) => {
     const opt = document.createElement('option');
     opt.value = si; opt.textContent = `${si+1}. ${s.name}`;
@@ -355,14 +382,15 @@
   });
 
   sceneSelect.addEventListener('change', (e) => {
-    populateLevelsDropdown(parseInt(e.target.value, 10));
-    loadLevel(parseInt(e.target.value, 10), 0);
+    const si = parseInt(e.target.value, 10);
+    populateLevelsDropdown(si);
+    loadLevel(si, 0);
   });
   levelSelect.addEventListener('change', (e) => {
     loadLevel(parseInt(sceneSelect.value, 10), parseInt(e.target.value, 10));
   });
 
-  // Tab behavior
+  // Tabs
   tabs.forEach(t => t.addEventListener('click', () => {
     tabs.forEach(x => x.classList.remove('active'));
     t.classList.add('active');
@@ -370,7 +398,7 @@
     panes[t.getAttribute('data-tab')].classList.add('active');
   }));
 
-  // Customization swatches
+  // Customization
   Array.from(document.querySelectorAll('.swatch')).forEach(sw => {
     sw.addEventListener('click', () => {
       const hex = sw.getAttribute('data-color');
@@ -395,7 +423,7 @@
   });
   codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') codeApplyBtn.click(); });
 
-  // Game mode state
+  // Game mode
   let gameMode = 'classic';
   let timeLeft = 60.0;
   let lives = 3;
@@ -418,7 +446,7 @@
   const airControl = 0.6;
   let onGround = false;
 
-  // Double jump
+  // Jumps
   let canDoubleJump = true;
   let doubleJumpEnabled = true;
 
@@ -450,7 +478,7 @@
   // Camera look with large deadzones around controls
   const moveStickEl = document.getElementById('moveStick');
   const jumpBtnEl = document.getElementById('jumpBtn');
-  function inExpandedRect(e, rect, pad=60) {
+  function inExpandedRect(e, rect, pad=70) {
     return e.clientX >= rect.left - pad && e.clientX <= rect.right + pad &&
            e.clientY >= rect.top - pad && e.clientY <= rect.bottom + pad;
   }
@@ -461,8 +489,8 @@
     if (!lastMouse) return;
     const moveRect = moveStickEl.getBoundingClientRect();
     const jumpRect = jumpBtnEl.getBoundingClientRect();
-    const overMove = inExpandedRect(e, moveRect, 70);
-    const overJump = inExpandedRect(e, jumpRect, 70);
+    const overMove = inExpandedRect(e, moveRect, 80);
+    const overJump = inExpandedRect(e, jumpRect, 80);
     if (overMove || overJump) { lastMouse = { x: e.clientX, y: e.clientY }; return; }
 
     const dx = (e.clientX - lastMouse.x) / window.innerWidth;
@@ -478,7 +506,7 @@
     lastMouse = { x: e.clientX, y: e.clientY };
   });
 
-  // Virtual joystick setup
+  // Virtual joystick
   function setupStick(stickId, thumbId, cb) {
     const stick = document.getElementById(stickId);
     const thumb = document.getElementById(thumbId);
@@ -517,7 +545,7 @@
   pauseOverlay.addEventListener('click', togglePause);
   pauseBtn.addEventListener('click', togglePause);
 
-  // Prevent touch scrolling on mobile during joystick use
+  // Prevent touch scrolling
   document.body.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive:false });
 
   // Toggle first/third person
@@ -574,10 +602,7 @@
     return null;
   }
 
-  // Level management
-  let currentScene = 0;
-  let currentLevel = 0;
-
+  // Theme application
   function applyTheme(themeKey) {
     const theme = THEMES[themeKey] || THEMES.forest;
     scene.background = new THREE.Color(theme.sky);
@@ -585,7 +610,14 @@
     scene.fog.near = theme.fog[0];
     scene.fog.far = theme.fog[1];
     sun.color = new THREE.Color(theme.lightColor);
+    hemi.color.setHex(theme.hemiTop);
+    hemi.groundColor.setHex(theme.hemiBottom);
+    ground.material.color.setHex(theme.sky);
   }
+
+  // Level management
+  let currentScene = 0;
+  let currentLevel = 0;
 
   function clearLevel() {
     platforms.forEach(m => scene.remove(m));
@@ -786,21 +818,14 @@
     // Void fall
     if (player.position.y < voidY) respawn(gameMode === 'survival');
 
-    // Smooth camera
+    // Camera placement (snap, no lerp)
     if (cameraMode === 'third') {
       const y = Math.sin(camPitch) * orbitRadius;
       const h = Math.cos(camPitch) * orbitRadius;
-      const desiredPos = new THREE.Vector3(
-        player.position.x + Math.sin(camYaw) * h,
-        player.position.y + y + 1.6,
-        player.position.z + Math.cos(camYaw) * h
-      );
-      camPosSmooth.lerp(desiredPos, 0.12); // smoothing factor
-      camera.position.copy(camPosSmooth);
-
-      const lookTarget = new THREE.Vector3(player.position.x, player.position.y + 0.9, player.position.z);
-      camLookSmooth.lerp(lookTarget, 0.18);
-      camera.lookAt(camLookSmooth);
+      const camX = player.position.x + Math.sin(camYaw) * h;
+      const camZ = player.position.z + Math.cos(camYaw) * h;
+      camera.position.set(camX, player.position.y + y + 1.6, camZ);
+      camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 0.9, player.position.z));
     } else {
       const head = new THREE.Vector3(player.position.x, player.position.y + playerHeight * 0.5 + 0.5, player.position.z);
       const dir = new THREE.Vector3(
@@ -808,12 +833,8 @@
         Math.sin(camPitch),
         Math.cos(camYaw) * Math.cos(camPitch)
       );
-      const desiredPos = head.clone();
-      camPosSmooth.lerp(desiredPos, 0.15);
-      camera.position.copy(camPosSmooth);
-      const lookTarget = head.clone().add(dir);
-      camLookSmooth.lerp(lookTarget, 0.18);
-      camera.lookAt(camLookSmooth);
+      camera.position.copy(head);
+      camera.lookAt(head.clone().add(dir));
     }
 
     // Ambient particles drift
