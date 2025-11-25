@@ -106,7 +106,7 @@
 
   // Player capsule
   const playerRadius = 0.5;      // collider sphere radius approximation
-  const playerHeight = 1.2;      // capsule height (center section)
+  const playerHeight = 1.2;      // capsule center-section height
   const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, playerHeight, 8, 16), matPlayer);
   player.castShadow = true;
   player.receiveShadow = false;
@@ -216,7 +216,7 @@
 
   // Input state
   const keys = { left: false, right: false, up: false, down: false, jump: false };
-  let moveDx = 0, moveDy = 0; // movement joystick values (inverted in callback below)
+  let moveDx = 0, moveDy = 0; // movement joystick values (inverted in callback)
   let paused = false;
   let score = 0;
   const voidY = -20;
@@ -445,17 +445,16 @@
     }
     updateHUD();
 
-    // Input vector: keyboard + inverted movement joystick (joystick Y is down; we already inverted in callback)
+    // Input vector: keyboard + inverted movement joystick (joystick Y is down; inverted in callback)
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + moveDx;
     const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy;
     const input = new THREE.Vector3(ix, 0, iz);
     if (input.lengthSq() > 1) input.normalize();
 
-    // Camera-based forward/right (forward on joystick is always camera forward)
+    // Camera-based forward/right (forward on joystick = camera forward)
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     forward.y = 0; forward.normalize();
-    // right vector: world up cross forward gives left; negate to get right
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), forward).normalize();
 
     // Movement vector relative to camera
@@ -574,7 +573,7 @@
     camera.updateProjectionMatrix();
   });
 
-  // Level/mode setup and UI bindings
+  // Initialize UI and start
   let currentLevel = 0;
   levelSelect.value = String(currentLevel);
   function initUI() {
@@ -593,7 +592,6 @@
     });
   }
 
-  // Initialize level and mode
   function startGame() {
     loadLevel(0);
     applyMode('classic');
