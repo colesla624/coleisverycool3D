@@ -3,47 +3,47 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>3D Mobile Platformer — Optimized</title>
+<title>3D Mobile Platformer — Daytime & Dynamic Friction (Full)</title>
 <style>
-  html, body { margin:0; height:100%; background:#0c1326; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+  html, body { margin:0; height:100%; background:#87ceeb; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
   #game { position:fixed; inset:0; }
 
-  #hud { position: fixed; left: 0; right: 0; top: 0; display: flex; gap: 8px; justify-content: space-between; padding: 10px; pointer-events: none; color:#e6e6e6; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
-  .panel { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 12px; }
-  #msg { position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; color:#fff; background: rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.15); border-radius: 10px; padding:8px 12px; pointer-events:none; }
+  #hud { position: fixed; left: 0; right: 0; top: 0; display: flex; gap: 8px; justify-content: space-between; padding: 10px; pointer-events: none; color:#0b1b2b; font-weight: 600; }
+  .panel { background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 8px 12px; }
+  #msg { position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; color:#0b1b2b; background: rgba(255,255,255,0.75); border:1px solid rgba(0,0,0,0.12); border-radius: 10px; padding:8px 12px; pointer-events:none; }
 
   #controls { position: fixed; inset: 0; pointer-events: none; }
   .stick-wrap { position: absolute; width: 160px; height: 160px; pointer-events: auto; touch-action: none; }
   .stick-base, .stick-thumb { position: absolute; border-radius: 50%; }
-  .stick-base { width: 160px; height: 160px; background: rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.18); backdrop-filter: blur(4px); }
-  .stick-thumb { width: 80px; height: 80px; left: 40px; top: 40px; background: rgba(255,255,255,0.22); border:2px solid rgba(255,255,255,0.3); }
+  .stick-base { width: 160px; height: 160px; background: rgba(255,255,255,0.35); border:2px solid rgba(0,0,0,0.15); backdrop-filter: blur(4px); }
+  .stick-thumb { width: 80px; height: 80px; left: 40px; top: 40px; background: rgba(255,255,255,0.8); border:2px solid rgba(0,0,0,0.25); }
   .btn { position: absolute; right: 24px; bottom: 120px; width: 100px; height: 100px; border-radius: 50%; pointer-events: auto; touch-action: manipulation;
-    background: radial-gradient(circle at 30% 30%, #fff 0%, #f6b73c 35%, #e36c1b 60%, #ad3a0a 100%);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 10px rgba(255,255,255,0.4); border: 2px solid rgba(255,255,255,0.5); }
+    background: radial-gradient(circle at 30% 30%, #fff 0%, #ffe082 35%, #ffca28 60%, #f57f17 100%);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25), inset 0 0 10px rgba(255,255,255,0.6); border: 2px solid rgba(0,0,0,0.2); }
   .btn:active { transform: scale(0.96); }
 
   #menu { position: fixed; left: 50%; transform: translateX(-50%); bottom: 70px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: auto; }
   #menu select, #menu button, #menu input {
-    padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.35); color:#e6e6e6; backdrop-filter: blur(3px);
+    padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15); background: rgba(255,255,255,0.8); color:#0b1b2b;
   }
 
-  #pauseOverlay { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); color:#fff; font-size: 20px; font-weight:700; text-align:center; }
-  #pauseOverlay .inner { background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.2); padding: 14px 18px; border-radius: 10px; }
+  #pauseOverlay { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.25); color:#0b1b2b; font-size: 20px; font-weight:700; text-align:center; }
+  #pauseOverlay .inner { background: rgba(255,255,255,0.85); border:1px solid rgba(0,0,0,0.12); padding: 14px 18px; border-radius: 10px; }
 
-  #mainMenu { position: fixed; inset: 0; display: none; background: rgba(0,0,0,0.7); color: #e6e6e6; }
+  #mainMenu { position: fixed; inset: 0; display: none; background: rgba(0,0,0,0.25); color: #0b1b2b; }
   #mainMenu .wrap { position: absolute; left:50%; top:50%; transform: translate(-50%,-50%); width: min(820px, 92vw); max-height: 80vh; overflow:auto;
-    background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; }
+    background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.15); border-radius: 12px; padding: 16px; }
   #mainMenu h2 { margin: 0 0 10px; font-weight: 700; }
   .tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .tab { padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); cursor: pointer; }
-  .tab.active { background: rgba(255,255,255,0.18); }
+  .tab { padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15); background: rgba(0,0,0,0.06); cursor: pointer; }
+  .tab.active { background: rgba(0,0,0,0.12); }
   .tabpane { display: none; }
   .tabpane.active { display: block; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-  .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; }
+  .card { background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.12); border-radius: 10px; padding: 10px; }
   .row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
-  .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); cursor: pointer; }
-  .closeMenu { position: absolute; right: 12px; top: 12px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); }
+  .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); cursor: pointer; }
+  .closeMenu { position: absolute; right: 12px; top: 12px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15); background: rgba(0,0,0,0.06); }
 </style>
 </head>
 <body>
@@ -53,7 +53,7 @@
   <div class="panel" id="score">Coins: 0 / 0</div>
   <div class="panel" id="level">Level</div>
   <div class="panel" id="mode">Mode: Classic</div>
-  <div class="panel" id="timer" style="display:none;">Time: 60.0s</div>
+  <div class="panel" id="timer" style="display:none;">Time: 75.0s</div>
   <div class="panel" id="lives" style="display:none;">Lives: 3</div>
 </div>
 <div id="msg">Explore and reach the glowing goal!</div>
@@ -147,60 +147,51 @@
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0c1326);
-  scene.fog = new THREE.Fog(0x0c1326, 50, 140);
+  scene.background = new THREE.Color(0x87ceeb); // daytime
+  scene.fog = new THREE.Fog(0x87ceeb, 80, 220);
 
   const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, 6, 10);
 
-  const hemi = new THREE.HemisphereLight(0x9bd4ff, 0x12131a, 0.9);
+  const hemi = new THREE.HemisphereLight(0xffffff, 0xb0c4de, 0.9);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xfff1e4, 1.0);
+  const sun = new THREE.DirectionalLight(0xffffff, 1.0);
   sun.position.set(12, 16, 10);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024); // reduced for performance
+  sun.shadow.mapSize.set(1024, 1024);
   scene.add(sun);
 
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0x182235, roughness: 0.95 });
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0xdde7f2, roughness: 0.9 });
   const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 32), groundMat);
   ground.rotation.x = -Math.PI/2;
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Ambient pillars simplified
-  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x283b5e, roughness: 0.8 });
-  for (let i=0;i<8;i++){
-    const h = 2 + Math.random()*4;
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,h,16), pillarMat);
-    const r = 45 + Math.random()*20, a = Math.random()*Math.PI*2;
-    p.position.set(Math.cos(a)*r, h/2, Math.sin(a)*r);
-    p.castShadow = true; p.receiveShadow = true;
-    scene.add(p);
-  }
-
-  const THEMES = {
-    forest: { platform: mat(0x2b5c4b), platformAlt: mat(0x3a2b5c), sky:0x0c1326, fog:[50,140], sun:0xfff1e4, hemiTop:0x9bd4ff, hemiBottom:0x12131a, lamp:0xfff2b0 },
-    crystal: { platform: mat(0x3dc8ff,0.4,0.6), platformAlt: mat(0x7bd8ff,0.45,0.6), sky:0x0a0f1f, fog:[40,120], sun:0xcfe7ff, hemiTop:0xbadfff, hemiBottom:0x0b1020, lamp:0xb0e1ff },
-    skyisles: { platform: mat(0xe3d5a4,0.7,0.2), platformAlt: mat(0xc8b68f,0.75,0.2), sky:0x10172b, fog:[60,160], sun:0xfff9d6, hemiTop:0xfff4c7, hemiBottom:0x0f1220, lamp:0xffddaa },
-    desert: { platform: mat(0xd2a679,0.85,0.1), platformAlt: mat(0xc19a6b,0.9,0.08), sky:0xffe0b3, fog:[40,120], sun:0xffd27f, hemiTop:0xfff0c2, hemiBottom:0x705030, lamp:0xffe8bb },
-    lava: { platform: emissiveMat(0x802020,0x300000,0.25,0.65), platformAlt: emissiveMat(0x993333,0x400000,0.25,0.6), sky:0x1a0000, fog:[25,95], sun:0xff3300, hemiTop:0x661111, hemiBottom:0x0a0000, lamp:0xff4500 },
-    ice: { platform: mat(0xa3d5ff,0.25,0.5), platformAlt: mat(0x7bbcff,0.3,0.5), sky:0xe6f7ff, fog:[50,140], sun:0xb3e5ff, hemiTop:0xdff2ff, hemiBottom:0xaad4ff, lamp:0xcfe9ff },
-    neon: { platform: emissiveMat(0x2b2b2b,0x00e5ff,0.35,0.3), platformAlt: emissiveMat(0x2b2b2b,0xff00aa,0.35,0.3), sky:0x0a0a12, fog:[40,130], sun:0x99f0ff, hemiTop:0x44ffee, hemiBottom:0x00141a, lamp:0x88ffee },
-    ocean: { platform: mat(0x2e6f8e,0.8,0.0), platformAlt: mat(0x1b4e66,0.85,0.0), sky:0x0c1f2b, fog:[45,135], sun:0xb0e4ff, hemiTop:0x78c7ff, hemiBottom:0x072231, lamp:0x9ad8ff },
-    garden: { platform: mat(0x5aa35a,0.8,0.0), platformAlt: mat(0x3f803f,0.85,0.0), sky:0x122012, fog:[50,150], sun:0xfff7cf, hemiTop:0xcde8a7, hemiBottom:0x0a170a, lamp:0xeaffc7 }
-  };
+  // Helper material builders
   function mat(colorHex, rough=0.78, metal=0.12){ return new THREE.MeshStandardMaterial({ color: colorHex, roughness: rough, metalness: metal }); }
-  function emissiveMat(colorHex, emHex, emInt=0.3, rough=0.6){ return new THREE.MeshStandardMaterial({ color: colorHex, emissive: emHex, emissiveIntensity: emInt, roughness: rough }); }
+  function emissiveMat(colorHex, emHex, emInt=0.35, rough=0.6){ return new THREE.MeshStandardMaterial({ color: colorHex, emissive: emHex, emissiveIntensity: emInt, roughness: rough }); }
+
+  // Daytime themes (bright skies, light fog)
+  const THEMES = {
+    forest: { platform: mat(0x2b5c4b,0.75,0.15), platformAlt: mat(0x3a6b5c,0.78,0.12), sky:0x87ceeb, fog:[80,220], sun:0xffffff, hemiTop:0xffffff, hemiBottom:0xb0c4de, lamp:0xfff2b0 },
+    crystal: { platform: mat(0x3dc8ff,0.45,0.6), platformAlt: mat(0x7bd8ff,0.5,0.6), sky:0x87ceeb, fog:[80,220], sun:0xffffff, hemiTop:0xffffff, hemiBottom:0xb0c4de, lamp:0xb0e1ff },
+    skyisles: { platform: mat(0xe3d5a4,0.7,0.2), platformAlt: mat(0xc8b68f,0.75,0.2), sky:0x87ceeb, fog:[90,240], sun:0xffffff, hemiTop:0xffffff, hemiBottom:0xb0c4de, lamp:0xffddaa },
+    desert: { platform: mat(0xd2a679,0.85,0.1), platformAlt: mat(0xc19a6b,0.9,0.08), sky:0x87ceeb, fog:[90,240], sun:0xffffff, hemiTop:0xffffff, hemiBottom:0xb0c4de, lamp:0xffe8bb },
+    lava: { platform: emissiveMat(0x802020,0x300000,0.2,0.65), platformAlt: emissiveMat(0x993333,0x400000,0.2,0.6), sky:0x87ceeb, fog:[80,220], sun:0xffffff, hemiTop:0xffffff, hemiBottom:0xb0c4de, lamp:0xff9a66 },
+    ice: { platform: mat(0xa3d5ff,0.25,0.5), platformAlt: mat(0x7bbcff,0.3,0.5), sky:0x87ceeb, fog:[80,220], sun:0xffffff, hemiTop:0xffffff, hemiBottom:0xb0c4de, lamp:0xcfe9ff },
+    neon: { platform: emissiveMat(0x2b2b2b,0x00e5ff,0.25,0.35), platformAlt: emissiveMat(0x2b2b2b,0xff00aa,0.25,0.35), sky:0x87ceeb, fog:[80,220], sun:0xffffff, hemiTop:0xffffff, hemiBottom:0xb0c4de, lamp:0xffffff },
+    ocean: { platform: mat(0x2e6f8e,0.8,0.0), platformAlt: mat(0x1b4e66,0.85,0.0), sky:0x87ceeb, fog:[80,220], sun:0xffffff, hemiTop:0xffffff, hemiBottom:0xb0c4de, lamp:0x9ad8ff },
+    garden: { platform: mat(0x5aa35a,0.8,0.0), platformAlt: mat(0x3f803f,0.85,0.0), sky:0x87ceeb, fog:[80,220], sun:0xffffff, hemiTop:0xffffff, hemiBottom:0xb0c4de, lamp:0xeaffc7 }
+  };
 
   const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.8, roughness: 0.5, metalness: 0.4 });
-
-  const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.85, roughness: 0.25, emissive: 0xffa500, emissiveIntensity: 0.2 });
+  const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.85, roughness: 0.25, emissive: 0xffa500, emissiveIntensity: 0.15 });
 
   // Player + cosmetics
   const playerRadius = 0.5;
   const playerHeight = 1.2;
   let playerColor = 0xf0f3f8;
-  const matPlayer = new THREE.MeshStandardMaterial({ color: playerColor, roughness: 0.35, metalness: 0.22, emissive: 0x141414, emissiveIntensity: 0.25 });
+  const matPlayer = new THREE.MeshStandardMaterial({ color: playerColor, roughness: 0.35, metalness: 0.22, emissive: 0x141414, emissiveIntensity: 0.22 });
   const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, playerHeight, 8, 16), matPlayer);
   player.castShadow = true;
   scene.add(player);
@@ -218,7 +209,7 @@
     const ctx = c.getContext('2d');
     ctx.font = 'bold 64px system-ui';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ff2b2b'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 6;
+    ctx.fillStyle = '#e53935'; ctx.strokeStyle = '#000000'; ctx.lineWidth = 3;
     ctx.strokeText('OWNER', c.width/2, c.height/2); ctx.fillText('OWNER', c.width/2, c.height/2);
     const tex = new THREE.CanvasTexture(c);
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
@@ -392,7 +383,7 @@
 
   // Game mode state
   let gameMode = 'classic';
-  let timeLeft = 60.0;
+  let timeLeft = 75.0;
   let lives = 3;
 
   function updateHUD() {
@@ -415,14 +406,14 @@
     if (gameMode === 'survival') livesEl.textContent = `Lives: ${lives}`;
   }
 
-  // Physics — tuned for responsiveness and instant stop on floor
+  // Physics — dynamic friction
   const velocity = new THREE.Vector3(0, 0, 0);
   const acceleration = new THREE.Vector3(0, 0, 0);
   const gravityBase = new THREE.Vector3(0, -24, 0);
   const gravity = gravityBase.clone();
   let accelGround = 16;
   let accelAir = 16;
-  const friction = 8.5;
+  const frictionStrong = 20; // strong friction only when no input
   const airControl = 0.6;
   let onGround = false;
 
@@ -538,8 +529,7 @@
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x, y, z);
     mesh.castShadow = true; mesh.receiveShadow = true;
-    // simple rim (low segments)
-    const rim = new THREE.Mesh(new THREE.BoxGeometry(w+0.2, 0.05, d+0.2), new THREE.MeshStandardMaterial({ color: 0x1b2a45, roughness: 0.9 }));
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(w+0.2, 0.05, d+0.2), new THREE.MeshStandardMaterial({ color: 0x8aa6c2, roughness: 0.95 }));
     rim.position.set(0, 0.325, 0);
     mesh.add(rim);
     scene.add(mesh);
@@ -550,7 +540,7 @@
     const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16), coinMat);
     coin.rotation.x = Math.PI / 2;
     coin.position.set(x, y, z);
-    coin.castShadow = false; // perf
+    coin.castShadow = false;
     scene.add(coin);
     coins.push(coin);
     return coin;
@@ -558,7 +548,7 @@
   function makeLamp(x, y, z, colorHex = 0xfff2b0) {
     const lamp = new THREE.PointLight(colorHex, 0.6, 12);
     lamp.position.set(x, y, z);
-    lamp.castShadow = false; // perf
+    lamp.castShadow = false;
     scene.add(lamp);
     lights.push(lamp);
     return lamp;
@@ -589,7 +579,7 @@
     sun.color = new THREE.Color(theme.sun);
     hemi.color.setHex(theme.hemiTop);
     hemi.groundColor.setHex(theme.hemiBottom);
-    ground.material.color.setHex(theme.sky);
+    ground.material.color.setHex(0xdde7f2);
   }
 
   // Level management
@@ -621,9 +611,9 @@
 
     lvl.coins.forEach(([x,y,z]) => { makeCoin(x, y, z); if (Math.random()<0.5) makeLamp(x, y + 0.6, z, THEMES[lvl.theme].lamp); });
 
-    goal = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.28, 12, 32), matGoal); // fewer segments
+    goal = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.28, 12, 32), matGoal);
     goal.position.set(lvl.goal[0], lvl.goal[1], lvl.goal[2]);
-    goal.castShadow = false; // perf
+    goal.castShadow = false;
     scene.add(goal);
 
     player.position.set(lvl.spawn[0], lvl.spawn[1], lvl.spawn[2]);
@@ -639,7 +629,7 @@
 
   function applyMode(mode) {
     gameMode = mode;
-    timeLeft = mode === 'time' ? 75.0 : 60.0;
+    timeLeft = mode === 'time' ? 75.0 : 75.0; // daytime brightness, longer default
     lives = 3;
 
     gravity.copy(gravityBase);
@@ -658,7 +648,7 @@
       gravity.set(0, -12, 0);
       jumpStrength = 15.0; doubleJumpStrength = 13.0;
     } else if (mode === 'fogMaze') {
-      scene.fog.near = 10; scene.fog.far = 60;
+      scene.fog.near = 40; scene.fog.far = 120; // still daytime but hazier
     }
 
     setupModeEnvironment();
@@ -677,7 +667,7 @@
     if (gameMode === 'lavaTower') {
       lavaHeight = SCENES[currentScene].levels[currentLevel].spawn[1] - 20;
       const lavaGeo = new THREE.PlaneGeometry(200, 200);
-      const lavaMat = new THREE.MeshStandardMaterial({ color: 0xff3b1f, emissive: 0x9c1c0f, emissiveIntensity: 0.7, roughness: 0.6, metalness: 0.0, side: THREE.DoubleSide });
+      const lavaMat = new THREE.MeshStandardMaterial({ color: 0xff7b55, emissive: 0xff6a33, emissiveIntensity: 0.5, roughness: 0.6, metalness: 0.0, side: THREE.DoubleSide });
       lava = new THREE.Mesh(lavaGeo, lavaMat);
       lava.rotation.x = -Math.PI / 2;
       lava.position.set(0, lavaHeight, 0);
@@ -691,7 +681,7 @@
   function spawnMonkeys(count = 2) {
     const monkeyMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
     for (let i=0;i<count;i++) {
-      const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), monkeyMat); // fewer segments
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), monkeyMat);
       const lvl = SCENES[currentScene].levels[currentLevel];
       const start = lvl.platforms[Math.min(lvl.platforms.length-1, 1+i)];
       m.position.set(start.x + (Math.random()-0.5)*4, start.y + 1.0, start.z + (Math.random()-0.5)*4);
@@ -718,11 +708,11 @@
     updateHUD();
   }
 
-  // Ambient particles — reduced count
+  // Ambient particles — reduced count for perf (daytime sparkles)
   const dustGeo = new THREE.SphereGeometry(0.03, 8, 8);
-  const dustMat = new THREE.MeshBasicMaterial({ color: 0x88aaff, transparent: true, opacity: 0.22 });
+  const dustMat = new THREE.MeshBasicMaterial({ color: 0x99d9ff, transparent: true, opacity: 0.22 });
   const dusts = [];
-  for (let i=0;i<50;i++){ // reduced from 120
+  for (let i=0;i<50;i++){
     const d = new THREE.Mesh(dustGeo, dustMat);
     d.position.set((Math.random()-0.5)*90, 2+Math.random()*14, (Math.random()-0.5)*140);
     scene.add(d); dusts.push(d);
@@ -740,7 +730,7 @@
     requestAnimationFrame(animate);
     if (paused) return;
 
-    const dt = Math.min(0.016, clock.getDelta()); // stable physics, smoother feel
+    const dt = Math.min(0.016, clock.getDelta()); // stable physics
 
     // Cosmetics
     hat.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 0.4, player.position.z);
@@ -756,7 +746,7 @@
     }
     updateHUD();
 
-    // Input vector
+    // Input vector: keyboard + movement joystick
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + moveDx;
     const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy;
     const input = new THREE.Vector3(ix, 0, iz);
@@ -770,9 +760,17 @@
 
     // Movement relative to camera
     const moveVec = new THREE.Vector3().addScaledVector(forward, input.z).addScaledVector(right, input.x);
+    const movingInput = moveVec.lengthSq() > 1e-4;
+
     acceleration.set(moveVec.x * (onGround ? accelGround : accelAir * airControl), 0, moveVec.z * (onGround ? accelGround : accelAir * airControl));
     acceleration.add(gravity);
     velocity.addScaledVector(acceleration, dt);
+
+    // Dynamic friction: only apply strong friction when no input and on ground
+    if (onGround && !movingInput) {
+      velocity.x = THREE.MathUtils.damp(velocity.x, 0, frictionStrong, dt);
+      velocity.z = THREE.MathUtils.damp(velocity.z, 0, frictionStrong, dt);
+    }
 
     // Jump handling
     if (keys.jump) {
@@ -792,7 +790,7 @@
     // Integrate
     player.position.addScaledVector(velocity, dt);
 
-    // Collisions + instant stop on floor
+    // Collisions + vanish platforms
     const wasGrounded = onGround;
     onGround = false;
     for (const box of platforms) {
@@ -808,9 +806,6 @@
         if (ny > 0.5) {
           onGround = true;
           if (velocity.y < 0) velocity.y = 0;
-          // Instant stop horizontally when landing on floor
-          velocity.x = 0;
-          velocity.z = 0;
           if (gameMode === 'vanishPlatforms') box.userData.stepped = true;
         } else {
           velocity.x *= 0.82;
@@ -824,12 +819,10 @@
     }
     if (!wasGrounded && onGround) canDoubleJump = true;
 
-    // Ground plane instant stop safeguard
+    // Ground plane safeguard (instant vertical stop)
     if (player.position.y < 0.9) {
       player.position.y = 0.9;
       if (velocity.y < 0) velocity.y = 0;
-      velocity.x = 0;
-      velocity.z = 0;
       onGround = true;
     }
 
