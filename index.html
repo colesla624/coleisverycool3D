@@ -51,13 +51,13 @@
 <canvas id="game"></canvas>
 
 <div id="hud">
-  <div class="panel" id="score">Stars: 0 / 0</div>
+  <div class="panel" id="score">Coins: 0</div>
   <div class="panel" id="level">Level</div>
   <div class="panel" id="mode">Mode: Classic</div>
   <div class="panel" id="timer" style="display:none;">Time: 60.0s</div>
   <div class="panel" id="lives" style="display:none;">Lives: 3</div>
 </div>
-<div id="msg">Collect stars and reach the glowing goal!</div>
+<div id="msg">Explore the level. Coins are optional!</div>
 
 <div id="controls">
   <div class="stick-wrap" id="moveStick" style="left:24px; bottom:24px;">
@@ -160,65 +160,60 @@
   ground.receiveShadow = true;
   scene.add(ground);
 
-  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x283b5e, roughness: 0.8 });
-  for (let i=0;i<12;i++){
-    const h = 2 + Math.random()*4;
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,h,24), pillarMat);
-    const r = 45 + Math.random()*20, a = Math.random()*Math.PI*2;
-    p.position.set(Math.cos(a)*r, h/2, Math.sin(a)*r);
-    p.castShadow = true; p.receiveShadow = true;
-    scene.add(p);
-  }
-
   const THEMES = {
     forest: {
       platform: new THREE.MeshStandardMaterial({ color: 0x2b5c4b, roughness: 0.78, metalness: 0.12 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0x3a2b5c, roughness: 0.82, metalness: 0.12 }),
-      sky: 0x0c1326, fog: [50,140], lightColor: 0xfff1e4, hemiTop: 0x9bd4ff, hemiBottom: 0x12131a
+      sky: 0x0c1326, fog: [50,140], sun: 0xfff1e4, hemiTop: 0x9bd4ff, hemiBottom: 0x12131a, lamp: 0xfff2b0
     },
     crystal: {
       platform: new THREE.MeshStandardMaterial({ color: 0x3dc8ff, roughness: 0.4, metalness: 0.6 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0x7bd8ff, roughness: 0.45, metalness: 0.6 }),
-      sky: 0x0a0f1f, fog: [40,120], lightColor: 0xcfe7ff, hemiTop: 0xbadfff, hemiBottom: 0x0b1020
+      sky: 0x0a0f1f, fog: [40,120], sun: 0xcfe7ff, hemiTop: 0xbadfff, hemiBottom: 0x0b1020, lamp: 0xb0e1ff
     },
     skyisles: {
       platform: new THREE.MeshStandardMaterial({ color: 0xe3d5a4, roughness: 0.7, metalness: 0.2 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0xc8b68f, roughness: 0.75, metalness: 0.2 }),
-      sky: 0x10172b, fog: [60,160], lightColor: 0xfff9d6, hemiTop: 0xfff4c7, hemiBottom: 0x0f1220
+      sky: 0x10172b, fog: [60,160], sun: 0xfff9d6, hemiTop: 0xfff4c7, hemiBottom: 0x0f1220, lamp: 0xffddaa
     },
     desert: {
       platform: new THREE.MeshStandardMaterial({ color: 0xd2a679, roughness: 0.85, metalness: 0.1 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0xc19a6b, roughness: 0.9, metalness: 0.08 }),
-      sky: 0xffe0b3, fog: [40,120], lightColor: 0xffd27f, hemiTop: 0xfff0c2, hemiBottom: 0x705030
+      sky: 0xffe0b3, fog: [40,120], sun: 0xffd27f, hemiTop: 0xfff0c2, hemiBottom: 0x705030, lamp: 0xffe8bb
     },
     lava: {
       platform: new THREE.MeshStandardMaterial({ color: 0x802020, emissive: 0x300000, emissiveIntensity: 0.25, roughness: 0.65 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0x993333, emissive: 0x400000, emissiveIntensity: 0.25, roughness: 0.6 }),
-      sky: 0x1a0000, fog: [25,95], lightColor: 0xff3300, hemiTop: 0x661111, hemiBottom: 0x0a0000
+      sky: 0x1a0000, fog: [25,95], sun: 0xff3300, hemiTop: 0x661111, hemiBottom: 0x0a0000, lamp: 0xff4500
     },
     ice: {
       platform: new THREE.MeshStandardMaterial({ color: 0xa3d5ff, roughness: 0.25, metalness: 0.5 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0x7bbcff, roughness: 0.3, metalness: 0.5 }),
-      sky: 0xe6f7ff, fog: [50,140], lightColor: 0xb3e5ff, hemiTop: 0xdff2ff, hemiBottom: 0xaad4ff
+      sky: 0xe6f7ff, fog: [50,140], sun: 0xb3e5ff, hemiTop: 0xdff2ff, hemiBottom: 0xaad4ff, lamp: 0xcfe9ff
     },
     neon: {
       platform: new THREE.MeshStandardMaterial({ color: 0x2b2b2b, emissive: 0x00e5ff, emissiveIntensity: 0.4, metalness: 0.3 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0x2b2b2b, emissive: 0xff00aa, emissiveIntensity: 0.4, metalness: 0.3 }),
-      sky: 0x0a0a12, fog: [40,130], lightColor: 0x99f0ff, hemiTop: 0x44ffee, hemiBottom: 0x00141a
+      sky: 0x0a0a12, fog: [40,130], sun: 0x99f0ff, hemiTop: 0x44ffee, hemiBottom: 0x00141a, lamp: 0x88ffee
     },
     ocean: {
       platform: new THREE.MeshStandardMaterial({ color: 0x2e6f8e, roughness: 0.8 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0x1b4e66, roughness: 0.85 }),
-      sky: 0x0c1f2b, fog: [45,135], lightColor: 0xb0e4ff, hemiTop: 0x78c7ff, hemiBottom: 0x072231
+      sky: 0x0c1f2b, fog: [45,135], sun: 0xb0e4ff, hemiTop: 0x78c7ff, hemiBottom: 0x072231, lamp: 0x9ad8ff
     },
     garden: {
       platform: new THREE.MeshStandardMaterial({ color: 0x5aa35a, roughness: 0.8 }),
       platformAlt: new THREE.MeshStandardMaterial({ color: 0x3f803f, roughness: 0.85 }),
-      sky: 0x122012, fog: [50,150], lightColor: 0xfff7cf, hemiTop: 0xcde8a7, hemiBottom: 0x0a170a
+      sky: 0x122012, fog: [50,150], sun: 0xfff7cf, hemiTop: 0xcde8a7, hemiBottom: 0x0a170a, lamp: 0xeaffc7
     }
   };
-  const matStar = new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0xffa000, emissiveIntensity: 1.0, roughness: 0.2, metalness: 0.6 });
+
   const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.9, roughness: 0.4, metalness: 0.4 });
+
+  // Coins (optional, decorative)
+  const coinMat = new THREE.MeshStandardMaterial({
+    color: 0xffd700, metalness: 0.85, roughness: 0.25, emissive: 0xffa500, emissiveIntensity: 0.25
+  });
 
   // Player + customization
   const playerRadius = 0.5;
@@ -270,28 +265,33 @@
   let camSensitivity = 3.5;
   const orbitRadius = 8.5;
 
-  // Procedural scenes with 20 levels each
+  // Procedural scenes with 20 levels each; difficulty increases by index
   function createSceneLevels(count, themeKey) {
     const levels = [];
     for (let i=1; i<=count; i++) {
-      const baseW = 20 + (i % 5) * 2;
-      const baseD = 20 + ((i+2) % 5) * 2;
+      const difficulty = i - 1; // 0..19
+      const baseW = 20 - Math.min(8, Math.floor(difficulty/2)); // narrower over time
+      const baseD = 20 - Math.min(6, Math.floor(difficulty/3));
+      const steps = 5 + Math.floor(difficulty/3); // more platforms later
+      const gapBase = 6 + Math.floor(difficulty/2); // bigger gaps later
+
       const platforms = [{ x:0, y:0, z:0, w:baseW, d:baseD, alt:false }];
-      const steps = 5 + (i % 4);
       for (let s=1; s<=steps; s++) {
         const alt = s % 2 === 0;
-        const x = ((i * 3 + s * 4) % 2 === 0 ? s*3 : -s*3);
-        const y = s * (1.8 + (i%3)*0.2);
-        const z = -s * (6 + (i%4));
-        const w = 4 + (s%3);
-        const d = 4 + ((i+s)%3);
+        const x = ((difficulty + s) % 2 === 0 ? s*(3 + Math.floor(difficulty/4)) : -s*(3 + Math.floor(difficulty/4)));
+        const y = s * (1.8 + Math.min(1.5, difficulty * 0.08));
+        const z = -s * (gapBase + (s % 3));
+        const w = Math.max(3, 4 - Math.floor(difficulty/5)) + (s % 2 ? 0 : -1);
+        const d = Math.max(3, 4 - Math.floor(difficulty/6));
         platforms.push({ x, y, z, w, d, alt });
       }
-      const stars = platforms.slice(1, Math.min(platforms.length, 7)).map(p => [p.x, p.y + 1.5, p.z]);
+
+      // Coins placed near some platforms (optional)
+      const coinSpots = platforms.slice(1, Math.min(platforms.length, 8)).map(p => [p.x + ((Math.random()-0.5)*1.2), p.y + 1.3, p.z + ((Math.random()-0.5)*1.2)]);
       const goalP = platforms[platforms.length - 1];
       const goal = [goalP.x, goalP.y + 1.5, goalP.z];
       const spawn = [0, 2.5, 6];
-      levels.push({ name: `Level ${i}`, platforms, stars, goal, spawn, theme: themeKey });
+      levels.push({ name: `Level ${i}`, platforms, coins: coinSpots, goal, spawn, theme: themeKey });
     }
     return levels;
   }
@@ -310,7 +310,8 @@
 
   // Gameplay containers
   let platforms = [];
-  let stars = [];
+  let coins = [];
+  let lights = [];
   let goal = null;
 
   // HUD elements
@@ -429,7 +430,7 @@
   let lives = 3;
 
   function updateHUD() {
-    scoreEl.textContent = `Stars: ${score} / ${stars.length}`;
+    scoreEl.textContent = `Coins: ${coins.length}`; // just a count (optional to collect)
     levelEl.textContent = `${SCENES[currentScene].name} — ${SCENES[currentScene].levels[currentLevel].name}`;
     modeEl.textContent = `Mode: ${gameMode === 'classic' ? 'Classic' : gameMode === 'time' ? 'Time Attack' : 'Survival'}`;
     timerEl.style.display = gameMode === 'time' ? 'block' : 'none';
@@ -438,15 +439,15 @@
     if (gameMode === 'survival') livesEl.textContent = `Lives: ${lives}`;
   }
 
-  // Physics
+  // Physics (slower player)
   const velocity = new THREE.Vector3(0, 0, 0);
   const acceleration = new THREE.Vector3(0, 0, 0);
   const gravity = new THREE.Vector3(0, -24, 0);
-  const friction = 8.5;
-  const airControl = 0.6;
+  const friction = 9.5;
+  const airControl = 0.55;
   let onGround = false;
 
-  // Jumps
+  // Jumps (weaker)
   let canDoubleJump = true;
   let doubleJumpEnabled = true;
 
@@ -454,7 +455,6 @@
   const keys = { left: false, right: false, up: false, down: false, jump: false };
   let moveDx = 0, moveDy = 0;
   let paused = false;
-  let score = 0;
   const voidY = -20;
 
   // Keyboard
@@ -475,10 +475,10 @@
     if (e.code === 'Space') keys.jump = false;
   });
 
-  // Camera look with large deadzones around controls
+  // Camera look with deadzones
   const moveStickEl = document.getElementById('moveStick');
   const jumpBtnEl = document.getElementById('jumpBtn');
-  function inExpandedRect(e, rect, pad=70) {
+  function inExpandedRect(e, rect, pad=80) {
     return e.clientX >= rect.left - pad && e.clientX <= rect.right + pad &&
            e.clientY >= rect.top - pad && e.clientY <= rect.bottom + pad;
   }
@@ -492,7 +492,6 @@
     const overMove = inExpandedRect(e, moveRect, 80);
     const overJump = inExpandedRect(e, jumpRect, 80);
     if (overMove || overJump) { lastMouse = { x: e.clientX, y: e.clientY }; return; }
-
     const dx = (e.clientX - lastMouse.x) / window.innerWidth;
     const dy = (e.clientY - lastMouse.y) / window.innerHeight;
     const jitterDeadzone = 0.02;
@@ -574,17 +573,22 @@
     platforms.push(mesh);
     return mesh;
   }
-  function makeStar(x, y, z) {
-    const s = new THREE.Mesh(new THREE.IcosahedronGeometry(0.38, 0), matStar);
-    s.position.set(x, y, z);
-    s.castShadow = true;
-    scene.add(s);
-    const pl = new THREE.PointLight(0xffa000, 0.5, 6);
-    pl.position.copy(s.position).add(new THREE.Vector3(0,0.2,0));
-    scene.add(pl);
-    s.userData.light = pl;
-    stars.push(s);
-    return s;
+  function makeCoin(x, y, z) {
+    const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.1, 32), coinMat);
+    coin.rotation.x = Math.PI / 2;
+    coin.position.set(x, y, z);
+    coin.castShadow = true;
+    scene.add(coin);
+    coins.push(coin);
+    return coin;
+  }
+  function makeLamp(x, y, z, colorHex = 0xfff2b0) {
+    const lamp = new THREE.PointLight(colorHex, 0.7, 14);
+    lamp.position.set(x, y, z);
+    lamp.castShadow = true;
+    scene.add(lamp);
+    lights.push(lamp);
+    return lamp;
   }
   function aabbSphereCollision(box, spherePos, sphereR) {
     const bPos = box.position;
@@ -609,7 +613,7 @@
     scene.fog.color = new THREE.Color(theme.sky);
     scene.fog.near = theme.fog[0];
     scene.fog.far = theme.fog[1];
-    sun.color = new THREE.Color(theme.lightColor);
+    sun.color = new THREE.Color(theme.sun);
     hemi.color.setHex(theme.hemiTop);
     hemi.groundColor.setHex(theme.hemiBottom);
     ground.material.color.setHex(theme.sky);
@@ -621,8 +625,9 @@
 
   function clearLevel() {
     platforms.forEach(m => scene.remove(m));
-    stars.forEach(s => { scene.remove(s); if (s.userData.light) scene.remove(s.userData.light); });
-    platforms = []; stars = [];
+    coins.forEach(c => scene.remove(c));
+    lights.forEach(l => scene.remove(l));
+    platforms = []; coins = []; lights = [];
     if (goal) { scene.remove(goal); goal = null; }
   }
 
@@ -633,19 +638,33 @@
     const lvl = SCENES[sceneIndex].levels[levelIndex];
     applyTheme(lvl.theme);
 
-    lvl.platforms.forEach(p => makePlatform(p.x, p.y, p.z, p.w, p.d, p.alt, lvl.theme));
-    lvl.stars.forEach(([x,y,z]) => makeStar(x, y, z));
+    // Build platforms
+    lvl.platforms.forEach(p => {
+      const mesh = makePlatform(p.x, p.y, p.z, p.w, p.d, p.alt, lvl.theme);
+      // Level lights: a soft lamp above every other platform for atmosphere
+      if (Math.random() < 0.7) {
+        makeLamp(p.x, p.y + 3.0, p.z, THEMES[lvl.theme].lamp);
+      }
+    });
+
+    // Coins (optional, decorative)
+    lvl.coins.forEach(([x,y,z]) => {
+      const coin = makeCoin(x, y, z);
+      // small lamp near coins for glow
+      makeLamp(x, y + 0.6, z, THEMES[lvl.theme].lamp);
+    });
+
+    // Goal
     goal = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.28, 16, 64), matGoal);
     goal.position.set(lvl.goal[0], lvl.goal[1], lvl.goal[2]);
     goal.castShadow = true;
     scene.add(goal);
 
-    score = 0;
     player.position.set(lvl.spawn[0], lvl.spawn[1], lvl.spawn[2]);
     velocity.set(0,0,0);
     onGround = false;
     canDoubleJump = true;
-    msgEl.textContent = 'Collect stars and reach the glowing goal!';
+    msgEl.textContent = 'Explore the level. Coins are optional!';
     updateHUD();
   }
 
@@ -727,11 +746,9 @@
     forward.y = 0; forward.normalize();
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), forward).normalize();
 
-    // Movement relative to camera
+    // Movement relative to camera (slower accel)
     const moveVec = new THREE.Vector3().addScaledVector(forward, input.z).addScaledVector(right, input.x);
-
-    // Movement params
-    const accelMag = onGround ? 17 : 17 * airControl;
+    const accelMag = onGround ? 10 : 10 * airControl;
     acceleration.set(moveVec.x * accelMag, 0, moveVec.z * accelMag);
     acceleration.add(gravity);
     velocity.addScaledVector(acceleration, dt);
@@ -742,15 +759,15 @@
       velocity.z = THREE.MathUtils.damp(velocity.z, 0, friction, dt);
     }
 
-    // Jump handling: stronger + double jump
+    // Jump handling: weaker jump + double jump
     if (keys.jump) {
       if (onGround) {
-        velocity.y = 14.5;
+        velocity.y = 10.0;
         onGround = false;
         canDoubleJump = true;
         keys.jump = false;
       } else if (doubleJumpEnabled && canDoubleJump) {
-        velocity.y = 11.8;
+        velocity.y = 8.5;
         canDoubleJump = false;
         msgEl.textContent = 'Double jump!';
         keys.jump = false;
@@ -784,20 +801,8 @@
     }
     if (!wasGrounded && onGround) canDoubleJump = true;
 
-    // Stars
-    for (const s of stars) {
-      if (!s.visible) continue;
-      const d = s.position.distanceTo(player.position);
-      if (d < playerRadius + 0.6) {
-        s.visible = false;
-        if (s.userData.light) s.userData.light.visible = false;
-        score += 1;
-        msgEl.textContent = score === stars.length ? 'All stars collected! Head to the goal.' : 'Star collected!';
-        updateHUD();
-      } else {
-        s.rotation.y += dt * 1.6;
-      }
-    }
+    // Coins spin (optional, no collection required)
+    for (const c of coins) c.rotation.z += dt * 2.0;
 
     // Goal
     tGoal += dt;
@@ -805,13 +810,9 @@
       goal.rotation.x = Math.sin(tGoal * 1.2) * 0.2;
       goal.rotation.y += dt * 0.8;
       if (player.position.distanceTo(goal.position) < 1.6) {
-        if (score === stars.length) {
-          msgEl.textContent = 'Level complete! Loading next...';
-          const nextLevel = (currentLevel + 1) % SCENES[currentScene].levels.length;
-          setTimeout(() => { loadLevel(currentScene, nextLevel); }, 900);
-        } else {
-          msgEl.textContent = 'Collect all stars first!';
-        }
+        msgEl.textContent = 'Level complete! Loading next...';
+        const nextLevel = (currentLevel + 1) % SCENES[currentScene].levels.length;
+        setTimeout(() => { loadLevel(currentScene, nextLevel); }, 900);
       }
     }
 
