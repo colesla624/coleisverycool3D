@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>3D Mobile Platformer</title>
+<title>3D Mobile Platformer — Optimized</title>
 <style>
   html, body { margin:0; height:100%; background:#0c1326; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
   #game { position:fixed; inset:0; }
@@ -144,6 +144,7 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0c1326);
@@ -157,111 +158,76 @@
   const sun = new THREE.DirectionalLight(0xfff1e4, 1.0);
   sun.position.set(12, 16, 10);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(1024, 1024); // reduced for performance
   scene.add(sun);
 
   const groundMat = new THREE.MeshStandardMaterial({ color: 0x182235, roughness: 0.95 });
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 64), groundMat);
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 32), groundMat);
   ground.rotation.x = -Math.PI/2;
   ground.receiveShadow = true;
   scene.add(ground);
 
+  // Ambient pillars simplified
+  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x283b5e, roughness: 0.8 });
+  for (let i=0;i<8;i++){
+    const h = 2 + Math.random()*4;
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,h,16), pillarMat);
+    const r = 45 + Math.random()*20, a = Math.random()*Math.PI*2;
+    p.position.set(Math.cos(a)*r, h/2, Math.sin(a)*r);
+    p.castShadow = true; p.receiveShadow = true;
+    scene.add(p);
+  }
+
   const THEMES = {
-    forest: {
-      platform: new THREE.MeshStandardMaterial({ color: 0x2b5c4b, roughness: 0.78, metalness: 0.12 }),
-      platformAlt: new THREE.MeshStandardMaterial({ color: 0x3a2b5c, roughness: 0.82, metalness: 0.12 }),
-      sky: 0x0c1326, fog: [50,140], sun: 0xfff1e4, hemiTop: 0x9bd4ff, hemiBottom: 0x12131a, lamp: 0xfff2b0
-    },
-    crystal: {
-      platform: new THREE.MeshStandardMaterial({ color: 0x3dc8ff, roughness: 0.4, metalness: 0.6 }),
-      platformAlt: new THREE.MeshStandardMaterial({ color: 0x7bd8ff, roughness: 0.45, metalness: 0.6 }),
-      sky: 0x0a0f1f, fog: [40,120], sun: 0xcfe7ff, hemiTop: 0xbadfff, hemiBottom: 0x0b1020, lamp: 0xb0e1ff
-    },
-    skyisles: {
-      platform: new THREE.MeshStandardMaterial({ color: 0xe3d5a4, roughness: 0.7, metalness: 0.2 }),
-      platformAlt: new THREE.MeshStandardMaterial({ color: 0xc8b68f, roughness: 0.75, metalness: 0.2 }),
-      sky: 0x10172b, fog: [60,160], sun: 0xfff9d6, hemiTop: 0xfff4c7, hemiBottom: 0x0f1220, lamp: 0xffddaa
-    },
-    desert: {
-      platform: new THREE.MeshStandardMaterial({ color: 0xd2a679, roughness: 0.85, metalness: 0.1 }),
-      platformAlt: new THREE.MeshStandardMaterial({ color: 0xc19a6b, roughness: 0.9, metalness: 0.08 }),
-      sky: 0xffe0b3, fog: [40,120], sun: 0xffd27f, hemiTop: 0xfff0c2, hemiBottom: 0x705030, lamp: 0xffe8bb
-    },
-    lava: {
-      platform: new THREE.MeshStandardMaterial({ color: 0x802020, emissive: 0x300000, emissiveIntensity: 0.25, roughness: 0.65 }),
-      platformAlt: new THREE.MeshStandardMaterial({ color: 0x993333, emissive: 0x400000, emissiveIntensity: 0.25, roughness: 0.6 }),
-      sky: 0x1a0000, fog: [25,95], sun: 0xff3300, hemiTop: 0x661111, hemiBottom: 0x0a0000, lamp: 0xff4500
-    },
-    ice: {
-      platform: new THREE.MeshStandardMaterial({ color: 0xa3d5ff, roughness: 0.25, metalness: 0.5 }),
-      platformAlt: new THREE.MeshStandardMaterial({ color: 0x7bbcff, roughness: 0.3, metalness: 0.5 }),
-      sky: 0xe6f7ff, fog: [50,140], sun: 0xb3e5ff, hemiTop: 0xdff2ff, hemiBottom: 0xaad4ff, lamp: 0xcfe9ff
-    },
-    neon: {
-      platform: new THREE.MeshStandardMaterial({ color: 0x2b2b2b, emissive: 0x00e5ff, emissiveIntensity: 0.4, metalness: 0.3 }),
-      platformAlt: new THREE.MeshStandardMaterial({ color: 0x2b2b2b, emissive: 0xff00aa, emissiveIntensity: 0.4, metalness: 0.3 }),
-      sky: 0x0a0a12, fog: [40,130], sun: 0x99f0ff, hemiTop: 0x44ffee, hemiBottom: 0x00141a, lamp: 0x88ffee
-    },
-    ocean: {
-      platform: new THREE.MeshStandardMaterial({ color: 0x2e6f8e, roughness: 0.8 }),
-      platformAlt: new THREE.MeshStandardMaterial({ color: 0x1b4e66, roughness: 0.85 }),
-      sky: 0x0c1f2b, fog: [45,135], sun: 0xb0e4ff, hemiTop: 0x78c7ff, hemiBottom: 0x072231, lamp: 0x9ad8ff
-    },
-    garden: {
-      platform: new THREE.MeshStandardMaterial({ color: 0x5aa35a, roughness: 0.8 }),
-      platformAlt: new THREE.MeshStandardMaterial({ color: 0x3f803f, roughness: 0.85 }),
-      sky: 0x122012, fog: [50,150], sun: 0xfff7cf, hemiTop: 0xcde8a7, hemiBottom: 0x0a170a, lamp: 0xeaffc7
-    }
+    forest: { platform: mat(0x2b5c4b), platformAlt: mat(0x3a2b5c), sky:0x0c1326, fog:[50,140], sun:0xfff1e4, hemiTop:0x9bd4ff, hemiBottom:0x12131a, lamp:0xfff2b0 },
+    crystal: { platform: mat(0x3dc8ff,0.4,0.6), platformAlt: mat(0x7bd8ff,0.45,0.6), sky:0x0a0f1f, fog:[40,120], sun:0xcfe7ff, hemiTop:0xbadfff, hemiBottom:0x0b1020, lamp:0xb0e1ff },
+    skyisles: { platform: mat(0xe3d5a4,0.7,0.2), platformAlt: mat(0xc8b68f,0.75,0.2), sky:0x10172b, fog:[60,160], sun:0xfff9d6, hemiTop:0xfff4c7, hemiBottom:0x0f1220, lamp:0xffddaa },
+    desert: { platform: mat(0xd2a679,0.85,0.1), platformAlt: mat(0xc19a6b,0.9,0.08), sky:0xffe0b3, fog:[40,120], sun:0xffd27f, hemiTop:0xfff0c2, hemiBottom:0x705030, lamp:0xffe8bb },
+    lava: { platform: emissiveMat(0x802020,0x300000,0.25,0.65), platformAlt: emissiveMat(0x993333,0x400000,0.25,0.6), sky:0x1a0000, fog:[25,95], sun:0xff3300, hemiTop:0x661111, hemiBottom:0x0a0000, lamp:0xff4500 },
+    ice: { platform: mat(0xa3d5ff,0.25,0.5), platformAlt: mat(0x7bbcff,0.3,0.5), sky:0xe6f7ff, fog:[50,140], sun:0xb3e5ff, hemiTop:0xdff2ff, hemiBottom:0xaad4ff, lamp:0xcfe9ff },
+    neon: { platform: emissiveMat(0x2b2b2b,0x00e5ff,0.35,0.3), platformAlt: emissiveMat(0x2b2b2b,0xff00aa,0.35,0.3), sky:0x0a0a12, fog:[40,130], sun:0x99f0ff, hemiTop:0x44ffee, hemiBottom:0x00141a, lamp:0x88ffee },
+    ocean: { platform: mat(0x2e6f8e,0.8,0.0), platformAlt: mat(0x1b4e66,0.85,0.0), sky:0x0c1f2b, fog:[45,135], sun:0xb0e4ff, hemiTop:0x78c7ff, hemiBottom:0x072231, lamp:0x9ad8ff },
+    garden: { platform: mat(0x5aa35a,0.8,0.0), platformAlt: mat(0x3f803f,0.85,0.0), sky:0x122012, fog:[50,150], sun:0xfff7cf, hemiTop:0xcde8a7, hemiBottom:0x0a170a, lamp:0xeaffc7 }
   };
+  function mat(colorHex, rough=0.78, metal=0.12){ return new THREE.MeshStandardMaterial({ color: colorHex, roughness: rough, metalness: metal }); }
+  function emissiveMat(colorHex, emHex, emInt=0.3, rough=0.6){ return new THREE.MeshStandardMaterial({ color: colorHex, emissive: emHex, emissiveIntensity: emInt, roughness: rough }); }
 
-  const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.9, roughness: 0.4, metalness: 0.4 });
-  const coinMat = new THREE.MeshStandardMaterial({
-    color: 0xffd700, metalness: 0.85, roughness: 0.25, emissive: 0xffa500, emissiveIntensity: 0.25
-  });
+  const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.8, roughness: 0.5, metalness: 0.4 });
 
-  // Player
+  const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.85, roughness: 0.25, emissive: 0xffa500, emissiveIntensity: 0.2 });
+
+  // Player + cosmetics
   const playerRadius = 0.5;
   const playerHeight = 1.2;
   let playerColor = 0xf0f3f8;
-  const matPlayer = new THREE.MeshStandardMaterial({ color: playerColor, roughness: 0.35, metalness: 0.22, emissive: 0x141414, emissiveIntensity: 0.28 });
+  const matPlayer = new THREE.MeshStandardMaterial({ color: playerColor, roughness: 0.35, metalness: 0.22, emissive: 0x141414, emissiveIntensity: 0.25 });
   const player = new THREE.Mesh(new THREE.CapsuleGeometry(playerRadius, playerHeight, 8, 16), matPlayer);
   player.castShadow = true;
   scene.add(player);
 
-  // Owner cosmetic label
   let ownerSprite = null;
+  let ownerUnlocked = false;
+  const hat = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xff6f61, roughness: 0.5 }));
+  hat.rotation.x = Math.PI; hat.visible = false; scene.add(hat);
+  const trail = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.05, 8, 20), new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x88aaff, emissiveIntensity: 0.6 }));
+  trail.visible = false; scene.add(trail);
+
   function makeOwnerSprite() {
     const c = document.createElement('canvas');
     c.width = 256; c.height = 128;
     const ctx = c.getContext('2d');
-    ctx.clearRect(0,0,c.width,c.height);
     ctx.font = 'bold 64px system-ui';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ff2b2b';
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 6;
-    ctx.strokeText('OWNER', c.width/2, c.height/2);
-    ctx.fillText('OWNER', c.width/2, c.height/2);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ff2b2b'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 6;
+    ctx.strokeText('OWNER', c.width/2, c.height/2); ctx.fillText('OWNER', c.width/2, c.height/2);
     const tex = new THREE.CanvasTexture(c);
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
-    const sprite = new THREE.Sprite(mat);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
     sprite.scale.set(2.8, 1.4, 1);
     scene.add(sprite);
     return sprite;
   }
-  let ownerUnlocked = false;
 
-  // Accessories
-  const hat = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xff6f61, roughness: 0.5 }));
-  hat.rotation.x = Math.PI; hat.visible = false; scene.add(hat);
-
-  const trailGeom = new THREE.TorusGeometry(0.25, 0.05, 8, 24);
-  const trailMat = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x88aaff, emissiveIntensity: 0.7, roughness: 0.2, metalness: 0.2 });
-  const trail = new THREE.Mesh(trailGeom, trailMat);
-  trail.visible = false; scene.add(trail);
-
-  // Camera rig (snap)
+  // Camera (snap)
   let cameraMode = 'third';
   let camYaw = 0;
   let camPitch = 0.25;
@@ -269,7 +235,7 @@
   let camSensitivity = 3.5;
   const orbitRadius = 8.5;
 
-  // Procedural scenes with difficulty scaling
+  // Procedural scenes with difficulty ramp
   function createSceneLevels(count, themeKey) {
     const levels = [];
     for (let i=1; i<=count; i++) {
@@ -311,7 +277,7 @@
     { name: "Midnight Garden", theme: 'garden', levels: createSceneLevels(20, 'garden') }
   ];
 
-  // Gameplay containers
+  // Containers
   let platforms = [];
   let coins = [];
   let lights = [];
@@ -319,16 +285,14 @@
   let lava = null;
   let monkeys = [];
 
-  // HUD
+  // HUD and menu
   const scoreEl = document.getElementById('score');
   const levelEl = document.getElementById('level');
   const modeEl = document.getElementById('mode');
   const timerEl = document.getElementById('timer');
   const livesEl = document.getElementById('lives');
   const msgEl = document.getElementById('msg');
-  const pauseOverlay = document.getElementById('pauseOverlay');
 
-  // Menus
   const sceneSelect = document.getElementById('sceneSelect');
   const levelSelect = document.getElementById('levelSelect');
   const modeSelect = document.getElementById('modeSelect');
@@ -339,7 +303,6 @@
   const codeInput = document.getElementById('codeInput');
   const codeApplyBtn = document.getElementById('codeApplyBtn');
 
-  // Main menu overlay
   const mainMenu = document.getElementById('mainMenu');
   const closeMenuBtn = document.getElementById('closeMenuBtn');
   const tabs = Array.from(document.querySelectorAll('.tab'));
@@ -354,7 +317,7 @@
   const doubleJumpToggle = document.getElementById('doubleJumpToggle');
   const camSensInput = document.getElementById('camSens');
 
-  // Populate scene + level dropdowns and grid
+  // Populate scene + levels UI
   SCENES.forEach((s, si) => {
     const opt = document.createElement('option');
     opt.value = si; opt.textContent = `${si+1}. ${s.name}`;
@@ -396,7 +359,6 @@
     loadLevel(parseInt(sceneSelect.value, 10), parseInt(e.target.value, 10));
   });
 
-  // Tabs
   tabs.forEach(t => t.addEventListener('click', () => {
     tabs.forEach(x => x.classList.remove('active'));
     t.classList.add('active');
@@ -404,7 +366,6 @@
     panes[t.getAttribute('data-tab')].classList.add('active');
   }));
 
-  // Customization
   Array.from(document.querySelectorAll('.swatch')).forEach(sw => {
     sw.addEventListener('click', () => {
       const hex = sw.getAttribute('data-color');
@@ -417,7 +378,6 @@
   camSensInput.addEventListener('input', () => { camSensitivity = parseFloat(camSensInput.value); });
   doubleJumpToggle.addEventListener('change', (e) => { doubleJumpEnabled = e.target.checked; });
 
-  // Owner code
   codeApplyBtn.addEventListener('click', () => {
     if (codeInput.value.trim().toLowerCase() === 'owner222') {
       ownerUnlocked = true;
@@ -430,7 +390,7 @@
   });
   codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') codeApplyBtn.click(); });
 
-  // Game mode
+  // Game mode state
   let gameMode = 'classic';
   let timeLeft = 60.0;
   let lives = 3;
@@ -455,24 +415,22 @@
     if (gameMode === 'survival') livesEl.textContent = `Lives: ${lives}`;
   }
 
-  // Physics (faster player + stronger jump)
+  // Physics — tuned for responsiveness and instant stop on floor
   const velocity = new THREE.Vector3(0, 0, 0);
   const acceleration = new THREE.Vector3(0, 0, 0);
   const gravityBase = new THREE.Vector3(0, -24, 0);
   const gravity = gravityBase.clone();
-  let accelGround = 16;   // faster than slow version
+  let accelGround = 16;
   let accelAir = 16;
   const friction = 8.5;
   const airControl = 0.6;
   let onGround = false;
 
-  // Jumps
   let jumpStrength = 13.0;
   let doubleJumpStrength = 11.0;
   let canDoubleJump = true;
   let doubleJumpEnabled = true;
 
-  // Input state
   const keys = { left: false, right: false, up: false, down: false, jump: false };
   let moveDx = 0, moveDy = 0;
   let paused = false;
@@ -497,7 +455,7 @@
     if (e.code === 'Space') keys.jump = false;
   });
 
-  // Camera look with deadzones
+  // Pointer look (with deadzones)
   const moveStickEl = document.getElementById('moveStick');
   const jumpBtnEl = document.getElementById('jumpBtn');
   function inExpandedRect(e, rect, pad=80) {
@@ -511,9 +469,7 @@
     if (!lastMouse) return;
     const moveRect = moveStickEl.getBoundingClientRect();
     const jumpRect = jumpBtnEl.getBoundingClientRect();
-    const overMove = inExpandedRect(e, moveRect, 80);
-    const overJump = inExpandedRect(e, jumpRect, 80);
-    if (overMove || overJump) { lastMouse = { x: e.clientX, y: e.clientY }; return; }
+    if (inExpandedRect(e, moveRect, 80) || inExpandedRect(e, jumpRect, 80)) { lastMouse = { x: e.clientX, y: e.clientY }; return; }
     const dx = (e.clientX - lastMouse.x) / window.innerWidth;
     const dy = (e.clientY - lastMouse.y) / window.innerHeight;
     const jitterDeadzone = 0.02;
@@ -547,10 +503,7 @@
       setThumb(e.clientX - (rc.left + rc.width/2), e.clientY - (rc.top + rc.height/2));
       stick.setPointerCapture(e.pointerId);
     });
-    stick.addEventListener('pointermove', (e) => {
-      if (!active) return; const rc = rect();
-      setThumb(e.clientX - (rc.left + rc.width/2), e.clientY - (rc.top + rc.height/2));
-    });
+    stick.addEventListener('pointermove', (e) => { if (!active) return; const rc = rect(); setThumb(e.clientX - (rc.left + rc.width/2), e.clientY - (rc.top + rc.height/2)); });
     stick.addEventListener('pointerup', () => { active = false; reset(); });
     stick.addEventListener('pointercancel', () => { active = false; reset(); });
   }
@@ -562,6 +515,7 @@
   jumpBtn.addEventListener('pointerup', () => keys.jump = false);
 
   // Pause/resume
+  const pauseOverlay = document.getElementById('pauseOverlay');
   function togglePause() { paused = !paused; pauseOverlay.style.display = paused ? 'flex' : 'none'; }
   pauseOverlay.addEventListener('click', togglePause);
   pauseBtn.addEventListener('click', togglePause);
@@ -569,11 +523,8 @@
   // Prevent touch scrolling
   document.body.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive:false });
 
-  // Toggle first/third person
-  toggleViewBtn.addEventListener('click', () => {
-    cameraMode = cameraMode === 'third' ? 'first' : 'third';
-    player.visible = cameraMode !== 'first';
-  });
+  // Toggle view
+  toggleViewBtn.addEventListener('click', () => { cameraMode = cameraMode === 'third' ? 'first' : 'third'; player.visible = cameraMode !== 'first'; });
 
   // Open/close main menu
   openMenuBtn.addEventListener('click', () => { mainMenu.style.display = 'block'; });
@@ -587,6 +538,7 @@
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x, y, z);
     mesh.castShadow = true; mesh.receiveShadow = true;
+    // simple rim (low segments)
     const rim = new THREE.Mesh(new THREE.BoxGeometry(w+0.2, 0.05, d+0.2), new THREE.MeshStandardMaterial({ color: 0x1b2a45, roughness: 0.9 }));
     rim.position.set(0, 0.325, 0);
     mesh.add(rim);
@@ -595,18 +547,18 @@
     return mesh;
   }
   function makeCoin(x, y, z) {
-    const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.1, 32), coinMat);
+    const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16), coinMat);
     coin.rotation.x = Math.PI / 2;
     coin.position.set(x, y, z);
-    coin.castShadow = true;
+    coin.castShadow = false; // perf
     scene.add(coin);
     coins.push(coin);
     return coin;
   }
   function makeLamp(x, y, z, colorHex = 0xfff2b0) {
-    const lamp = new THREE.PointLight(colorHex, 0.7, 14);
+    const lamp = new THREE.PointLight(colorHex, 0.6, 12);
     lamp.position.set(x, y, z);
-    lamp.castShadow = true;
+    lamp.castShadow = false; // perf
     scene.add(lamp);
     lights.push(lamp);
     return lamp;
@@ -634,7 +586,7 @@
     scene.fog.color = new THREE.Color(theme.sky);
     scene.fog.near = theme.fog[0];
     scene.fog.far = theme.fog[1];
-    sun.color = new THREE.Color(theme.sun);       // fixed bug
+    sun.color = new THREE.Color(theme.sun);
     hemi.color.setHex(theme.hemiTop);
     hemi.groundColor.setHex(theme.hemiBottom);
     ground.material.color.setHex(theme.sky);
@@ -663,18 +615,15 @@
 
     lvl.platforms.forEach(p => {
       const mesh = makePlatform(p.x, p.y, p.z, p.w, p.d, p.alt, lvl.theme);
-      if (Math.random() < 0.7) makeLamp(p.x, p.y + 3.0, p.z, THEMES[lvl.theme].lamp);
+      if (Math.random() < 0.6) makeLamp(p.x, p.y + 3.0, p.z, THEMES[lvl.theme].lamp);
       mesh.userData = { vanishTimer: 0, stepped: false };
     });
 
-    lvl.coins.forEach(([x,y,z]) => {
-      makeCoin(x, y, z);
-      makeLamp(x, y + 0.6, z, THEMES[lvl.theme].lamp);
-    });
+    lvl.coins.forEach(([x,y,z]) => { makeCoin(x, y, z); if (Math.random()<0.5) makeLamp(x, y + 0.6, z, THEMES[lvl.theme].lamp); });
 
-    goal = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.28, 16, 64), matGoal);
+    goal = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.28, 12, 32), matGoal); // fewer segments
     goal.position.set(lvl.goal[0], lvl.goal[1], lvl.goal[2]);
-    goal.castShadow = true;
+    goal.castShadow = false; // perf
     scene.add(goal);
 
     player.position.set(lvl.spawn[0], lvl.spawn[1], lvl.spawn[2]);
@@ -693,17 +642,14 @@
     timeLeft = mode === 'time' ? 75.0 : 60.0;
     lives = 3;
 
-    // Reset defaults
     gravity.copy(gravityBase);
     accelGround = 16;
     accelAir = 16;
     jumpStrength = 13.0;
     doubleJumpStrength = 11.0;
     const themeFog = THEMES[SCENES[currentScene].theme].fog;
-    scene.fog.near = themeFog[0];
-    scene.fog.far = themeFog[1];
+    scene.fog.near = themeFog[0]; scene.fog.far = themeFog[1];
 
-    // Mode adjustments
     if (mode === 'speedRun') {
       accelGround = 22; accelAir = 22;
       jumpStrength = 14.0; doubleJumpStrength = 12.0;
@@ -712,8 +658,7 @@
       gravity.set(0, -12, 0);
       jumpStrength = 15.0; doubleJumpStrength = 13.0;
     } else if (mode === 'fogMaze') {
-      scene.fog.near = 10;
-      scene.fog.far = 60;
+      scene.fog.near = 10; scene.fog.far = 60;
     }
 
     setupModeEnvironment();
@@ -721,9 +666,9 @@
   }
 
   modeSelect.addEventListener('change', (e) => applyMode(e.target.value));
-  document.getElementById('restartBtn').addEventListener('click', () => loadLevel(currentScene, currentLevel));
+  restartBtn.addEventListener('click', () => loadLevel(currentScene, currentLevel));
 
-  // Mode environment setup (lava, monkeys, etc.)
+  // Mode environment setup
   let lavaHeight = -50;
   function setupModeEnvironment() {
     if (lava) { scene.remove(lava); lava = null; }
@@ -732,29 +677,25 @@
     if (gameMode === 'lavaTower') {
       lavaHeight = SCENES[currentScene].levels[currentLevel].spawn[1] - 20;
       const lavaGeo = new THREE.PlaneGeometry(200, 200);
-      const lavaMat = new THREE.MeshStandardMaterial({
-        color: 0xff3b1f, emissive: 0x9c1c0f, emissiveIntensity: 0.7, roughness: 0.5, metalness: 0.0, side: THREE.DoubleSide
-      });
+      const lavaMat = new THREE.MeshStandardMaterial({ color: 0xff3b1f, emissive: 0x9c1c0f, emissiveIntensity: 0.7, roughness: 0.6, metalness: 0.0, side: THREE.DoubleSide });
       lava = new THREE.Mesh(lavaGeo, lavaMat);
       lava.rotation.x = -Math.PI / 2;
       lava.position.set(0, lavaHeight, 0);
-      lava.receiveShadow = true;
+      lava.receiveShadow = false;
       scene.add(lava);
     }
 
-    if (gameMode === 'monkeyChase') {
-      spawnMonkeys(3);
-    }
+    if (gameMode === 'monkeyChase') spawnMonkeys(3);
   }
 
   function spawnMonkeys(count = 2) {
     const monkeyMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
     for (let i=0;i<count;i++) {
-      const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), monkeyMat);
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), monkeyMat); // fewer segments
       const lvl = SCENES[currentScene].levels[currentLevel];
       const start = lvl.platforms[Math.min(lvl.platforms.length-1, 1+i)];
       m.position.set(start.x + (Math.random()-0.5)*4, start.y + 1.0, start.z + (Math.random()-0.5)*4);
-      m.castShadow = true;
+      m.castShadow = false;
       scene.add(m);
       monkeys.push(m);
     }
@@ -777,11 +718,11 @@
     updateHUD();
   }
 
-  // Ambient particles
+  // Ambient particles — reduced count
   const dustGeo = new THREE.SphereGeometry(0.03, 8, 8);
-  const dustMat = new THREE.MeshBasicMaterial({ color: 0x88aaff, transparent: true, opacity: 0.25 });
+  const dustMat = new THREE.MeshBasicMaterial({ color: 0x88aaff, transparent: true, opacity: 0.22 });
   const dusts = [];
-  for (let i=0;i<120;i++){
+  for (let i=0;i<50;i++){ // reduced from 120
     const d = new THREE.Mesh(dustGeo, dustMat);
     d.position.set((Math.random()-0.5)*90, 2+Math.random()*14, (Math.random()-0.5)*140);
     scene.add(d); dusts.push(d);
@@ -799,16 +740,14 @@
     requestAnimationFrame(animate);
     if (paused) return;
 
-    const dt = Math.min(0.033, clock.getDelta());
+    const dt = Math.min(0.016, clock.getDelta()); // stable physics, smoother feel
 
-    // Accessories & owner label
+    // Cosmetics
     hat.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 0.4, player.position.z);
     trail.position.set(player.position.x, player.position.y + 0.2, player.position.z);
     trail.rotation.y += dt * 2.0;
     if (ownerUnlocked && !ownerSprite) ownerSprite = makeOwnerSprite();
-    if (ownerUnlocked && ownerSprite) {
-      ownerSprite.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 1.8, player.position.z);
-    }
+    if (ownerUnlocked && ownerSprite) ownerSprite.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 1.8, player.position.z);
 
     // Time attack
     if (gameMode === 'time') {
@@ -817,7 +756,7 @@
     }
     updateHUD();
 
-    // Input vector: keyboard + movement joystick
+    // Input vector
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + moveDx;
     const iz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + moveDy;
     const input = new THREE.Vector3(ix, 0, iz);
@@ -834,12 +773,6 @@
     acceleration.set(moveVec.x * (onGround ? accelGround : accelAir * airControl), 0, moveVec.z * (onGround ? accelGround : accelAir * airControl));
     acceleration.add(gravity);
     velocity.addScaledVector(acceleration, dt);
-
-    // Ground friction when idle
-    if (onGround && moveVec.lengthSq() < 1e-4) {
-      velocity.x = THREE.MathUtils.damp(velocity.x, 0, friction, dt);
-      velocity.z = THREE.MathUtils.damp(velocity.z, 0, friction, dt);
-    }
 
     // Jump handling
     if (keys.jump) {
@@ -859,7 +792,7 @@
     // Integrate
     player.position.addScaledVector(velocity, dt);
 
-    // Collisions + vanish platforms
+    // Collisions + instant stop on floor
     const wasGrounded = onGround;
     onGround = false;
     for (const box of platforms) {
@@ -875,19 +808,30 @@
         if (ny > 0.5) {
           onGround = true;
           if (velocity.y < 0) velocity.y = 0;
+          // Instant stop horizontally when landing on floor
+          velocity.x = 0;
+          velocity.z = 0;
           if (gameMode === 'vanishPlatforms') box.userData.stepped = true;
         } else {
           velocity.x *= 0.82;
           velocity.z *= 0.82;
         }
       }
-
       if (gameMode === 'vanishPlatforms' && box.userData.stepped) {
         box.userData.vanishTimer += dt;
         if (box.userData.vanishTimer > 1.0) box.visible = false;
       }
     }
     if (!wasGrounded && onGround) canDoubleJump = true;
+
+    // Ground plane instant stop safeguard
+    if (player.position.y < 0.9) {
+      player.position.y = 0.9;
+      if (velocity.y < 0) velocity.y = 0;
+      velocity.x = 0;
+      velocity.z = 0;
+      onGround = true;
+    }
 
     // Coins: collectible
     for (const c of coins) {
@@ -902,35 +846,29 @@
       }
     }
 
-    // Monkeys chase
+    // Monkey chase
     if (gameMode === 'monkeyChase') {
       for (const m of monkeys) {
         const dir = new THREE.Vector3().subVectors(player.position, m.position);
         const dist = dir.length();
         if (dist > 0.001) dir.normalize();
         m.position.addScaledVector(dir, dt * 4.0);
-        if (dist < 0.7) {
-          msgEl.textContent = 'Caught by a monkey!';
-          respawn(true);
-        }
+        if (dist < 0.7) { msgEl.textContent = 'Caught by a monkey!'; respawn(true); }
       }
     }
 
-    // Lava tower
+    // Lava rising
     if (gameMode === 'lavaTower' && lava) {
       lavaHeight += dt * 1.2;
       lava.position.y = lavaHeight;
-      if (player.position.y < lavaHeight + 0.3) {
-        msgEl.textContent = 'The lava got you!';
-        respawn(true);
-      }
+      if (player.position.y < lavaHeight + 0.3) { msgEl.textContent = 'The lava got you!'; respawn(true); }
     }
 
     // Goal
     tGoal += dt;
     if (goal) {
-      goal.rotation.x = Math.sin(tGoal * 1.2) * 0.2;
-      goal.rotation.y += dt * 0.8;
+      goal.rotation.x = Math.sin(tGoal * 1.2) * 0.18;
+      goal.rotation.y += dt * 0.7;
       if (player.position.distanceTo(goal.position) < 1.6) {
         if (gameMode === 'coinCollector' && coinsCollected < coins.length) {
           msgEl.textContent = 'Collect all coins first!';
@@ -955,11 +893,7 @@
       camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 0.9, player.position.z));
     } else {
       const head = new THREE.Vector3(player.position.x, player.position.y + playerHeight * 0.5 + 0.5, player.position.z);
-      const dir = new THREE.Vector3(
-        Math.sin(camYaw) * Math.cos(camPitch),
-        Math.sin(camPitch),
-        Math.cos(camYaw) * Math.cos(camPitch)
-      );
+      const dir = new THREE.Vector3(Math.sin(camYaw) * Math.cos(camPitch), Math.sin(camPitch), Math.cos(camYaw) * Math.cos(camPitch));
       camera.position.copy(head);
       camera.lookAt(head.clone().add(dir));
     }
