@@ -460,15 +460,15 @@
   const acceleration = new THREE.Vector3(0, 0, 0);
   const gravityBase = new THREE.Vector3(0, -24, 0);
   const gravity = gravityBase.clone();
-  let accelGround = 16;   // was 10, now faster
+  let accelGround = 16;   // faster than slow version
   let accelAir = 16;
   const friction = 8.5;
   const airControl = 0.6;
   let onGround = false;
 
   // Jumps
-  let jumpStrength = 13.0;       // stronger
-  let doubleJumpStrength = 11.0; // stronger
+  let jumpStrength = 13.0;
+  let doubleJumpStrength = 11.0;
   let canDoubleJump = true;
   let doubleJumpEnabled = true;
 
@@ -634,8 +634,7 @@
     scene.fog.color = new THREE.Color(theme.sky);
     scene.fog.near = theme.fog[0];
     scene.fog.far = theme.fog[1];
-    sun.color = new THREE Color ? null : null; // placeholder to avoid accidental typo handling
-    sun.color = new THREE.Color(theme.sun);
+    sun.color = new THREE.Color(theme.sun);       // fixed bug
     hemi.color.setHex(theme.hemiTop);
     hemi.groundColor.setHex(theme.hemiBottom);
     ground.material.color.setHex(theme.sky);
@@ -684,9 +683,7 @@
     canDoubleJump = true;
     coinsCollected = 0;
 
-    // Mode-specific init
     setupModeEnvironment();
-
     msgEl.textContent = 'Explore and reach the glowing goal!';
     updateHUD();
   }
@@ -702,8 +699,9 @@
     accelAir = 16;
     jumpStrength = 13.0;
     doubleJumpStrength = 11.0;
-    scene.fog.near = THEMES[SCENES[currentScene].theme].fog[0];
-    scene.fog.far = THEMES[SCENES[currentScene].theme].fog[1];
+    const themeFog = THEMES[SCENES[currentScene].theme].fog;
+    scene.fog.near = themeFog[0];
+    scene.fog.far = themeFog[1];
 
     // Mode adjustments
     if (mode === 'speedRun') {
@@ -723,12 +721,11 @@
   }
 
   modeSelect.addEventListener('change', (e) => applyMode(e.target.value));
-  restartBtn.addEventListener('click', () => loadLevel(currentScene, currentLevel));
+  document.getElementById('restartBtn').addEventListener('click', () => loadLevel(currentScene, currentLevel));
 
   // Mode environment setup (lava, monkeys, etc.)
   let lavaHeight = -50;
   function setupModeEnvironment() {
-    // Clear previous special actors
     if (lava) { scene.remove(lava); lava = null; }
     monkeys.forEach(m => scene.remove(m)); monkeys = [];
 
@@ -746,7 +743,7 @@
     }
 
     if (gameMode === 'monkeyChase') {
-      spawnMonkeys(3); // 3 monkeys by default
+      spawnMonkeys(3);
     }
   }
 
@@ -808,6 +805,7 @@
     hat.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 0.4, player.position.z);
     trail.position.set(player.position.x, player.position.y + 0.2, player.position.z);
     trail.rotation.y += dt * 2.0;
+    if (ownerUnlocked && !ownerSprite) ownerSprite = makeOwnerSprite();
     if (ownerUnlocked && ownerSprite) {
       ownerSprite.position.set(player.position.x, player.position.y + playerHeight * 0.5 + 1.8, player.position.z);
     }
@@ -877,10 +875,7 @@
         if (ny > 0.5) {
           onGround = true;
           if (velocity.y < 0) velocity.y = 0;
-          // mark stepped for vanish mode
-          if (gameMode === 'vanishPlatforms') {
-            box.userData.stepped = true;
-          }
+          if (gameMode === 'vanishPlatforms') box.userData.stepped = true;
         } else {
           velocity.x *= 0.82;
           velocity.z *= 0.82;
@@ -889,9 +884,7 @@
 
       if (gameMode === 'vanishPlatforms' && box.userData.stepped) {
         box.userData.vanishTimer += dt;
-        if (box.userData.vanishTimer > 1.0) {
-          box.visible = false;
-        }
+        if (box.userData.vanishTimer > 1.0) box.visible = false;
       }
     }
     if (!wasGrounded && onGround) canDoubleJump = true;
@@ -909,7 +902,7 @@
       }
     }
 
-    // Monkeys chase mode
+    // Monkeys chase
     if (gameMode === 'monkeyChase') {
       for (const m of monkeys) {
         const dir = new THREE.Vector3().subVectors(player.position, m.position);
@@ -923,9 +916,9 @@
       }
     }
 
-    // Lava tower mode
+    // Lava tower
     if (gameMode === 'lavaTower' && lava) {
-      lavaHeight += dt * 1.2; // rising speed
+      lavaHeight += dt * 1.2;
       lava.position.y = lavaHeight;
       if (player.position.y < lavaHeight + 0.3) {
         msgEl.textContent = 'The lava got you!';
@@ -939,7 +932,6 @@
       goal.rotation.x = Math.sin(tGoal * 1.2) * 0.2;
       goal.rotation.y += dt * 0.8;
       if (player.position.distanceTo(goal.position) < 1.6) {
-        // coin collector mode requires all coins
         if (gameMode === 'coinCollector' && coinsCollected < coins.length) {
           msgEl.textContent = 'Collect all coins first!';
         } else {
