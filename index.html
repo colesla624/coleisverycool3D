@@ -30,7 +30,6 @@
   #pauseOverlay { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); color:#fff; font-size: 20px; font-weight:700; text-align:center; }
   #pauseOverlay .inner { background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.2); padding: 14px 18px; border-radius: 10px; }
 
-  /* Main menu overlay */
   #mainMenu { position: fixed; inset: 0; display: none; background: rgba(0,0,0,0.7); color: #e6e6e6; }
   #mainMenu .wrap { position: absolute; left:50%; top:50%; transform: translate(-50%,-50%); width: min(820px, 92vw); max-height: 80vh; overflow:auto;
     background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; }
@@ -51,13 +50,13 @@
 <canvas id="game"></canvas>
 
 <div id="hud">
-  <div class="panel" id="score">Coins: 0</div>
+  <div class="panel" id="score">Coins: 0 / 0</div>
   <div class="panel" id="level">Level</div>
   <div class="panel" id="mode">Mode: Classic</div>
   <div class="panel" id="timer" style="display:none;">Time: 60.0s</div>
   <div class="panel" id="lives" style="display:none;">Lives: 3</div>
 </div>
-<div id="msg">Explore the level. Coins are optional!</div>
+<div id="msg">Explore and reach the glowing goal!</div>
 
 <div id="controls">
   <div class="stick-wrap" id="moveStick" style="left:24px; bottom:24px;">
@@ -74,6 +73,13 @@
     <option value="classic">Classic</option>
     <option value="time">Time Attack</option>
     <option value="survival">Survival</option>
+    <option value="lavaTower">Lava Rising Tower</option>
+    <option value="monkeyChase">Monkey Chase</option>
+    <option value="coinCollector">Coin Collector</option>
+    <option value="vanishPlatforms">Vanish Platforms</option>
+    <option value="fogMaze">Fog Maze</option>
+    <option value="speedRun">Speed Run</option>
+    <option value="lowGravity">Low Gravity</option>
   </select>
   <button id="restartBtn">Restart</button>
   <button id="pauseBtn">Pause</button>
@@ -209,13 +215,11 @@
   };
 
   const matGoal = new THREE.MeshStandardMaterial({ color: 0x5ce1e6, emissive: 0x29d5da, emissiveIntensity: 0.9, roughness: 0.4, metalness: 0.4 });
-
-  // Coins (optional, decorative)
   const coinMat = new THREE.MeshStandardMaterial({
     color: 0xffd700, metalness: 0.85, roughness: 0.25, emissive: 0xffa500, emissiveIntensity: 0.25
   });
 
-  // Player + customization
+  // Player
   const playerRadius = 0.5;
   const playerHeight = 1.2;
   let playerColor = 0xf0f3f8;
@@ -257,7 +261,7 @@
   const trail = new THREE.Mesh(trailGeom, trailMat);
   trail.visible = false; scene.add(trail);
 
-  // Camera rig (snap, no lerp)
+  // Camera rig (snap)
   let cameraMode = 'third';
   let camYaw = 0;
   let camPitch = 0.25;
@@ -265,15 +269,15 @@
   let camSensitivity = 3.5;
   const orbitRadius = 8.5;
 
-  // Procedural scenes with 20 levels each; difficulty increases by index
+  // Procedural scenes with difficulty scaling
   function createSceneLevels(count, themeKey) {
     const levels = [];
     for (let i=1; i<=count; i++) {
-      const difficulty = i - 1; // 0..19
-      const baseW = 20 - Math.min(8, Math.floor(difficulty/2)); // narrower over time
+      const difficulty = i - 1;
+      const baseW = 20 - Math.min(8, Math.floor(difficulty/2));
       const baseD = 20 - Math.min(6, Math.floor(difficulty/3));
-      const steps = 5 + Math.floor(difficulty/3); // more platforms later
-      const gapBase = 6 + Math.floor(difficulty/2); // bigger gaps later
+      const steps = 5 + Math.floor(difficulty/3);
+      const gapBase = 6 + Math.floor(difficulty/2);
 
       const platforms = [{ x:0, y:0, z:0, w:baseW, d:baseD, alt:false }];
       for (let s=1; s<=steps; s++) {
@@ -286,8 +290,7 @@
         platforms.push({ x, y, z, w, d, alt });
       }
 
-      // Coins placed near some platforms (optional)
-      const coinSpots = platforms.slice(1, Math.min(platforms.length, 8)).map(p => [p.x + ((Math.random()-0.5)*1.2), p.y + 1.3, p.z + ((Math.random()-0.5)*1.2)]);
+      const coinSpots = platforms.slice(1, Math.min(platforms.length, 10)).map(p => [p.x + ((Math.random()-0.5)*1.2), p.y + 1.3, p.z + ((Math.random()-0.5)*1.2)]);
       const goalP = platforms[platforms.length - 1];
       const goal = [goalP.x, goalP.y + 1.5, goalP.z];
       const spawn = [0, 2.5, 6];
@@ -313,8 +316,10 @@
   let coins = [];
   let lights = [];
   let goal = null;
+  let lava = null;
+  let monkeys = [];
 
-  // HUD elements
+  // HUD
   const scoreEl = document.getElementById('score');
   const levelEl = document.getElementById('level');
   const modeEl = document.getElementById('mode');
@@ -410,6 +415,7 @@
   hatToggle.addEventListener('change', () => { hat.visible = hatToggle.checked; });
   trailToggle.addEventListener('change', () => { trail.visible = trailToggle.checked; });
   camSensInput.addEventListener('input', () => { camSensitivity = parseFloat(camSensInput.value); });
+  doubleJumpToggle.addEventListener('change', (e) => { doubleJumpEnabled = e.target.checked; });
 
   // Owner code
   codeApplyBtn.addEventListener('click', () => {
@@ -430,24 +436,39 @@
   let lives = 3;
 
   function updateHUD() {
-    scoreEl.textContent = `Coins: ${coins.length}`; // just a count (optional to collect)
+    scoreEl.textContent = `Coins: ${coinsCollected} / ${coins.length}`;
     levelEl.textContent = `${SCENES[currentScene].name} — ${SCENES[currentScene].levels[currentLevel].name}`;
-    modeEl.textContent = `Mode: ${gameMode === 'classic' ? 'Classic' : gameMode === 'time' ? 'Time Attack' : 'Survival'}`;
+    modeEl.textContent = `Mode: ${
+      gameMode === 'classic' ? 'Classic' :
+      gameMode === 'time' ? 'Time Attack' :
+      gameMode === 'survival' ? 'Survival' :
+      gameMode === 'lavaTower' ? 'Lava Rising Tower' :
+      gameMode === 'monkeyChase' ? 'Monkey Chase' :
+      gameMode === 'coinCollector' ? 'Coin Collector' :
+      gameMode === 'vanishPlatforms' ? 'Vanish Platforms' :
+      gameMode === 'fogMaze' ? 'Fog Maze' :
+      gameMode === 'speedRun' ? 'Speed Run' : 'Low Gravity'
+    }`;
     timerEl.style.display = gameMode === 'time' ? 'block' : 'none';
     livesEl.style.display = gameMode === 'survival' ? 'block' : 'none';
     if (gameMode === 'time') timerEl.textContent = `Time: ${timeLeft.toFixed(1)}s`;
     if (gameMode === 'survival') livesEl.textContent = `Lives: ${lives}`;
   }
 
-  // Physics (slower player)
+  // Physics (faster player + stronger jump)
   const velocity = new THREE.Vector3(0, 0, 0);
   const acceleration = new THREE.Vector3(0, 0, 0);
-  const gravity = new THREE.Vector3(0, -24, 0);
-  const friction = 9.5;
-  const airControl = 0.55;
+  const gravityBase = new THREE.Vector3(0, -24, 0);
+  const gravity = gravityBase.clone();
+  let accelGround = 16;   // was 10, now faster
+  let accelAir = 16;
+  const friction = 8.5;
+  const airControl = 0.6;
   let onGround = false;
 
-  // Jumps (weaker)
+  // Jumps
+  let jumpStrength = 13.0;       // stronger
+  let doubleJumpStrength = 11.0; // stronger
   let canDoubleJump = true;
   let doubleJumpEnabled = true;
 
@@ -456,6 +477,7 @@
   let moveDx = 0, moveDy = 0;
   let paused = false;
   const voidY = -20;
+  let coinsCollected = 0;
 
   // Keyboard
   window.addEventListener('keydown', (e) => {
@@ -556,7 +578,6 @@
   // Open/close main menu
   openMenuBtn.addEventListener('click', () => { mainMenu.style.display = 'block'; });
   closeMenuBtn.addEventListener('click', () => { mainMenu.style.display = 'none'; });
-  doubleJumpToggle.addEventListener('change', (e) => { doubleJumpEnabled = e.target.checked; });
 
   // Geometry helpers
   function makePlatform(x, y, z, w, d, alt, themeKey) {
@@ -613,6 +634,7 @@
     scene.fog.color = new THREE.Color(theme.sky);
     scene.fog.near = theme.fog[0];
     scene.fog.far = theme.fog[1];
+    sun.color = new THREE Color ? null : null; // placeholder to avoid accidental typo handling
     sun.color = new THREE.Color(theme.sun);
     hemi.color.setHex(theme.hemiTop);
     hemi.groundColor.setHex(theme.hemiBottom);
@@ -627,7 +649,9 @@
     platforms.forEach(m => scene.remove(m));
     coins.forEach(c => scene.remove(c));
     lights.forEach(l => scene.remove(l));
-    platforms = []; coins = []; lights = [];
+    monkeys.forEach(m => scene.remove(m));
+    if (lava) { scene.remove(lava); lava = null; }
+    platforms = []; coins = []; lights = []; monkeys = [];
     if (goal) { scene.remove(goal); goal = null; }
   }
 
@@ -638,23 +662,17 @@
     const lvl = SCENES[sceneIndex].levels[levelIndex];
     applyTheme(lvl.theme);
 
-    // Build platforms
     lvl.platforms.forEach(p => {
       const mesh = makePlatform(p.x, p.y, p.z, p.w, p.d, p.alt, lvl.theme);
-      // Level lights: a soft lamp above every other platform for atmosphere
-      if (Math.random() < 0.7) {
-        makeLamp(p.x, p.y + 3.0, p.z, THEMES[lvl.theme].lamp);
-      }
+      if (Math.random() < 0.7) makeLamp(p.x, p.y + 3.0, p.z, THEMES[lvl.theme].lamp);
+      mesh.userData = { vanishTimer: 0, stepped: false };
     });
 
-    // Coins (optional, decorative)
     lvl.coins.forEach(([x,y,z]) => {
-      const coin = makeCoin(x, y, z);
-      // small lamp near coins for glow
+      makeCoin(x, y, z);
       makeLamp(x, y + 0.6, z, THEMES[lvl.theme].lamp);
     });
 
-    // Goal
     goal = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.28, 16, 64), matGoal);
     goal.position.set(lvl.goal[0], lvl.goal[1], lvl.goal[2]);
     goal.castShadow = true;
@@ -664,19 +682,86 @@
     velocity.set(0,0,0);
     onGround = false;
     canDoubleJump = true;
-    msgEl.textContent = 'Explore the level. Coins are optional!';
+    coinsCollected = 0;
+
+    // Mode-specific init
+    setupModeEnvironment();
+
+    msgEl.textContent = 'Explore and reach the glowing goal!';
     updateHUD();
   }
 
   function applyMode(mode) {
     gameMode = mode;
-    timeLeft = gameMode === 'time' ? 75.0 : 60.0;
+    timeLeft = mode === 'time' ? 75.0 : 60.0;
     lives = 3;
+
+    // Reset defaults
+    gravity.copy(gravityBase);
+    accelGround = 16;
+    accelAir = 16;
+    jumpStrength = 13.0;
+    doubleJumpStrength = 11.0;
+    scene.fog.near = THEMES[SCENES[currentScene].theme].fog[0];
+    scene.fog.far = THEMES[SCENES[currentScene].theme].fog[1];
+
+    // Mode adjustments
+    if (mode === 'speedRun') {
+      accelGround = 22; accelAir = 22;
+      jumpStrength = 14.0; doubleJumpStrength = 12.0;
+      timeLeft = 60.0;
+    } else if (mode === 'lowGravity') {
+      gravity.set(0, -12, 0);
+      jumpStrength = 15.0; doubleJumpStrength = 13.0;
+    } else if (mode === 'fogMaze') {
+      scene.fog.near = 10;
+      scene.fog.far = 60;
+    }
+
+    setupModeEnvironment();
     updateHUD();
   }
 
   modeSelect.addEventListener('change', (e) => applyMode(e.target.value));
   restartBtn.addEventListener('click', () => loadLevel(currentScene, currentLevel));
+
+  // Mode environment setup (lava, monkeys, etc.)
+  let lavaHeight = -50;
+  function setupModeEnvironment() {
+    // Clear previous special actors
+    if (lava) { scene.remove(lava); lava = null; }
+    monkeys.forEach(m => scene.remove(m)); monkeys = [];
+
+    if (gameMode === 'lavaTower') {
+      lavaHeight = SCENES[currentScene].levels[currentLevel].spawn[1] - 20;
+      const lavaGeo = new THREE.PlaneGeometry(200, 200);
+      const lavaMat = new THREE.MeshStandardMaterial({
+        color: 0xff3b1f, emissive: 0x9c1c0f, emissiveIntensity: 0.7, roughness: 0.5, metalness: 0.0, side: THREE.DoubleSide
+      });
+      lava = new THREE.Mesh(lavaGeo, lavaMat);
+      lava.rotation.x = -Math.PI / 2;
+      lava.position.set(0, lavaHeight, 0);
+      lava.receiveShadow = true;
+      scene.add(lava);
+    }
+
+    if (gameMode === 'monkeyChase') {
+      spawnMonkeys(3); // 3 monkeys by default
+    }
+  }
+
+  function spawnMonkeys(count = 2) {
+    const monkeyMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
+    for (let i=0;i<count;i++) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), monkeyMat);
+      const lvl = SCENES[currentScene].levels[currentLevel];
+      const start = lvl.platforms[Math.min(lvl.platforms.length-1, 1+i)];
+      m.position.set(start.x + (Math.random()-0.5)*4, start.y + 1.0, start.z + (Math.random()-0.5)*4);
+      m.castShadow = true;
+      scene.add(m);
+      monkeys.push(m);
+    }
+  }
 
   // Respawn
   function respawn(penalize = true) {
@@ -690,7 +775,7 @@
       msgEl.textContent = lives > 0 ? `Oops! Lives left: ${lives}` : 'Game over. Restart or change level.';
       if (lives <= 0) paused = true;
     } else {
-      msgEl.textContent = 'Try again! Reach the glowing goal.';
+      msgEl.textContent = 'Try again!';
     }
     updateHUD();
   }
@@ -746,10 +831,9 @@
     forward.y = 0; forward.normalize();
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), forward).normalize();
 
-    // Movement relative to camera (slower accel)
+    // Movement relative to camera
     const moveVec = new THREE.Vector3().addScaledVector(forward, input.z).addScaledVector(right, input.x);
-    const accelMag = onGround ? 10 : 10 * airControl;
-    acceleration.set(moveVec.x * accelMag, 0, moveVec.z * accelMag);
+    acceleration.set(moveVec.x * (onGround ? accelGround : accelAir * airControl), 0, moveVec.z * (onGround ? accelGround : accelAir * airControl));
     acceleration.add(gravity);
     velocity.addScaledVector(acceleration, dt);
 
@@ -759,15 +843,15 @@
       velocity.z = THREE.MathUtils.damp(velocity.z, 0, friction, dt);
     }
 
-    // Jump handling: weaker jump + double jump
+    // Jump handling
     if (keys.jump) {
       if (onGround) {
-        velocity.y = 10.0;
+        velocity.y = jumpStrength;
         onGround = false;
         canDoubleJump = true;
         keys.jump = false;
       } else if (doubleJumpEnabled && canDoubleJump) {
-        velocity.y = 8.5;
+        velocity.y = doubleJumpStrength;
         canDoubleJump = false;
         msgEl.textContent = 'Double jump!';
         keys.jump = false;
@@ -777,7 +861,7 @@
     // Integrate
     player.position.addScaledVector(velocity, dt);
 
-    // Collisions
+    // Collisions + vanish platforms
     const wasGrounded = onGround;
     onGround = false;
     for (const box of platforms) {
@@ -793,16 +877,61 @@
         if (ny > 0.5) {
           onGround = true;
           if (velocity.y < 0) velocity.y = 0;
+          // mark stepped for vanish mode
+          if (gameMode === 'vanishPlatforms') {
+            box.userData.stepped = true;
+          }
         } else {
           velocity.x *= 0.82;
           velocity.z *= 0.82;
         }
       }
+
+      if (gameMode === 'vanishPlatforms' && box.userData.stepped) {
+        box.userData.vanishTimer += dt;
+        if (box.userData.vanishTimer > 1.0) {
+          box.visible = false;
+        }
+      }
     }
     if (!wasGrounded && onGround) canDoubleJump = true;
 
-    // Coins spin (optional, no collection required)
-    for (const c of coins) c.rotation.z += dt * 2.0;
+    // Coins: collectible
+    for (const c of coins) {
+      if (!c.visible) continue;
+      c.rotation.z += dt * 2.0;
+      const d = c.position.distanceTo(player.position);
+      if (d < playerRadius + 0.6) {
+        c.visible = false;
+        coinsCollected += 1;
+        msgEl.textContent = `Coin collected! (${coinsCollected}/${coins.length})`;
+        updateHUD();
+      }
+    }
+
+    // Monkeys chase mode
+    if (gameMode === 'monkeyChase') {
+      for (const m of monkeys) {
+        const dir = new THREE.Vector3().subVectors(player.position, m.position);
+        const dist = dir.length();
+        if (dist > 0.001) dir.normalize();
+        m.position.addScaledVector(dir, dt * 4.0);
+        if (dist < 0.7) {
+          msgEl.textContent = 'Caught by a monkey!';
+          respawn(true);
+        }
+      }
+    }
+
+    // Lava tower mode
+    if (gameMode === 'lavaTower' && lava) {
+      lavaHeight += dt * 1.2; // rising speed
+      lava.position.y = lavaHeight;
+      if (player.position.y < lavaHeight + 0.3) {
+        msgEl.textContent = 'The lava got you!';
+        respawn(true);
+      }
+    }
 
     // Goal
     tGoal += dt;
@@ -810,16 +939,21 @@
       goal.rotation.x = Math.sin(tGoal * 1.2) * 0.2;
       goal.rotation.y += dt * 0.8;
       if (player.position.distanceTo(goal.position) < 1.6) {
-        msgEl.textContent = 'Level complete! Loading next...';
-        const nextLevel = (currentLevel + 1) % SCENES[currentScene].levels.length;
-        setTimeout(() => { loadLevel(currentScene, nextLevel); }, 900);
+        // coin collector mode requires all coins
+        if (gameMode === 'coinCollector' && coinsCollected < coins.length) {
+          msgEl.textContent = 'Collect all coins first!';
+        } else {
+          msgEl.textContent = 'Level complete! Loading next...';
+          const nextLevel = (currentLevel + 1) % SCENES[currentScene].levels.length;
+          setTimeout(() => { loadLevel(currentScene, nextLevel); }, 900);
+        }
       }
     }
 
     // Void fall
     if (player.position.y < voidY) respawn(gameMode === 'survival');
 
-    // Camera placement (snap, no lerp)
+    // Camera placement (snap)
     if (cameraMode === 'third') {
       const y = Math.sin(camPitch) * orbitRadius;
       const h = Math.cos(camPitch) * orbitRadius;
