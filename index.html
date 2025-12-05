@@ -2,39 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D PvE Shooter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3D PvE Shooter (Mobile gyro + PC mouse, optional WebXR)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin: 0; height: 100%; background: #0b0e12; overflow: hidden; font-family: system-ui, Arial, sans-serif; }
     #hud {
       position: fixed; top: 0; left: 0; right: 0; padding: 10px 16px;
       color: #e6edf3; font-weight: 600; font-size: 14px; display: flex; justify-content: space-between;
-      mix-blend-mode: difference; pointer-events: none;
+      mix-blend-mode: difference; pointer-events: none; z-index: 10;
     }
     #centerMsg {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); color: #e6edf3;
-      text-align: center; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;
+      text-align: center; font-size: 18px; font-weight: 700; letter-spacing: 0.5px; z-index: 9;
     }
     #crosshair {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      width: 16px; height: 16px; pointer-events: none;
+      width: 16px; height: 16px; pointer-events: none; z-index: 8;
     }
-    #crosshair::before, #crosshair::after {
-      content: ""; position: absolute; background: #e6edf3;
-    }
+    #crosshair::before, #crosshair::after { content: ""; position: absolute; background: #e6edf3; }
     #crosshair::before { left: 7px; top: 0; width: 2px; height: 16px; }
     #crosshair::after { top: 7px; left: 0; height: 2px; width: 16px; }
-    #overlay {
-      position: fixed; inset: 0; display: grid; place-items: center; background: rgba(5,7,10,0.6);
-      color: #e6edf3; text-align: center;
+    #controlsBar {
+      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 11;
     }
-    #overlay button {
-      background: #1f6feb; border: none; color: white; padding: 12px 16px; border-radius: 8px;
+    #controlsBar button {
+      background: #1f6feb; border: none; color: white; padding: 10px 12px; border-radius: 8px;
       font-weight: 700; cursor: pointer;
     }
     #log {
       position: fixed; bottom: 12px; left: 12px; width: 360px; max-width: calc(100% - 24px);
-      color: #9fb5d1; font-size: 12px; white-space: pre-wrap; pointer-events: none;
+      color: #9fb5d1; font-size: 12px; white-space: pre-wrap; pointer-events: none; z-index: 7;
     }
   </style>
 </head>
@@ -45,22 +43,20 @@
   </div>
   <div id="centerMsg"></div>
   <div id="crosshair"></div>
-
-  <div id="overlay">
-    <div>
-      <h1>3D PvE Shooter</h1>
-      <p>WASD to move, Mouse to aim, Left click to shoot, R to reload, Shift to sprint, Space to jump.</p>
-      <button id="startBtn">Click to play</button>
-    </div>
+  <div id="controlsBar">
+    <button id="toggleGyro">Enable gyro</button>
+    <button id="enterVR">Enter VR</button>
+    <button id="lockMouse">Lock mouse</button>
   </div>
   <div id="log"></div>
 
   <!-- Three.js and controls -->
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.160.0/examples/js/controls/PointerLockControls.js"></script>
+  <script src="https://unpkg.com/three@0.160.0/examples/jsm/controls/DeviceOrientationControls.js"></script>
 
   <script>
-    // Basic game state
+    // Game state
     const state = {
       hp: 100,
       shield: 0,
@@ -70,20 +66,22 @@
       wave: 1,
       enemiesAlive: 0,
       maxWaves: 10,
-      playing: false,
+      playing: true,     // auto-start, no start screen
       sprinting: false,
       reloading: false,
       time: 0,
       score: 0,
+      usingGyro: false,
     };
 
     // DOM refs
     const hudLeft = document.getElementById('statsLeft');
     const hudRight = document.getElementById('statsRight');
     const centerMsg = document.getElementById('centerMsg');
-    const overlay = document.getElementById('overlay');
-    const startBtn = document.getElementById('startBtn');
     const logEl = document.getElementById('log');
+    const toggleGyroBtn = document.getElementById('toggleGyro');
+    const enterVRBtn = document.getElementById('enterVR');
+    const lockMouseBtn = document.getElementById('lockMouse');
 
     // Three.js setup
     const scene = new THREE.Scene();
@@ -95,19 +93,16 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
+    renderer.xr.enabled = true; // WebXR on
     document.body.appendChild(renderer.domElement);
 
-    // Audio
+    // Add WebXR button (hidden; we make our own)
+    // Optionally: THREE.WebXRManager provides session controls via renderer.xr
+
+    // Audio (simple beeps)
     const audioListener = new THREE.AudioListener();
     camera.add(audioListener);
-    const sfx = {
-      shoot: new THREE.Audio(audioListener),
-      hit: new THREE.Audio(audioListener),
-      hurt: new THREE.Audio(audioListener),
-      pickup: new THREE.Audio(audioListener),
-      reload: new THREE.Audio(audioListener),
-      wave: new THREE.Audio(audioListener),
-    };
+    const sfx = { shoot:new THREE.Audio(audioListener), hit:new THREE.Audio(audioListener), hurt:new THREE.Audio(audioListener), pickup:new THREE.Audio(audioListener), reload:new THREE.Audio(audioListener), wave:new THREE.Audio(audioListener) };
     function makeBeep(audio, freq = 440, duration = 0.08, type = 'square', volume = 0.2){
       const ctx = audioListener.context;
       const osc = ctx.createOscillator();
@@ -145,7 +140,6 @@
     floor.receiveShadow = true;
     arena.add(floor);
 
-    // Walls (simple boundaries)
     const wallMat = new THREE.MeshStandardMaterial({ color: 0x0f1722, roughness: 0.9 });
     function makeWall(x, z, w, h) {
       const geo = new THREE.BoxGeometry(w, h, 2);
@@ -160,7 +154,6 @@
     makeWall(-100, 0, 2, 8);
     makeWall(100, 0, 2, 8);
 
-    // Some cover blocks
     const coverMat = new THREE.MeshStandardMaterial({ color: 0x233040, roughness: 0.7 });
     for (let i = 0; i < 24; i++) {
       const geo = new THREE.BoxGeometry(6 + Math.random()*6, 3 + Math.random()*4, 6 + Math.random()*6);
@@ -171,17 +164,70 @@
       arena.add(m);
     }
 
-    // Pointer lock controls
+    // Controls: Pointer lock (PC) + Device Orientation (Mobile) + WebXR
     const controls = new THREE.PointerLockControls(camera, document.body);
     scene.add(controls.getObject());
 
-    // Movement
+    let deviceControls = null;
+    let lastGyroPromptTime = 0;
+
+    function initDeviceOrientation(){
+      if (deviceControls) return;
+      deviceControls = new THREE.DeviceOrientationControls(camera);
+      state.usingGyro = true;
+      centerMsg.textContent = 'Gyro ON: tilt/turn phone to look. Use on-screen buttons for actions.';
+      toggleGyroBtn.textContent = 'Disable gyro';
+    }
+
+    async function enableGyro(){
+      try {
+        // iOS requires explicit permission
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+          const p = await DeviceMotionEvent.requestPermission();
+          if (p !== 'granted') { log('Gyro permission denied'); return; }
+        }
+        initDeviceOrientation();
+      } catch (e) {
+        log('Gyro not available or permission failed');
+      }
+    }
+
+    function disableGyro(){
+      deviceControls = null;
+      state.usingGyro = false;
+      toggleGyroBtn.textContent = 'Enable gyro';
+      centerMsg.textContent = '';
+    }
+
+    toggleGyroBtn.addEventListener('click', () => {
+      if (state.usingGyro) disableGyro(); else enableGyro();
+    });
+
+    // WebXR VR
+    enterVRBtn.addEventListener('click', async () => {
+      try {
+        // Request immersive-vr session if available
+        const supported = await navigator.xr?.isSessionSupported?.('immersive-vr');
+        if (!supported) { log('VR not supported on this device/browser'); return; }
+        renderer.xr.setSession(await navigator.xr.requestSession('immersive-vr', { requiredFeatures: ['local-floor'] }));
+        centerMsg.textContent = 'VR enabled (use your headset controllers)';
+      } catch (e) {
+        log('Failed to enter VR');
+      }
+    });
+
+    // Mouse lock
+    lockMouseBtn.addEventListener('click', () => {
+      controls.lock();
+      centerMsg.textContent = 'Mouse locked. Click to shoot.';
+    });
+
+    // Movement (PC keyboard). On mobile, use gyro to look; optional buttons could be added.
     const keys = {};
     window.addEventListener('keydown', (e) => {
       keys[e.code] = true;
       if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') state.sprinting = true;
       if (e.code === 'KeyR') tryReload();
-      if (!state.playing && (e.code === 'Enter' || e.code === 'Space')) startFromOverlay();
     });
     window.addEventListener('keyup', (e) => {
       keys[e.code] = false;
@@ -197,6 +243,7 @@
       const friction = onGround ? 8 : 1;
       const accel = onGround ? 55 : 15;
 
+      // Orientation source: gyro or camera forward from pointer lock
       const forward = new THREE.Vector3();
       camera.getWorldDirection(forward);
       forward.y = 0; forward.normalize();
@@ -219,7 +266,7 @@
       // Gravity
       velocity.y -= 24 * delta;
 
-      // Jump
+      // Jump (PC)
       if (keys['Space'] && onGround) {
         velocity.y = 9;
         onGround = false;
@@ -229,7 +276,7 @@
       const obj = controls.getObject();
       obj.position.addScaledVector(velocity, delta);
 
-      // Ground check (simple ray)
+      // Ground check
       const ray = new THREE.Raycaster(obj.position, new THREE.Vector3(0,-1,0), 0, 1.8);
       const hits = ray.intersectObject(floor, true);
       if (hits.length > 0) {
@@ -249,18 +296,13 @@
         velocity.x = horizVel.x; velocity.z = horizVel.z;
       }
 
-      // Boundary clamp
+      // Bounds
       obj.position.x = THREE.MathUtils.clamp(obj.position.x, -95, 95);
       obj.position.z = THREE.MathUtils.clamp(obj.position.z, -95, 95);
     }
 
-    // Shooting and pointer lock
+    // Shooting
     window.addEventListener('mousedown', (e) => {
-      if (!controls.isLocked && state.playing) {
-        controls.lock();   // lock pointer after a user click
-        centerMsg.textContent = '';
-        return;
-      }
       if (e.button === 0) shoot();
     });
 
@@ -309,7 +351,6 @@
         damageEnemy(closestEnemy, 25);
         sfxHit();
       } else {
-        // If no enemy hit, mark impact vs arena
         const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
         const impact = new THREE.Vector3();
         ray.intersectPlane(plane, impact);
@@ -346,7 +387,6 @@
       const mesh = new THREE.Mesh(geo, enemyMat);
       mesh.castShadow = true; mesh.receiveShadow = true;
 
-      // Spawn at ring boundary away from player
       const angle = Math.random() * Math.PI * 2;
       const radius = 80 + Math.random() * 20;
       const px = Math.cos(angle) * radius;
@@ -389,12 +429,10 @@
       enemies.forEach(e => {
         if (!e.alive) return;
 
-        // Simple seek behavior
         const dir = playerPos.clone().sub(e.mesh.position);
         dir.y = 0;
         const dist = dir.length();
 
-        // knockback decay
         e.knockback.multiplyScalar(0.9);
 
         if (dist > 1.2) {
@@ -402,7 +440,6 @@
           e.mesh.position.addScaledVector(dir, e.speed * delta);
           e.mesh.position.addScaledVector(e.knockback, delta);
         } else {
-          // Attack with cooldown
           e.attackCooldown -= delta;
           if (e.attackCooldown <= 0) {
             applyDamageToPlayer(e.damage);
@@ -410,7 +447,6 @@
           }
         }
 
-        // Slight bobbing
         e.mesh.position.y = 1.5 + Math.sin(state.time * 2 + e.mesh.position.x * 0.1) * 0.05;
       });
     }
@@ -430,7 +466,7 @@
       flashCenter(`-${dmg}`);
     }
 
-    // Pickups (ammo / health / shield)
+    // Pickups
     const pickupMatAmmo = new THREE.MeshStandardMaterial({ color: 0x1f6feb, emissive: 0x0c2a6e, metalness: 0.2 });
     const pickupMatHeal = new THREE.MeshStandardMaterial({ color: 0x2ea043, emissive: 0x145522, metalness: 0.2 });
     const pickupMatShield = new THREE.MeshStandardMaterial({ color: 0x9c27b0, emissive: 0x4a148c, metalness: 0.2 });
@@ -449,7 +485,6 @@
       m.userData.kind = kind;
       scene.add(m);
 
-      // auto-despawn
       setTimeout(() => scene.remove(m), 15000);
       pickups.push(m);
     }
@@ -478,7 +513,7 @@
 
     // Waves
     let nextSpawnTimer = 0;
-    let inIntermission = true;
+    let inIntermission = false;
     let intermissionTimer = 0;
 
     function startWave(){
@@ -488,6 +523,7 @@
       centerMsg.textContent = `Wave ${state.wave}`;
       setTimeout(()=> centerMsg.textContent = '', 1500);
     }
+    startWave(); // immediate start
 
     function updateWave(delta){
       if (inIntermission) {
@@ -496,7 +532,6 @@
         return;
       }
 
-      // spawn logic
       nextSpawnTimer -= delta;
       if (nextSpawnTimer <= 0) {
         const batch = Math.min(3 + Math.floor(state.wave * 0.8), 8);
@@ -504,7 +539,6 @@
         nextSpawnTimer = 3.5;
       }
 
-      // end when all enemies gone
       if (state.enemiesAlive <= 0 && enemies.filter(e => e.alive).length === 0) {
         inIntermission = true;
         state.wave++;
@@ -527,50 +561,17 @@
 
     function log(msg){
       logEl.textContent = msg;
-      setTimeout(() => { if (logEl.textContent === msg) logEl.textContent = ''; }, 2000);
-    }
-
-    // Start logic (fixed)
-    function startFromOverlay(){
-      overlay.style.display = 'none';
-      startGame();
-      centerMsg.textContent = 'Click to lock mouse';
-    }
-
-    startBtn.addEventListener('click', () => {
-      startFromOverlay();
-    });
-
-    function startGame(){
-      state.playing = true;
-      state.hp = 100;
-      state.shield = 0;
-      state.ammoInMag = 30;
-      state.reserveAmmo = 90;
-      state.wave = 1;
-      state.score = 0;
-      enemies.splice(0, enemies.length);
-      pickups.splice(0, pickups.length);
-      nextSpawnTimer = 0;
-      inIntermission = true;
-      intermissionTimer = 2.0;
-      updateHUD();
+      setTimeout(() => { if (logEl.textContent === msg) logEl.textContent = ''; }, 2500);
     }
 
     function gameOver(){
       state.playing = false;
-      overlay.style.display = 'grid';
-      overlay.querySelector('h1').textContent = 'You died';
-      overlay.querySelector('p').textContent = `Score: ${state.score} | Wave reached: ${state.wave}`;
-      startBtn.textContent = 'Play again';
+      centerMsg.textContent = `You died | Score: ${state.score} | Wave: ${state.wave}`;
     }
 
     function gameWin(){
       state.playing = false;
-      overlay.style.display = 'grid';
-      overlay.querySelector('h1').textContent = 'Victory!';
-      overlay.querySelector('p').textContent = `Score: ${state.score} | Waves cleared: ${state.maxWaves}`;
-      startBtn.textContent = 'Play again';
+      centerMsg.textContent = `Victory! Score: ${state.score} | Waves: ${state.maxWaves}`;
     }
 
     // Resize
@@ -582,13 +583,16 @@
 
     // Main loop
     let lastTime = performance.now();
-    function animate(now){
-      requestAnimationFrame(animate);
+    function tick(now){
       const delta = Math.min(0.033, (now - lastTime) / 1000);
       lastTime = now;
       state.time += delta;
 
       if (state.playing) {
+        // Update orientation controls if enabled
+        if (deviceControls) {
+          deviceControls.update();
+        }
         movePlayer(delta);
         updateEnemies(delta);
         updatePickups(delta);
@@ -597,10 +601,17 @@
 
       renderer.render(scene, camera);
     }
+
+    function animate(now){
+      tick(now);
+      renderer.setAnimationLoop(animate); // works for both WebXR and non-VR
+    }
     animate(performance.now());
 
-    // Help text
-    log('Tip: If clicking doesn’t lock the mouse, run on a local server (e.g., VS Code Live Server).');
+    // Tips
+    centerMsg.textContent = 'PC: click "Lock mouse". Mobile: tap "Enable gyro". VR: tap "Enter VR".';
+    log('Note: On iOS Safari, you must grant motion/gyro permission when prompted.');
+
   </script>
 </body>
 </html>
