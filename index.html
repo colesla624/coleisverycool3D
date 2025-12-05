@@ -181,6 +181,7 @@
       keys[e.code] = true;
       if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') state.sprinting = true;
       if (e.code === 'KeyR') tryReload();
+      if (!state.playing && (e.code === 'Enter' || e.code === 'Space')) startFromOverlay();
     });
     window.addEventListener('keyup', (e) => {
       keys[e.code] = false;
@@ -233,7 +234,6 @@
       const hits = ray.intersectObject(floor, true);
       if (hits.length > 0) {
         onGround = true;
-        // keep player above ground
         obj.position.y = Math.max(obj.position.y, hits[0].point.y + 1.7);
         velocity.y = Math.max(velocity.y, -2);
       } else {
@@ -254,10 +254,14 @@
       obj.position.z = THREE.MathUtils.clamp(obj.position.z, -95, 95);
     }
 
-    // Shooting
+    // Shooting and pointer lock
     window.addEventListener('mousedown', (e) => {
+      if (!controls.isLocked && state.playing) {
+        controls.lock();   // lock pointer after a user click
+        centerMsg.textContent = '';
+        return;
+      }
       if (e.button === 0) shoot();
-      if (!controls.isLocked && state.playing) controls.lock();
     });
 
     const impactMat = new THREE.MeshBasicMaterial({ color: 0xff3355 });
@@ -453,7 +457,7 @@
     const pickups = [];
     function updatePickups(delta){
       const playerPos = controls.getObject().position;
-      pickups.forEach((p, i) => {
+      pickups.forEach((p) => {
         if (!p.parent) return;
         p.rotation.y += delta;
         const dist = p.position.distanceTo(playerPos);
@@ -500,9 +504,8 @@
         nextSpawnTimer = 3.5;
       }
 
-      // progress and intermission when fewer than N enemies remain and enough spawned
+      // end when all enemies gone
       if (state.enemiesAlive <= 0 && enemies.filter(e => e.alive).length === 0) {
-        // End of wave when no enemies remain for a moment
         inIntermission = true;
         state.wave++;
         if (state.wave > state.maxWaves) return gameWin();
@@ -527,7 +530,17 @@
       setTimeout(() => { if (logEl.textContent === msg) logEl.textContent = ''; }, 2000);
     }
 
-    // Game lifecycle
+    // Start logic (fixed)
+    function startFromOverlay(){
+      overlay.style.display = 'none';
+      startGame();
+      centerMsg.textContent = 'Click to lock mouse';
+    }
+
+    startBtn.addEventListener('click', () => {
+      startFromOverlay();
+    });
+
     function startGame(){
       state.playing = true;
       state.hp = 100;
@@ -541,9 +554,7 @@
       nextSpawnTimer = 0;
       inIntermission = true;
       intermissionTimer = 2.0;
-      overlay.style.display = 'none';
       updateHUD();
-      controls.lock();
     }
 
     function gameOver(){
@@ -561,10 +572,6 @@
       overlay.querySelector('p').textContent = `Score: ${state.score} | Waves cleared: ${state.maxWaves}`;
       startBtn.textContent = 'Play again';
     }
-
-    startBtn.addEventListener('click', () => {
-      startGame();
-    });
 
     // Resize
     window.addEventListener('resize', () => {
@@ -593,7 +600,7 @@
     animate(performance.now());
 
     // Help text
-    log('Tip: If clicking doesn’t lock the mouse, try running on a local server.');
+    log('Tip: If clicking doesn’t lock the mouse, run on a local server (e.g., VS Code Live Server).');
   </script>
 </body>
 </html>
