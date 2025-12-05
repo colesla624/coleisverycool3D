@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>3D PvE Shooter (Mobile gyro + PC mouse, optional WebXR)</title>
+  <title>3D PvE Shooter — PC + Mobile Gyro + Optional WebXR VR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     html, body { margin: 0; height: 100%; background: #0b0e12; overflow: hidden; font-family: system-ui, Arial, sans-serif; }
@@ -34,6 +34,20 @@
       position: fixed; bottom: 12px; left: 12px; width: 360px; max-width: calc(100% - 24px);
       color: #9fb5d1; font-size: 12px; white-space: pre-wrap; pointer-events: none; z-index: 7;
     }
+
+    /* Mobile movement buttons */
+    #mobileControls {
+      position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+      display: none; gap: 8px; z-index: 12;
+    }
+    #mobileControls button {
+      background: #233040; color: #e6edf3; border: 1px solid #1f6feb;
+      padding: 10px 12px; border-radius: 8px; font-weight: 700;
+    }
+
+    @media (pointer: coarse) {
+      #mobileControls { display: flex; }
+    }
   </style>
 </head>
 <body>
@@ -43,14 +57,26 @@
   </div>
   <div id="centerMsg"></div>
   <div id="crosshair"></div>
+
   <div id="controlsBar">
     <button id="toggleGyro">Enable gyro</button>
     <button id="enterVR">Enter VR</button>
     <button id="lockMouse">Lock mouse</button>
+    <button id="reloadBtn">Reload</button>
+    <button id="shootBtn">Shoot</button>
   </div>
+
+  <div id="mobileControls">
+    <button id="mLeft">◀︎</button>
+    <button id="mRight">▶︎</button>
+    <button id="mForward">▲</button>
+    <button id="mBack">▼</button>
+    <button id="mJump">Jump</button>
+    <button id="mSprint">Sprint</button>
+  </div>
+
   <div id="log"></div>
 
-  <!-- Three.js and controls -->
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.160.0/examples/js/controls/PointerLockControls.js"></script>
   <script src="https://unpkg.com/three@0.160.0/examples/jsm/controls/DeviceOrientationControls.js"></script>
@@ -66,7 +92,7 @@
       wave: 1,
       enemiesAlive: 0,
       maxWaves: 10,
-      playing: true,     // auto-start, no start screen
+      playing: true, // auto-start
       sprinting: false,
       reloading: false,
       time: 0,
@@ -82,8 +108,17 @@
     const toggleGyroBtn = document.getElementById('toggleGyro');
     const enterVRBtn = document.getElementById('enterVR');
     const lockMouseBtn = document.getElementById('lockMouse');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const shootBtn = document.getElementById('shootBtn');
 
-    // Three.js setup
+    const mLeft = document.getElementById('mLeft');
+    const mRight = document.getElementById('mRight');
+    const mForward = document.getElementById('mForward');
+    const mBack = document.getElementById('mBack');
+    const mJump = document.getElementById('mJump');
+    const mSprint = document.getElementById('mSprint');
+
+    // Three.js base
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b0e12);
 
@@ -96,10 +131,7 @@
     renderer.xr.enabled = true; // WebXR on
     document.body.appendChild(renderer.domElement);
 
-    // Add WebXR button (hidden; we make our own)
-    // Optionally: THREE.WebXRManager provides session controls via renderer.xr
-
-    // Audio (simple beeps)
+    // Audio (beeps)
     const audioListener = new THREE.AudioListener();
     camera.add(audioListener);
     const sfx = { shoot:new THREE.Audio(audioListener), hit:new THREE.Audio(audioListener), hurt:new THREE.Audio(audioListener), pickup:new THREE.Audio(audioListener), reload:new THREE.Audio(audioListener), wave:new THREE.Audio(audioListener) };
@@ -164,18 +196,17 @@
       arena.add(m);
     }
 
-    // Controls: Pointer lock (PC) + Device Orientation (Mobile) + WebXR
+    // Controls: Pointer lock + Device Orientation + WebXR
     const controls = new THREE.PointerLockControls(camera, document.body);
     scene.add(controls.getObject());
 
     let deviceControls = null;
-    let lastGyroPromptTime = 0;
 
     function initDeviceOrientation(){
       if (deviceControls) return;
       deviceControls = new THREE.DeviceOrientationControls(camera);
       state.usingGyro = true;
-      centerMsg.textContent = 'Gyro ON: tilt/turn phone to look. Use on-screen buttons for actions.';
+      centerMsg.textContent = 'Gyro ON: tilt/turn phone to look.';
       toggleGyroBtn.textContent = 'Disable gyro';
     }
 
@@ -203,26 +234,27 @@
       if (state.usingGyro) disableGyro(); else enableGyro();
     });
 
-    // WebXR VR
     enterVRBtn.addEventListener('click', async () => {
       try {
-        // Request immersive-vr session if available
         const supported = await navigator.xr?.isSessionSupported?.('immersive-vr');
         if (!supported) { log('VR not supported on this device/browser'); return; }
-        renderer.xr.setSession(await navigator.xr.requestSession('immersive-vr', { requiredFeatures: ['local-floor'] }));
-        centerMsg.textContent = 'VR enabled (use your headset controllers)';
+        const session = await navigator.xr.requestSession('immersive-vr', { requiredFeatures: ['local-floor'] });
+        await renderer.xr.setSession(session);
+        centerMsg.textContent = 'VR enabled (use headset/controllers).';
       } catch (e) {
         log('Failed to enter VR');
       }
     });
 
-    // Mouse lock
     lockMouseBtn.addEventListener('click', () => {
       controls.lock();
       centerMsg.textContent = 'Mouse locked. Click to shoot.';
     });
 
-    // Movement (PC keyboard). On mobile, use gyro to look; optional buttons could be added.
+    reloadBtn.addEventListener('click', () => tryReload());
+    shootBtn.addEventListener('click', () => shoot());
+
+    // PC keyboard
     const keys = {};
     window.addEventListener('keydown', (e) => {
       keys[e.code] = true;
@@ -234,27 +266,45 @@
       if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') state.sprinting = false;
     });
 
+    // Mobile movement hold states
+    const touchMove = { left:false, right:false, forward:false, back:false, sprint:false };
+    mLeft.addEventListener('touchstart', () => touchMove.left = true);
+    mLeft.addEventListener('touchend', () => touchMove.left = false);
+    mRight.addEventListener('touchstart', () => touchMove.right = true);
+    mRight.addEventListener('touchend', () => touchMove.right = false);
+    mForward.addEventListener('touchstart', () => touchMove.forward = true);
+    mForward.addEventListener('touchend', () => touchMove.forward = false);
+    mBack.addEventListener('touchstart', () => touchMove.back = true);
+    mBack.addEventListener('touchend', () => touchMove.back = false);
+    mJump.addEventListener('touchstart', () => mobileJump());
+    mSprint.addEventListener('touchstart', () => { touchMove.sprint = true; state.sprinting = true; });
+    mSprint.addEventListener('touchend', () => { touchMove.sprint = false; state.sprinting = false; });
+
     // Physics-lite
     let velocity = new THREE.Vector3();
     let onGround = false;
 
     function movePlayer(delta) {
-      const speed = state.sprinting ? 9 : 6;
+      const speed = (state.sprinting || touchMove.sprint) ? 9 : 6;
       const friction = onGround ? 8 : 1;
       const accel = onGround ? 55 : 15;
 
-      // Orientation source: gyro or camera forward from pointer lock
       const forward = new THREE.Vector3();
       camera.getWorldDirection(forward);
       forward.y = 0; forward.normalize();
-
       const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), forward).normalize();
 
       let wishdir = new THREE.Vector3();
+      // PC keys
       if (keys['KeyW']) wishdir.add(forward);
       if (keys['KeyS']) wishdir.add(forward.clone().multiplyScalar(-1));
       if (keys['KeyA']) wishdir.add(right.clone().multiplyScalar(-1));
       if (keys['KeyD']) wishdir.add(right);
+      // Mobile touches
+      if (touchMove.forward) wishdir.add(forward);
+      if (touchMove.back) wishdir.add(forward.clone().multiplyScalar(-1));
+      if (touchMove.left) wishdir.add(right.clone().multiplyScalar(-1));
+      if (touchMove.right) wishdir.add(right);
 
       wishdir.normalize();
 
@@ -301,10 +351,16 @@
       obj.position.z = THREE.MathUtils.clamp(obj.position.z, -95, 95);
     }
 
+    function mobileJump(){
+      if (onGround) { velocity.y = 9; onGround = false; }
+    }
+
     // Shooting
-    window.addEventListener('mousedown', (e) => {
-      if (e.button === 0) shoot();
-    });
+    window.addEventListener('mousedown', (e) => { if (e.button === 0) shoot(); });
+    window.addEventListener('touchstart', (e) => {
+      // Single tap shoot for mobile if not on button
+      if (e.target.tagName !== 'BUTTON') shoot();
+    }, { passive: true });
 
     const impactMat = new THREE.MeshBasicMaterial({ color: 0xff3355 });
     function makeImpactPoint(pos){
@@ -321,7 +377,6 @@
       state.ammoInMag--;
       sfxShoot();
 
-      // Hitscan ray
       const origin = controls.getObject().position.clone();
       origin.y += 0.1;
       const dir = new THREE.Vector3();
@@ -330,7 +385,6 @@
       const ray = new THREE.Ray(origin, dir);
       const maxDist = 120;
 
-      // Check enemies
       let closestHit = null;
       let closestEnemy = null;
       enemies.forEach(e => {
@@ -425,7 +479,6 @@
 
     function updateEnemies(delta){
       const playerPos = controls.getObject().position;
-
       enemies.forEach(e => {
         if (!e.alive) return;
 
@@ -523,7 +576,7 @@
       centerMsg.textContent = `Wave ${state.wave}`;
       setTimeout(()=> centerMsg.textContent = '', 1500);
     }
-    startWave(); // immediate start
+    startWave();
 
     function updateWave(delta){
       if (inIntermission) {
@@ -589,10 +642,7 @@
       state.time += delta;
 
       if (state.playing) {
-        // Update orientation controls if enabled
-        if (deviceControls) {
-          deviceControls.update();
-        }
+        if (deviceControls) deviceControls.update();
         movePlayer(delta);
         updateEnemies(delta);
         updatePickups(delta);
@@ -609,9 +659,8 @@
     animate(performance.now());
 
     // Tips
-    centerMsg.textContent = 'PC: click "Lock mouse". Mobile: tap "Enable gyro". VR: tap "Enter VR".';
-    log('Note: On iOS Safari, you must grant motion/gyro permission when prompted.');
-
+    centerMsg.textContent = 'PC: Lock mouse to aim. Mobile: Enable gyro to look. VR: Enter VR.';
+    log('Note: iOS Safari requires motion/gyro permission when prompted.');
   </script>
 </body>
 </html>
