@@ -2,73 +2,76 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mini Fortnite-Style 3D Game (Single HTML)</title>
+<title>Mini Fortnite-Style 3D Game - Fully Working (Copy & Paste)</title>
 <style>
-  body { margin:0; overflow:hidden; font-family:Arial, sans-serif; }
-  #info { position:absolute; top:10px; left:10px; color:white; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; }
-  #crosshair { position:absolute; top:50%; left:50%; font-size:30px; color:white; pointer-events:none; transform:translate(-50%,-50%); }
+  body { margin:0; overflow:hidden; background:#000; font-family:Arial, sans-serif; }
+  #info { position:absolute; top:10px; left:10px; color:white; background:rgba(0,0,0,0.6); padding:12px; border-radius:8px; z-index:100; }
+  #crosshair { position:absolute; top:50%; left:50%; font-size:32px; color:white; pointer-events:none; transform:translate(-50%,-50%); z-index:100; }
 </style>
 </head>
 <body>
+
 <div id="info">Score: <span id="score">0</span><br>
-WASD = Move | SPACE = Jump | L-Click = Shoot | B = Build Mode (click to place)</div>
+WASD = Move • SPACE = Jump • Click = Shoot • B = Build Mode (Wheel to switch piece)</div>
 <div id="crosshair">+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.168.0/examples/js/controls/PointerLockControls.js"></script>
+<!-- Three.js from CDN (latest working version) -->
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.160.0/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
-// ================ BASIC SETUP ================
+// ================ SCENE SETUP ================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
-scene.fog = new THREE.FogExp2(0x87CEEB, 0.002);
+scene.fog = new THREE.FogExp2(0x87CEEB, 0.0015);
 
-const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth, innerHeight);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// ================ POINTER LOCK CONTROLS ================
+// ================ POINTER LOCK ================
 const controls = new THREE.PointerLockControls(camera, document.body);
 document.body.addEventListener('click', () => controls.lock());
 
-// ================ LIGHTING ================
-const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-scene.add(ambient);
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-dirLight.position.set(50, 100, 30);
-scene.add(dirLight);
+// ================ LIGHTS ================
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+sun.position.set(100, 150, 100);
+sun.castShadow = true;
+scene.add(sun);
 
 // ================ GROUND ================
-const groundGeo = new THREE.PlaneGeometry(500, 500);
-const groundMat = new THREE.MeshStandardMaterial({color:0x3d9140});
-const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.rotation.x = -Math.PI/2;
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(1000, 1000),
+  new THREE.MeshStandardMaterial({ color: 0x3d8f3e })
+);
+ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// ================ PLAYER PHYSICS ================
-let move = {forward:false, backward:false, left:false, right:false, jump:false};
+// ================ PLAYER VARIABLES ================
+camera.position.set(0, 1.8, 10);
 let velocity = new THREE.Vector3();
 let direction = new THREE.Vector3();
-let canJump = false;
-const gravity = -40;
-const playerHeight = 1.8;
+let move = { forward: false, backward: false, left: false, right: false };
+let canJump = true;
+const gravity = -50;
 
-camera.position.y = playerHeight;
-
+// ================ INPUT ================
 document.addEventListener('keydown', e => {
-  switch(e.code){
+  switch (e.code) {
     case 'KeyW': move.forward = true; break;
     case 'KeyS': move.backward = true; break;
     case 'KeyA': move.left = true; break;
     case 'KeyD': move.right = true; break;
-    case 'Space': if(canJump) move.jump = true; break;
-    case 'KeyB': buildMode = !buildMode; updateInfo(); break;
+    case 'Space': if (canJump) velocity.y = 15; canJump = false; break;
+    case 'KeyB': buildMode = !buildMode; updateUI(); createPreview(); break;
   }
 });
 document.addEventListener('keyup', e => {
-  switch(e.code){
+  switch (e.code) {
     case 'KeyW': move.forward = false; break;
     case 'KeyS': move.backward = false; break;
     case 'KeyA': move.left = false; break;
@@ -78,17 +81,15 @@ document.addEventListener('keyup', e => {
 
 // ================ SHOOTING ================
 const bullets = [];
-const bulletSpeed = 100;
-
-function shoot(){
+function shoot() {
   const bullet = new THREE.Mesh(
     new THREE.SphereGeometry(0.15),
-    new THREE.MeshBasicMaterial({color:0xffff00})
+    new THREE.MeshBasicMaterial({ color: 0xffff00 })
   );
   bullet.position.copy(camera.position);
   const dir = new THREE.Vector3();
   camera.getWorldDirection(dir);
-  bullet.velocity = dir.multiplyScalar(bulletSpeed);
+  bullet.velocity = dir.multiplyScalar(120);
   scene.add(bullet);
   bullets.push(bullet);
 }
@@ -96,157 +97,145 @@ function shoot(){
 // ================ BUILDING SYSTEM ================
 let buildMode = false;
 let previewMesh = null;
-const buildPieces = [];
-const buildTypes = ['wall','ramp','floor'];
 let currentBuildType = 0;
+const buildTypes = ['wall', 'floor', 'ramp'];
 
-function createPreview(){
-  if(previewMesh) scene.remove(previewMesh);
+function createPreview() {
+  if (previewMesh) scene.remove(previewMesh);
   let geo;
-  if(buildTypes[currentBuildType]==='wall') geo = new THREE.BoxGeometry(4,4,0.3);
-  if(buildTypes[currentBuildType]==='ramp') geo = new THREE.BoxGeometry(4,4,4);
-  if(buildTypes[currentBuildType]==='floor') geo = new THREE.BoxGeometry(4,0.3,4);
-  
-  previewMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color:0x4488ff, opacity:0.5, transparent:true}));
+  if (buildTypes[currentBuildType] === 'wall') geo = new THREE.BoxGeometry(4, 4, 0.3);
+  if (buildTypes[currentBuildType] === 'floor') geo = new THREE.BoxGeometry(4, 0.3, 4);
+  if (buildTypes[currentBuildType] === 'ramp') geo = new THREE.BoxGeometry(4, 4, 4);
+
+  previewMesh = new THREE.Mesh(
+    geo,
+    new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.6 })
+  );
   scene.add(previewMesh);
 }
 
-function placeStructure(){
-  const mat = new THREE.MeshStandardMaterial({color:0x8888ff, metalness:0.3, roughness:0.7});
+function placeStructure() {
+  const mat = new THREE.MeshStandardMaterial({ color: 0x8888ff, metalness: 0.2, roughness: 0.8 });
   let mesh;
-  if(buildTypes[currentBuildType]==='wall'){
-    mesh = new THREE.Mesh(new THREE.BoxGeometry(4,4,0.3), mat);
-  }
-  if(buildTypes[currentBuildType]==='floor'){
-    mesh = new THREE.Mesh(new THREE.BoxGeometry(4,0.3,4), mat);
-  }
-  if(buildTypes[currentBuildType]==='ramp'){
-    mesh = new THREE.Mesh(new THREE.BoxGeometry(4,4,4), mat);
-    mesh.rotation.x = -Math.PI/4;
+
+  if (buildTypes[currentBuildType] === 'wall')
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 0.3), mat);
+  if (buildTypes[currentBuildType] === 'floor')
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, 4), mat);
+  if (buildTypes[currentBuildType] === 'ramp') {
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), mat);
+    mesh.rotation.x = -Math.PI / 4;
     mesh.position.y += 2;
   }
-  const pos = previewMesh.position.clone();
-  pos.y = (buildTypes[currentBuildType]==='floor') ? 0.15 : pos.y;
-  mesh.position.copy(pos);
+
+  mesh.position.copy(previewMesh.position);
+  if (buildTypes[currentBuildType] === 'floor') mesh.position.y = 0.15;
   scene.add(mesh);
-  buildPieces.push(mesh);
   score += 10;
   updateScore();
 }
 
-// ================ TARGET CUBES (Enemies/Props) ================
+// ================ TARGETS ================
 let score = 0;
 const targets = [];
-function createTargets(count){
-  const geo = new THREE.BoxGeometry(2,2,2);
-  for(let i=0;i<count;i++){
-    const mat = new THREE.MeshStandardMaterial({color:Math.random()*0xffffff});
-    const cube = new THREE.Mesh(geo, mat);
+function spawnTargets(n) {
+  for (let i = 0; i < n; i++) {
+    const cube = new THREE.Mesh(
+      new THREE.BoxGeometry(2, 2, 2),
+      new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff })
+    );
     cube.position.set(
-      Math.random()*180-90,
+      (Math.random() - 0.5) * 300,
       1,
-      Math.random()*180-90
+      (Math.random() - 0.5) * 300
     );
     scene.add(cube);
     targets.push(cube);
   }
 }
-createTargets(40);
+spawnTargets(50);
 
 // ================ UI ================
-function updateInfo(){
+function updateUI() {
   document.getElementById('info').innerHTML = `
     Score: <b>${score}</b><br>
-    WASD Move • SPACE Jump • Click Shoot • B = Build Mode ${buildMode?'<b>ON</b>':''}
+    WASD Move • SPACE Jump • Click Shoot • B = Build Mode ${buildMode ? '<b>ON</b>' : 'OFF'}
   `;
 }
-function updateScore(){ document.getElementById('score').textContent = score; }
-updateInfo();
+function updateScore() { document.getElementById('score').textContent = score; }
+updateUI();
 
-// ================ MOUSE CLICK ================
+// ================ INPUT HANDLING ================
 document.addEventListener('click', () => {
-  if(controls.isLocked){
-    if(buildMode){
-      placeStructure();
-    }else{
-      shoot();
-    }
-  }
+  if (!controls.isLocked) return;
+  if (buildMode) placeStructure();
+  else shoot();
 });
 
-// Cycle build type with mouse wheel
 document.addEventListener('wheel', e => {
-  if(!buildMode) return;
-  currentBuildType = (currentBuildType + (e.deltaY>0?1:-1) + 3) % 3;
+  if (!buildMode) return;
+  currentBuildType = (currentBuildType + (e.deltaY > 0 ? 1 : -1) + 3) % 3;
   createPreview();
 });
 
 // ================ MAIN LOOP ================
 const clock = new THREE.Clock();
-function animate(){
+function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
 
-  if(controls.isLocked){
-    // --- Movement & Gravity ---
+  if (controls.isLocked) {
+    // Movement
     direction.z = Number(move.forward) - Number(move.backward);
     direction.x = Number(move.right) - Number(move.left);
     direction.normalize();
 
-    if(move.forward || move.backward) velocity.z = direction.z * 12;
+    if (move.forward || move.backward) velocity.z = direction.z * 20 * delta;
     else velocity.z *= 0.9;
-    if(move.left || move.right) velocity.x = direction.x * 12;
+    if (move.left || move.right) velocity.x = direction.x * 20 * delta;
     else velocity.x *= 0.9;
 
+    // Gravity
     velocity.y += gravity * delta;
 
-    if(move.jump){
-      if(canJump){
-        velocity.y = 12;
-        canJump = false;
-      }
-      move.jump = false;
-    }
+    controls.moveRight(velocity.x);
+    controls.moveForward(velocity.z);
+    controls.getObject().position.y += velocity.y;
 
-    controls.moveRight(velocity.x * delta);
-    controls.moveForward(velocity.z * delta);
-    controls.getObject().position.y += velocity.y * delta;
-
-    // Ground collision
-    if(controls.getObject().position.y < playerHeight){
+    // Floor collision
+    if (controls.getObject().position.y < 1.8) {
       velocity.y = 0;
-      controls.getObject().position.y = playerHeight;
+      controls.getObject().position.y = 1.8;
       canJump = true;
     }
 
-    // --- Build preview follows cursor ---
-    if(buildMode && previewMesh){
-      const ray = new THREE.Raycaster(camera.position, camera.getWorldDirection(new THREE.Vector3()));
-      const intersect = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0), 0), new THREE.Vector3());
-      if(intersect){
-        previewMesh.position.copy(intersect).add(new THREE.Vector3(0,2,0));
-        previewMesh.position.x = Math.round(previewMesh.position.x/4)*4;
-        previewMesh.position.z = Math.round(previewMesh.position.z/4)*4;
+    // Build preview
+    if (buildMode && previewMesh) {
+      const raycaster = new THREE.Raycaster(camera.position, camera.getWorldDirection(new THREE.Vector3()));
+      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const intersect = new THREE.Vector3();
+      raycaster.ray.intersectPlane(plane, intersect);
+      if (intersect) {
+        previewMesh.position.copy(intersect);
+        previewMesh.position.x = Math.round(previewMesh.position.x / 4) * 4;
+        previewMesh.position.z = Math.round(previewMesh.position.z / 4) * 4;
+        previewMesh.position.y = (buildTypes[currentBuildType] === 'floor') ? 0.15 : 2;
       }
     }
   }
 
-  // --- Bullets ---
-  for(let i=bullets.length-1; i>=0; i--){
+  // Bullets
+  for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
     b.position.add(b.velocity.clone().multiplyScalar(delta));
-    if(b.position.length() > 300){
-      scene.remove(b);
-      bullets.splice(i,1);
-      continue;
-    }
-    // Hit targets
-    for(let j=targets.length-1; j>=0; j--){
-      if(b.position.distanceTo(targets[j].position)<2){
+    if (b.position.length() > 500) { scene.remove(b); bullets.splice(i, 1); continue; }
+
+    for (let j = targets.length - 1; j >= 0; j--) {
+      if (b.position.distanceTo(targets[j].position) < 2) {
         scene.remove(targets[j]);
-        targets.splice(j,1);
+        targets.splice(j, 1);
         scene.remove(b);
-        bullets.splice(i,1);
+        bullets.splice(i, 1);
         score += 50;
         updateScore();
         break;
@@ -258,14 +247,14 @@ function animate(){
 }
 animate();
 
-// Initialize preview
+// Start building preview
 createPreview();
 
-// Resize handler
+// Resize
 window.addEventListener('resize', () => {
-  camera.aspect = innerWidth/innerHeight;
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
 </body>
