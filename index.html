@@ -7,16 +7,9 @@
   body { margin:0; overflow:hidden; font-family:Arial, sans-serif; }
   #info { position:absolute; top:10px; left:10px; color:white; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; }
   #crosshair { position:absolute; top:50%; left:50%; font-size:30px; color:white; pointer-events:none; transform:translate(-50%,-50%); }
-  #startScreen { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10; }
-  #startScreen h1 { font-size:48px; margin:0; }
-  #startScreen p { font-size:24px; margin:10px 0; cursor:pointer; }
 </style>
 </head>
 <body>
-<div id="startScreen">
-  <h1>Mini Fortnite-Style Game</h1>
-  <p>Click to Start</p>
-</div>
 <div id="info">Score: <span id="score">0</span><br>
 WASD = Move | SPACE = Jump | L-Click = Shoot | B = Build Mode (click to place)</div>
 <div id="crosshair">+</div>
@@ -37,6 +30,7 @@ document.body.appendChild(renderer.domElement);
 
 // ================ POINTER LOCK CONTROLS ================
 const controls = new THREE.PointerLockControls(camera, document.body);
+document.body.addEventListener('click', () => controls.lock());
 
 // ================ LIGHTING ================
 const ambient = new THREE.AmbientLight(0xffffff, 0.6);
@@ -171,7 +165,7 @@ updateInfo();
 
 // ================ MOUSE CLICK ================
 document.addEventListener('click', () => {
-  if(gameStarted && controls.isLocked){
+  if(controls.isLocked){
     if(buildMode){
       placeStructure();
     }else{
@@ -182,29 +176,15 @@ document.addEventListener('click', () => {
 
 // Cycle build type with mouse wheel
 document.addEventListener('wheel', e => {
-  if(!buildMode || !gameStarted) return;
+  if(!buildMode) return;
   currentBuildType = (currentBuildType + (e.deltaY>0?1:-1) + 3) % 3;
   createPreview();
-});
-
-// ================ START SCREEN ================
-let gameStarted = false;
-const startScreen = document.getElementById('startScreen');
-startScreen.addEventListener('click', () => {
-  startScreen.style.display = 'none';
-  controls.lock();
-  gameStarted = true;
-  createPreview(); // Initialize preview after start
 });
 
 // ================ MAIN LOOP ================
 const clock = new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
-  if(!gameStarted) {
-    renderer.render(scene, camera); // Still render scene behind start screen
-    return;
-  }
   const delta = clock.getDelta();
 
   if(controls.isLocked){
@@ -277,6 +257,9 @@ function animate(){
   renderer.render(scene, camera);
 }
 animate();
+
+// Initialize preview
+createPreview();
 
 // Resize handler
 window.addEventListener('resize', () => {
