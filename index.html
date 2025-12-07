@@ -1,666 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>3D PvE Shooter — PC + Mobile Gyro + Optional WebXR VR</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta charset="utf-8">
+  <title>Mini Fortnite-like 3D Game (Three.js)</title>
   <style>
-    html, body { margin: 0; height: 100%; background: #0b0e12; overflow: hidden; font-family: system-ui, Arial, sans-serif; }
-    #hud {
-      position: fixed; top: 0; left: 0; right: 0; padding: 10px 16px;
-      color: #e6edf3; font-weight: 600; font-size: 14px; display: flex; justify-content: space-between;
-      mix-blend-mode: difference; pointer-events: none; z-index: 10;
+    body { margin:0; overflow:hidden; background:#87CEEB; }
+    #info { position:absolute; top:10px; left:10px; color:white; font-family:Arial; background:rgba(0,0,0,0.5); padding:10px; border-radius:5px; }
+    #crosshair { position:absolute; top:50%; left:50%; width:20px; height:20px; margin:-10px 0 0 -10px; pointer-events:none; }
+    #crosshair::before, #crosshair::after {
+      content:''; position:absolute; background:white;
     }
-    #centerMsg {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); color: #e6edf3;
-      text-align: center; font-size: 18px; font-weight: 700; letter-spacing: 0.5px; z-index: 9;
-    }
-    #crosshair {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      width: 16px; height: 16px; pointer-events: none; z-index: 8;
-    }
-    #crosshair::before, #crosshair::after { content: ""; position: absolute; background: #e6edf3; }
-    #crosshair::before { left: 7px; top: 0; width: 2px; height: 16px; }
-    #crosshair::after { top: 7px; left: 0; height: 2px; width: 16px; }
-    #controlsBar {
-      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 8px; z-index: 11;
-    }
-    #controlsBar button {
-      background: #1f6feb; border: none; color: white; padding: 10px 12px; border-radius: 8px;
-      font-weight: 700; cursor: pointer;
-    }
-    #log {
-      position: fixed; bottom: 12px; left: 12px; width: 360px; max-width: calc(100% - 24px);
-      color: #9fb5d1; font-size: 12px; white-space: pre-wrap; pointer-events: none; z-index: 7;
-    }
-
-    /* Mobile movement buttons */
-    #mobileControls {
-      position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
-      display: none; gap: 8px; z-index: 12;
-    }
-    #mobileControls button {
-      background: #233040; color: #e6edf3; border: 1px solid #1f6feb;
-      padding: 10px 12px; border-radius: 8px; font-weight: 700;
-    }
-
-    @media (pointer: coarse) {
-      #mobileControls { display: flex; }
-    }
+    #crosshair::before { width:20px; height:2px; top:9px; left:0; }
+    #crosshair::after { width:2px; height:20px; top:0; left:9px; }
   </style>
 </head>
 <body>
-  <div id="hud">
-    <div id="statsLeft">HP: 100 | Shield: 0</div>
-    <div id="statsRight">Ammo: 30/90 | Wave: 1 | Enemies: 0</div>
-  </div>
-  <div id="centerMsg"></div>
+  <div id="info">WASD = Move | SPACE = Jump | MOUSE = Look | LEFT CLICK = Shoot</div>
   <div id="crosshair"></div>
 
-  <div id="controlsBar">
-    <button id="toggleGyro">Enable gyro</button>
-    <button id="enterVR">Enter VR</button>
-    <button id="lockMouse">Lock mouse</button>
-    <button id="reloadBtn">Reload</button>
-    <button id="shootBtn">Shoot</button>
-  </div>
-
-  <div id="mobileControls">
-    <button id="mLeft">◀︎</button>
-    <button id="mRight">▶︎</button>
-    <button id="mForward">▲</button>
-    <button id="mBack">▼</button>
-    <button id="mJump">Jump</button>
-    <button id="mSprint">Sprint</button>
-  </div>
-
-  <div id="log"></div>
-
-  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.160.0/examples/js/controls/PointerLockControls.js"></script>
-  <script src="https://unpkg.com/three@0.160.0/examples/jsm/controls/DeviceOrientationControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.168.0/examples/js/controls/PointerLockControls.js"></script>
+  <script src="https://unpkg.com/cannon@0.6.2/build/cannon.min.js"></script>
 
   <script>
-    // Game state
-    const state = {
-      hp: 100,
-      shield: 0,
-      ammoInMag: 30,
-      magSize: 30,
-      reserveAmmo: 90,
-      wave: 1,
-      enemiesAlive: 0,
-      maxWaves: 10,
-      playing: true, // auto-start
-      sprinting: false,
-      reloading: false,
-      time: 0,
-      score: 0,
-      usingGyro: false,
-    };
-
-    // DOM refs
-    const hudLeft = document.getElementById('statsLeft');
-    const hudRight = document.getElementById('statsRight');
-    const centerMsg = document.getElementById('centerMsg');
-    const logEl = document.getElementById('log');
-    const toggleGyroBtn = document.getElementById('toggleGyro');
-    const enterVRBtn = document.getElementById('enterVR');
-    const lockMouseBtn = document.getElementById('lockMouse');
-    const reloadBtn = document.getElementById('reloadBtn');
-    const shootBtn = document.getElementById('shootBtn');
-
-    const mLeft = document.getElementById('mLeft');
-    const mRight = document.getElementById('mRight');
-    const mForward = document.getElementById('mForward');
-    const mBack = document.getElementById('mBack');
-    const mJump = document.getElementById('mJump');
-    const mSprint = document.getElementById('mSprint');
-
-    // Three.js base
+    // ---------- BASIC SETUP ----------
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0b0e12);
+    scene.fog = new THREE.FogExp2(0x87CEEB, 0.0005);
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 300);
-    camera.position.set(0, 1.7, 0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({antialias:true});
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
-    renderer.xr.enabled = true; // WebXR on
     document.body.appendChild(renderer.domElement);
 
-    // Audio (beeps)
-    const audioListener = new THREE.AudioListener();
-    camera.add(audioListener);
-    const sfx = { shoot:new THREE.Audio(audioListener), hit:new THREE.Audio(audioListener), hurt:new THREE.Audio(audioListener), pickup:new THREE.Audio(audioListener), reload:new THREE.Audio(audioListener), wave:new THREE.Audio(audioListener) };
-    function makeBeep(audio, freq = 440, duration = 0.08, type = 'square', volume = 0.2){
-      const ctx = audioListener.context;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = type;
-      osc.frequency.value = freq;
-      gain.gain.value = volume;
-      osc.connect(gain).connect(audioListener.getInput());
-      osc.start();
-      osc.stop(ctx.currentTime + duration);
-    }
-    function sfxShoot(){ makeBeep(sfx.shoot, 880, 0.06, 'square', 0.15); }
-    function sfxHit(){ makeBeep(sfx.hit, 220, 0.04, 'sawtooth', 0.15); }
-    function sfxHurt(){ makeBeep(sfx.hurt, 160, 0.15, 'sine', 0.3); }
-    function sfxPickup(){ makeBeep(sfx.pickup, 1200, 0.08, 'triangle', 0.2); }
-    function sfxReload(){ makeBeep(sfx.reload, 600, 0.2, 'square', 0.15); }
-    function sfxWave(){ makeBeep(sfx.wave, 300, 0.4, 'triangle', 0.25); }
-
-    // Lighting
-    const hemi = new THREE.HemisphereLight(0xddeeff, 0x0a0a0a, 0.4);
-    scene.add(hemi);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-    dirLight.position.set(20, 30, 10);
-    dirLight.castShadow = true;
-    scene.add(dirLight);
-
-    // Arena
-    const arena = new THREE.Group();
-    scene.add(arena);
-
-    const floorGeo = new THREE.PlaneGeometry(200, 200);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a2433, roughness: 1, metalness: 0 });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    arena.add(floor);
-
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x0f1722, roughness: 0.9 });
-    function makeWall(x, z, w, h) {
-      const geo = new THREE.BoxGeometry(w, h, 2);
-      const m = new THREE.Mesh(geo, wallMat);
-      m.position.set(x, h/2, z);
-      m.castShadow = true;
-      m.receiveShadow = true;
-      arena.add(m);
-    }
-    makeWall(0, -100, 200, 8);
-    makeWall(0, 100, 200, 8);
-    makeWall(-100, 0, 2, 8);
-    makeWall(100, 0, 2, 8);
-
-    const coverMat = new THREE.MeshStandardMaterial({ color: 0x233040, roughness: 0.7 });
-    for (let i = 0; i < 24; i++) {
-      const geo = new THREE.BoxGeometry(6 + Math.random()*6, 3 + Math.random()*4, 6 + Math.random()*6);
-      const m = new THREE.Mesh(geo, coverMat);
-      m.position.set((Math.random() - 0.5) * 160, geo.parameters.height / 2, (Math.random() - 0.5) * 160);
-      m.castShadow = true;
-      m.receiveShadow = true;
-      arena.add(m);
-    }
-
-    // Controls: Pointer lock + Device Orientation + WebXR
+    // Pointer lock controls (first-person style but we'll offset camera for third-person feel)
     const controls = new THREE.PointerLockControls(camera, document.body);
-    scene.add(controls.getObject());
+    document.addEventListener('click', () => controls.lock());
 
-    let deviceControls = null;
+    controls.addEventListener('lock', () => document.getElementById('info').style.display = 'none');
+    controls.addEventListener('unlock', () => document.getElementById('info').style.display = 'block');
 
-    function initDeviceOrientation(){
-      if (deviceControls) return;
-      deviceControls = new THREE.DeviceOrientationControls(camera);
-      state.usingGyro = true;
-      centerMsg.textContent = 'Gyro ON: tilt/turn phone to look.';
-      toggleGyroBtn.textContent = 'Disable gyro';
-    }
+    // ---------- PHYSICS WORLD ----------
+    const world = new CANNON.World();
+    world.gravity.set(0, -20, 0);
+    world.broadphase = new CANNON.NaiveBroadphase();
+    world.solver.iterations = 10;
 
-    async function enableGyro(){
-      try {
-        // iOS requires explicit permission
-        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-          const p = await DeviceMotionEvent.requestPermission();
-          if (p !== 'granted') { log('Gyro permission denied'); return; }
-        }
-        initDeviceOrientation();
-      } catch (e) {
-        log('Gyro not available or permission failed');
-      }
-    }
+    // Ground
+    const groundGeo = new THREE.PlaneGeometry(500, 500);
+    const groundMat = new THREE.MeshStandardMaterial({color:0x3d9140});
+    const groundMesh = new THREE.Mesh(groundGeo, groundMat);
+    groundMesh.rotation.x = -Math.PI/2;
+    groundMesh.receiveShadow = true;
+    scene.add(groundMesh);
 
-    function disableGyro(){
-      deviceControls = null;
-      state.usingGyro = false;
-      toggleGyroBtn.textContent = 'Enable gyro';
-      centerMsg.textContent = '';
-    }
+    const groundShape = new CANNON.Plane();
+    const groundBody = new CANNON.Body({mass:0});
+    groundBody.addShape(groundShape);
+    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0), -Math.PI/2);
+    world.addBody(groundBody);
 
-    toggleGyroBtn.addEventListener('click', () => {
-      if (state.usingGyro) disableGyro(); else enableGyro();
-    });
+    // ---------- PLAYER ----------
+    const playerRadius = 1.5;
+    const playerShape = new CANNON.Sphere(playerRadius);
+    const playerBody = new CANNON.Body({mass: 80});
+    playerBody.addShape(playerShape);
+    playerBody.position.set(0, 5, 0);
+    playerBody.linearDamping = 0.9;
+    world.addBody(playerBody);
 
-    enterVRBtn.addEventListener('click', async () => {
-      try {
-        const supported = await navigator.xr?.isSessionSupported?.('immersive-vr');
-        if (!supported) { log('VR not supported on this device/browser'); return; }
-        const session = await navigator.xr.requestSession('immersive-vr', { requiredFeatures: ['local-floor'] });
-        await renderer.xr.setSession(session);
-        centerMsg.textContent = 'VR enabled (use headset/controllers).';
-      } catch (e) {
-        log('Failed to enter VR');
-      }
-    });
+    // Simple player visual (capsule-like)
+    const playerGeo = new THREE.CylinderGeometry(0.8, 1, 3, 16);
+    const playerMat = new THREE.MeshStandardMaterial({color:0x00aaff});
+    const playerMesh = new THREE.Mesh(playerGeo, playerMat);
+    playerMesh.castShadow = true;
+    scene.add(playerMesh);
 
-    lockMouseBtn.addEventListener('click', () => {
-      controls.lock();
-      centerMsg.textContent = 'Mouse locked. Click to shoot.';
-    });
+    // Third-person offset
+    const cameraOffset = new THREE.Vector3(0, 8, 15);
 
-    reloadBtn.addEventListener('click', () => tryReload());
-    shootBtn.addEventListener('click', () => shoot());
+    // ---------- LIGHTING ----------
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
+    const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+    sun.position.set(50, 100, 50);
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 2048;
+    sun.shadow.mapSize.height = 2048;
+    scene.add(sun);
 
-    // PC keyboard
-    const keys = {};
-    window.addEventListener('keydown', (e) => {
-      keys[e.code] = true;
-      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') state.sprinting = true;
-      if (e.code === 'KeyR') tryReload();
-    });
-    window.addEventListener('keyup', (e) => {
-      keys[e.code] = false;
-      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') state.sprinting = false;
-    });
-
-    // Mobile movement hold states
-    const touchMove = { left:false, right:false, forward:false, back:false, sprint:false };
-    mLeft.addEventListener('touchstart', () => touchMove.left = true);
-    mLeft.addEventListener('touchend', () => touchMove.left = false);
-    mRight.addEventListener('touchstart', () => touchMove.right = true);
-    mRight.addEventListener('touchend', () => touchMove.right = false);
-    mForward.addEventListener('touchstart', () => touchMove.forward = true);
-    mForward.addEventListener('touchend', () => touchMove.forward = false);
-    mBack.addEventListener('touchstart', () => touchMove.back = true);
-    mBack.addEventListener('touchend', () => touchMove.back = false);
-    mJump.addEventListener('touchstart', () => mobileJump());
-    mSprint.addEventListener('touchstart', () => { touchMove.sprint = true; state.sprinting = true; });
-    mSprint.addEventListener('touchend', () => { touchMove.sprint = false; state.sprinting = false; });
-
-    // Physics-lite
-    let velocity = new THREE.Vector3();
-    let onGround = false;
-
-    function movePlayer(delta) {
-      const speed = (state.sprinting || touchMove.sprint) ? 9 : 6;
-      const friction = onGround ? 8 : 1;
-      const accel = onGround ? 55 : 15;
-
-      const forward = new THREE.Vector3();
-      camera.getWorldDirection(forward);
-      forward.y = 0; forward.normalize();
-      const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), forward).normalize();
-
-      let wishdir = new THREE.Vector3();
-      // PC keys
-      if (keys['KeyW']) wishdir.add(forward);
-      if (keys['KeyS']) wishdir.add(forward.clone().multiplyScalar(-1));
-      if (keys['KeyA']) wishdir.add(right.clone().multiplyScalar(-1));
-      if (keys['KeyD']) wishdir.add(right);
-      // Mobile touches
-      if (touchMove.forward) wishdir.add(forward);
-      if (touchMove.back) wishdir.add(forward.clone().multiplyScalar(-1));
-      if (touchMove.left) wishdir.add(right.clone().multiplyScalar(-1));
-      if (touchMove.right) wishdir.add(right);
-
-      wishdir.normalize();
-
-      const wishspeed = speed;
-      const addSpeed = wishspeed - velocity.dot(wishdir);
-      const accelspeed = Math.min(accel * delta * wishspeed, addSpeed);
-      velocity.add(wishdir.multiplyScalar(accelspeed));
-
-      // Gravity
-      velocity.y -= 24 * delta;
-
-      // Jump (PC)
-      if (keys['Space'] && onGround) {
-        velocity.y = 9;
-        onGround = false;
-      }
-
-      // Apply
-      const obj = controls.getObject();
-      obj.position.addScaledVector(velocity, delta);
-
-      // Ground check
-      const ray = new THREE.Raycaster(obj.position, new THREE.Vector3(0,-1,0), 0, 1.8);
-      const hits = ray.intersectObject(floor, true);
-      if (hits.length > 0) {
-        onGround = true;
-        obj.position.y = Math.max(obj.position.y, hits[0].point.y + 1.7);
-        velocity.y = Math.max(velocity.y, -2);
-      } else {
-        onGround = false;
-      }
-
-      // Friction
-      const horizVel = new THREE.Vector3(velocity.x, 0, velocity.z);
-      const drop = friction * delta;
-      const newSpeed = Math.max(0, horizVel.length() - drop);
-      if (horizVel.length() > 0) {
-        horizVel.normalize().multiplyScalar(newSpeed);
-        velocity.x = horizVel.x; velocity.z = horizVel.z;
-      }
-
-      // Bounds
-      obj.position.x = THREE.MathUtils.clamp(obj.position.x, -95, 95);
-      obj.position.z = THREE.MathUtils.clamp(obj.position.z, -95, 95);
-    }
-
-    function mobileJump(){
-      if (onGround) { velocity.y = 9; onGround = false; }
-    }
-
-    // Shooting
-    window.addEventListener('mousedown', (e) => { if (e.button === 0) shoot(); });
-    window.addEventListener('touchstart', (e) => {
-      // Single tap shoot for mobile if not on button
-      if (e.target.tagName !== 'BUTTON') shoot();
-    }, { passive: true });
-
-    const impactMat = new THREE.MeshBasicMaterial({ color: 0xff3355 });
-    function makeImpactPoint(pos){
-      const g = new THREE.SphereGeometry(0.08, 8, 8);
-      const m = new THREE.Mesh(g, impactMat);
-      m.position.copy(pos);
-      scene.add(m);
-      setTimeout(() => { scene.remove(m); }, 300);
-    }
-
-    function shoot(){
-      if (!state.playing || state.reloading) return;
-      if (state.ammoInMag <= 0) { tryReload(); return; }
-      state.ammoInMag--;
-      sfxShoot();
-
-      const origin = controls.getObject().position.clone();
-      origin.y += 0.1;
-      const dir = new THREE.Vector3();
-      camera.getWorldDirection(dir);
-
-      const ray = new THREE.Ray(origin, dir);
-      const maxDist = 120;
-
-      let closestHit = null;
-      let closestEnemy = null;
-      enemies.forEach(e => {
-        if (!e.alive) return;
-        const box = new THREE.Box3().setFromObject(e.mesh);
-        const hit = ray.intersectBox(box, new THREE.Vector3());
-        if (hit) {
-          const dist = hit.distanceTo(origin);
-          if (dist <= maxDist && (!closestHit || dist < closestHit.distanceTo(origin))) {
-            closestHit = hit.clone();
-            closestEnemy = e;
-          }
-        }
-      });
-
-      if (closestHit && closestEnemy) {
-        makeImpactPoint(closestHit);
-        damageEnemy(closestEnemy, 25);
-        sfxHit();
-      } else {
-        const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
-        const impact = new THREE.Vector3();
-        ray.intersectPlane(plane, impact);
-        const dist = impact.distanceTo(origin);
-        if (dist > 0 && dist < maxDist) makeImpactPoint(impact);
-      }
-
-      updateHUD();
-    }
-
-    function tryReload(){
-      if (state.reloading) return;
-      if (state.ammoInMag >= state.magSize) return;
-      if (state.reserveAmmo <= 0) return;
-
-      state.reloading = true;
-      sfxReload();
-      setTimeout(() => {
-        const needed = state.magSize - state.ammoInMag;
-        const take = Math.min(needed, state.reserveAmmo);
-        state.ammoInMag += take;
-        state.reserveAmmo -= take;
-        state.reloading = false;
-        updateHUD();
-      }, 900);
-    }
-
-    // Enemies
-    const enemies = [];
-    const enemyMat = new THREE.MeshStandardMaterial({ color: 0xb71c1c, roughness: 0.6, metalness: 0.1 });
-
-    function spawnEnemy(){
-      const geo = new THREE.CapsuleGeometry(0.5, 1.0, 8, 16);
-      const mesh = new THREE.Mesh(geo, enemyMat);
-      mesh.castShadow = true; mesh.receiveShadow = true;
-
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 80 + Math.random() * 20;
-      const px = Math.cos(angle) * radius;
-      const pz = Math.sin(angle) * radius;
-
-      mesh.position.set(px, 1.5, pz);
+    // ---------- SOME BUILDINGS ----------
+    function createBuilding(x, z, width=10, depth=10, height=15) {
+      const geo = new THREE.BoxGeometry(width, height, depth);
+      const mat = new THREE.MeshStandardMaterial({color: Math.random()*0xffffff});
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, height/2, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       scene.add(mesh);
 
-      const enemy = {
-        mesh,
-        speed: 2.2 + Math.random() * 1.0,
-        hp: 50 + Math.floor(Math.random() * 20) + Math.floor(state.wave * 3),
-        alive: true,
-        damage: 8 + Math.floor(state.wave * 1.2),
-        attackCooldown: 0,
-        knockback: new THREE.Vector3(),
+      const shape = new CANNON.Box(new CANNON.Vec3(width/2, height/2, depth/2));
+      const body = new CANNON.Body({mass:0});
+      body.addShape(shape);
+      body.position.set(x, height/2, z);
+      world.addBody(body);
+    }
+
+    for(let i=0; i<30; i++) {
+      const x = Math.random()*400 - 200;
+      const z = Math.random()*400 - 200;
+      createBuilding(x, z, 8+Math.random()*12, 8+Math.random()*12, 10+Math.random()*20);
+    }
+
+    // ---------- SHOOTING ----------
+    const bullets = [];
+    const bulletSpeed = 100;
+    const bulletGeometry = new THREE.SphereGeometry(0.3, 8, 6);
+    const bulletMaterial = new THREE.MeshBasicMaterial({color:0xffff00});
+
+    function shoot() {
+      const bulletMesh = new THREE.Mesh(bulletGeometry, bulletMaterial);
+      scene.add(bulletMesh);
+
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+
+      const bullet = {
+        mesh: bulletMesh,
+        velocity: direction.multiplyScalar(bulletSpeed),
+        life: 100
       };
-      enemies.push(enemy);
-      state.enemiesAlive++;
-      updateHUD();
+
+      // Start from camera position
+      bulletMesh.position.copy(camera.position);
+      bullets.push(bullet);
     }
 
-    function damageEnemy(e, dmg){
-      if (!e.alive) return;
-      e.hp -= dmg;
-      e.knockback.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(0.6));
-      if (e.hp <= 0) {
-        e.alive = false;
-        scene.remove(e.mesh);
-        state.enemiesAlive--;
-        state.score += 5;
-        dropPickup(e.mesh.position);
-        updateHUD();
-      }
-    }
-
-    function updateEnemies(delta){
-      const playerPos = controls.getObject().position;
-      enemies.forEach(e => {
-        if (!e.alive) return;
-
-        const dir = playerPos.clone().sub(e.mesh.position);
-        dir.y = 0;
-        const dist = dir.length();
-
-        e.knockback.multiplyScalar(0.9);
-
-        if (dist > 1.2) {
-          dir.normalize();
-          e.mesh.position.addScaledVector(dir, e.speed * delta);
-          e.mesh.position.addScaledVector(e.knockback, delta);
-        } else {
-          e.attackCooldown -= delta;
-          if (e.attackCooldown <= 0) {
-            applyDamageToPlayer(e.damage);
-            e.attackCooldown = 1.0;
-          }
-        }
-
-        e.mesh.position.y = 1.5 + Math.sin(state.time * 2 + e.mesh.position.x * 0.1) * 0.05;
-      });
-    }
-
-    function applyDamageToPlayer(dmg){
-      if (state.shield > 0) {
-        const absorbed = Math.min(dmg, state.shield);
-        state.shield -= absorbed;
-        dmg -= absorbed;
-      }
-      if (dmg > 0) {
-        state.hp -= dmg;
-        sfxHurt();
-      }
-      if (state.hp <= 0) gameOver();
-      updateHUD();
-      flashCenter(`-${dmg}`);
-    }
-
-    // Pickups
-    const pickupMatAmmo = new THREE.MeshStandardMaterial({ color: 0x1f6feb, emissive: 0x0c2a6e, metalness: 0.2 });
-    const pickupMatHeal = new THREE.MeshStandardMaterial({ color: 0x2ea043, emissive: 0x145522, metalness: 0.2 });
-    const pickupMatShield = new THREE.MeshStandardMaterial({ color: 0x9c27b0, emissive: 0x4a148c, metalness: 0.2 });
-
-    function dropPickup(pos){
-      const typeRoll = Math.random();
-      let mat = pickupMatAmmo, kind = 'ammo';
-      if (typeRoll < 0.33) { mat = pickupMatAmmo; kind = 'ammo'; }
-      else if (typeRoll < 0.66) { mat = pickupMatHeal; kind = 'heal'; }
-      else { mat = pickupMatShield; kind = 'shield'; }
-
-      const geo = new THREE.IcosahedronGeometry(0.6, 0);
-      const m = new THREE.Mesh(geo, mat);
-      m.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*2, 0.5, (Math.random()-0.5)*2));
-      m.castShadow = true; m.receiveShadow = true;
-      m.userData.kind = kind;
-      scene.add(m);
-
-      setTimeout(() => scene.remove(m), 15000);
-      pickups.push(m);
-    }
-
-    const pickups = [];
-    function updatePickups(delta){
-      const playerPos = controls.getObject().position;
-      pickups.forEach((p) => {
-        if (!p.parent) return;
-        p.rotation.y += delta;
-        const dist = p.position.distanceTo(playerPos);
-        if (dist < 2.0) {
-          if (p.userData.kind === 'ammo') {
-            state.reserveAmmo = Math.min(240, state.reserveAmmo + 30);
-          } else if (p.userData.kind === 'heal') {
-            state.hp = Math.min(100, state.hp + 20);
-          } else if (p.userData.kind === 'shield') {
-            state.shield = Math.min(100, state.shield + 25);
-          }
-          sfxPickup();
-          scene.remove(p);
-          updateHUD();
-        }
-      });
-    }
-
-    // Waves
-    let nextSpawnTimer = 0;
-    let inIntermission = false;
-    let intermissionTimer = 0;
-
-    function startWave(){
-      sfxWave();
-      inIntermission = false;
-      nextSpawnTimer = 0;
-      centerMsg.textContent = `Wave ${state.wave}`;
-      setTimeout(()=> centerMsg.textContent = '', 1500);
-    }
-    startWave();
-
-    function updateWave(delta){
-      if (inIntermission) {
-        intermissionTimer -= delta;
-        if (intermissionTimer <= 0) startWave();
-        return;
-      }
-
-      nextSpawnTimer -= delta;
-      if (nextSpawnTimer <= 0) {
-        const batch = Math.min(3 + Math.floor(state.wave * 0.8), 8);
-        for (let i = 0; i < batch; i++) spawnEnemy();
-        nextSpawnTimer = 3.5;
-      }
-
-      if (state.enemiesAlive <= 0 && enemies.filter(e => e.alive).length === 0) {
-        inIntermission = true;
-        state.wave++;
-        if (state.wave > state.maxWaves) return gameWin();
-        intermissionTimer = 4.0;
-        centerMsg.textContent = `Intermission: Wave ${state.wave} in ${intermissionTimer.toFixed(0)}s`;
-      }
-    }
-
-    // HUD
-    function updateHUD(){
-      hudLeft.textContent = `HP: ${Math.max(0, state.hp)} | Shield: ${state.shield}`;
-      hudRight.textContent = `Ammo: ${state.ammoInMag}/${state.reserveAmmo} | Wave: ${state.wave} | Enemies: ${state.enemiesAlive}`;
-    }
-
-    function flashCenter(text){
-      centerMsg.textContent = text;
-      setTimeout(() => { if (centerMsg.textContent === text) centerMsg.textContent = ''; }, 600);
-    }
-
-    function log(msg){
-      logEl.textContent = msg;
-      setTimeout(() => { if (logEl.textContent === msg) logEl.textContent = ''; }, 2500);
-    }
-
-    function gameOver(){
-      state.playing = false;
-      centerMsg.textContent = `You died | Score: ${state.score} | Wave: ${state.wave}`;
-    }
-
-    function gameWin(){
-      state.playing = false;
-      centerMsg.textContent = `Victory! Score: ${state.score} | Waves: ${state.maxWaves}`;
-    }
-
-    // Resize
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+    document.addEventListener('mousedown', (e) => {
+      if (e.button === 0 && controls.isLocked) shoot();
     });
 
-    // Main loop
-    let lastTime = performance.now();
-    function tick(now){
-      const delta = Math.min(0.033, (now - lastTime) / 1000);
-      lastTime = now;
-      state.time += delta;
+    // ---------- INPUT ----------
+    const keys = {};
+    document.addEventListener('keydown', e => keys[e.code] = true);
+    document.addEventListener('keyup', e => keys[e.code] = false);
 
-      if (state.playing) {
-        if (deviceControls) deviceControls.update();
-        movePlayer(delta);
-        updateEnemies(delta);
-        updatePickups(delta);
-        updateWave(delta);
+    // ---------- GAME LOOP ----------
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+
+      // Player movement
+      if (controls.isLocked) {
+        const direction = new THREE.Vector3();
+        const frontVector = new THREE.Vector3(0,0,-1);
+        const sideVector = new THREE.Vector3(1,0,0);
+        frontVector.applyQuaternion(camera.quaternion);
+        sideVector.applyQuaternion(camera.quaternion);
+        frontVector.y = 0; frontVector.normalize();
+        sideVector.y = 0; sideVector.normalize();
+
+        const moveSpeed = 20;
+        let moveX = 0, moveZ = 0;
+        if (keys['KeyW']) moveZ -= moveSpeed * delta;
+        if (keys['KeyS']) moveZ += moveSpeed * delta;
+        if (keys['KeyA']) moveX -= moveSpeed * delta;
+        if (keys['KeyD']) moveX += moveSpeed * delta;
+
+        playerBody.velocity.x = moveX * sideVector.x + moveZ * frontVector.x;
+        playerBody.velocity.z = moveX * sideVector.z + moveZ * frontVector.z;
+
+        // Jump
+        if (keys['Space'] && Math.abs(playerBody.velocity.y) < 0.1) {
+          playerBody.velocity.y = 12;
+        }
+      }
+
+      // Update physics
+      world.step(1/60, delta, 3);
+
+      // Sync player mesh
+      playerMesh.position.copy(playerBody.position);
+      playerMesh.quaternion.copy(playerBody.quaternion);
+
+      // Third-person camera
+      const idealCameraPos = new THREE.Vector3().copy(playerBody.position).add(cameraOffset);
+      camera.position.lerp(idealCameraPos, 0.1);
+      camera.lookAt(playerBody.position.x, playerBody.position.y + 2, playerBody.position.z);
+
+      // Update bullets
+      for(let i = bullets.length-1; i >= 0; i--) {
+        const b = bullets[i];
+        b.mesh.position.add(b.velocity.clone().multiplyScalar(delta));
+        b.life--;
+        if (b.life <= 0) {
+          scene.remove(b.mesh);
+          bullets.splice(i,1);
+        }
       }
 
       renderer.render(scene, camera);
     }
 
-    function animate(now){
-      tick(now);
-      renderer.setAnimationLoop(animate); // works for both WebXR and non-VR
-    }
-    animate(performance.now());
+    // Handle resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
-    // Tips
-    centerMsg.textContent = 'PC: Lock mouse to aim. Mobile: Enable gyro to look. VR: Enter VR.';
-    log('Note: iOS Safari requires motion/gyro permission when prompted.');
+    animate();
   </script>
 </body>
 </html>
