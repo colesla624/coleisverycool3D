@@ -3,41 +3,52 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-  <title>Scary Collector 3D</title>
+  <title>Scary Collector 3D – Full Game with Map Toggle (E)</title>
   <style>
     html, body { margin:0; padding:0; background:#000; height:100%; overflow:hidden; font-family:system-ui, sans-serif; }
+    canvas { display:block; }
+
+    /* Top UI bar */
     #ui {
-      position:fixed; top:0; left:0; right:0; display:flex; gap:8px; align-items:center;
-      padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.1));
-      color:#f5f5f5; z-index:2; backdrop-filter: blur(2px);
+      position:fixed; top:0; left:0; right:0; display:flex; gap:10px; align-items:center;
+      padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0.2));
+      color:#f5f5f5; z-index:4;
     }
     #stats { flex:1; display:flex; gap:16px; font-weight:600; }
-    #toggle { padding:8px 12px; border:1px solid #555; background:#111; color:#eee; cursor:pointer; border-radius:6px; }
-    #msg { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); color:#bbb; font-size:12px; }
+    #toggle { padding:8px 12px; border:1px solid #555; background:#161616; color:#eee; cursor:pointer; border-radius:6px; }
+    #msg { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); color:#bbb; font-size:12px; z-index:4; }
+
+    /* Crosshair + vignette */
     #crosshair {
       position:fixed; left:50%; top:50%; width:14px; height:14px; transform:translate(-50%, -50%);
-      border:2px solid #b00; border-radius:50%; box-shadow: 0 0 8px #a00; z-index:2; opacity:.7;
+      border:2px solid #b00; border-radius:50%; box-shadow: 0 0 8px #a00; z-index:4; opacity:.7;
     }
+    #vignette {
+      position:fixed; inset:0; pointer-events:none; z-index:3;
+      background:radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 90%);
+    }
+
     /* Mobile controls */
-    #mobile-controls { position:fixed; bottom:18px; left:18px; right:18px; display:none; justify-content:space-between; z-index:2; }
+    #mobile-controls { position:fixed; bottom:18px; left:18px; right:18px; display:none; justify-content:space-between; z-index:4; }
     .stick {
-      width:110px; height:110px; border-radius:50%; background:rgba(255,255,255,0.08);
+      width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.08);
       border:1px solid rgba(255,255,255,0.15); position:relative; touch-action:none;
     }
     .knob {
-      width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,0.25);
+      width:54px; height:54px; border-radius:50%; background:rgba(255,255,255,0.28);
       position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);
     }
-    .btn {
-      width:110px; height:110px; border-radius:50%; background:rgba(255,0,0,0.15);
-      border:1px solid rgba(255,0,0,0.35); color:#fff; display:flex; align-items:center; justify-content:center;
-      font-weight:700; letter-spacing:1px; user-select:none;
+
+    /* Map overlay */
+    #map {
+      position:fixed; right:16px; bottom:16px; width:200px; height:200px; background:#0a0a0a;
+      border:1px solid #333; border-radius:8px; box-shadow: 0 0 12px rgba(255,0,0,0.15);
+      z-index:4; display:none; overflow:hidden;
     }
-    canvas { display:block; }
-    /* Scary vignette */
-    #vignette {
-      position:fixed; inset:0; pointer-events:none; z-index:1;
-      background:radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.6) 85%);
+    #map canvas { width:100%; height:100%; display:block; }
+    #map-label {
+      position:absolute; top:6px; left:8px; color:#ddd; font-size:12px; text-shadow:0 1px 2px #000;
+      pointer-events:none;
     }
   </style>
 </head>
@@ -46,56 +57,65 @@
     <div id="stats">
       <div id="level">Level: 1</div>
       <div id="collected">Collected: 0 / 0</div>
-      <div id="status">Stay quiet… it hears your breath.</div>
+      <div id="status">WASD to move. Drag to look. Press E to toggle map.</div>
     </div>
     <button id="toggle" aria-label="Toggle control mode">Mode: PC</button>
   </div>
+
   <div id="crosshair" aria-hidden="true"></div>
   <div id="vignette" aria-hidden="true"></div>
+
   <div id="mobile-controls">
     <div id="left-stick" class="stick"><div class="knob"></div></div>
-    <div style="display:flex; gap:18px; align-items:end;">
-      <div id="look-stick" class="stick"><div class="knob"></div></div>
-      <div id="flash-btn" class="btn">LIGHT</div>
-    </div>
+    <div id="look-stick" class="stick"><div class="knob"></div></div>
   </div>
-  <div id="msg">PC: WASD to move, mouse/drag to look, F to toggle flashlight. Mobile: use sticks, LIGHT button.</div>
 
-  <!-- Three.js (r160) -->
+  <div id="msg">PC: WASD to move, drag mouse to look, E for map. Mobile: use sticks, tap E on a keyboard only if connected.</div>
+
+  <!-- Map -->
+  <div id="map">
+    <div id="map-label">Map (E to toggle)</div>
+    <canvas id="map-canvas" width="200" height="200"></canvas>
+  </div>
+
+  <!-- Three.js -->
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.min.js"></script>
   <script>
-    // Basic setup
+    // Full single-file game with:
+    // - PC/Mobile mode toggle
+    // - Flashlight always ON (no toggle)
+    // - Collect orange dodecahedrons
+    // - Monster stalks you and levels get harder
+    // - Map overlay toggled with E, showing player and monster positions
+
     let renderer, scene, camera;
-    let controls; // pointer lock camera yaw/pitch
-    let mode = 'pc'; // 'pc' or 'mobile'
     let clock = new THREE.Clock();
+    let mode = 'pc'; // 'pc' or 'mobile'
     let move = { f:0, b:0, l:0, r:0 };
     let velocity = new THREE.Vector3();
-    let canMove = true;
 
-    // World params
+    // World
     const WORLD_SIZE = 140;
     const PLAYER_HEIGHT = 1.7;
-    const PLAYER_SPEED_BASE = 3.2; // m/s
-    const MONSTER_SPEED_BASE = 2.2;
+    const PLAYER_SPEED_BASE = 3.1;
+
     const LEVELS = [
-      { count: 4, monsterSpeed: 2.2, monsterAggro: 0.6 },
-      { count: 6, monsterSpeed: 2.8, monsterAggro: 0.8 },
-      { count: 8, monsterSpeed: 3.4, monsterAggro: 1.0 },
-      { count: 10, monsterSpeed: 3.9, monsterAggro: 1.2 },
+      { count: 4, monsterSpeed: 2.0, monsterAggro: 0.6 },
+      { count: 6, monsterSpeed: 2.6, monsterAggro: 0.8 },
+      { count: 8, monsterSpeed: 3.2, monsterAggro: 1.0 },
+      { count: 10, monsterSpeed: 3.6, monsterAggro: 1.15 },
     ];
     let levelIndex = 0;
     let collectibles = [];
     let collectedCount = 0;
 
-    // Lighting
-    let ambient, flashlight, flashOn = true;
+    // Lighting (flashlight always ON)
+    let ambient, flashlight;
 
     // Monster
     let monster, monsterTarget = new THREE.Vector3(), monsterGrowlTimer = 0;
 
-    // Post: simple dark fog
+    // Fog color
     const fogColor = new THREE.Color(0x000000);
 
     // Mobile sticks state
@@ -103,6 +123,12 @@
       left: { active:false, ox:0, oy:0, x:0, y:0 },
       look: { active:false, ox:0, oy:0, x:0, y:0 }
     };
+
+    // Map state
+    const mapEl = document.getElementById('map');
+    const mapCanvas = document.getElementById('map-canvas');
+    const mapCtx = mapCanvas.getContext('2d');
+    let mapVisible = false;
 
     init();
     animate();
@@ -117,27 +143,27 @@
 
       scene = new THREE.Scene();
       scene.background = fogColor.clone();
-      scene.fog = new THREE.FogExp2(fogColor.clone(), 0.045);
+      scene.fog = new THREE.FogExp2(fogColor.clone(), 0.02); // not pitch black
 
       camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 300);
       camera.position.set(0, PLAYER_HEIGHT, 0);
+      camera.rotation.order = 'YXZ';
 
-      // Ground: matte dark plane
-      const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 64, 64);
-      const groundMat = new THREE.MeshStandardMaterial({ color:0x0a0a0a, roughness:1, metalness:0 });
+      // Ground
+      const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 1, 1);
+      const groundMat = new THREE.MeshStandardMaterial({ color:0x101010, roughness:1, metalness:0 });
       const ground = new THREE.Mesh(groundGeo, groundMat);
       ground.rotation.x = -Math.PI/2;
       ground.receiveShadow = true;
       scene.add(ground);
 
-      // Scattered pillars/walls for occlusion
       addEnvironment();
 
-      // Lighting
-      ambient = new THREE.AmbientLight(0x111111);
+      // Lighting: ambient + flashlight always on
+      ambient = new THREE.AmbientLight(0x1e1e1e);
       scene.add(ambient);
 
-      flashlight = new THREE.SpotLight(0xffffff, 4.0, 16, Math.PI/9, 0.35, 1.5);
+      flashlight = new THREE.SpotLight(0xffffff, 3.8, 18, Math.PI/9, 0.35, 1.5);
       flashlight.castShadow = true;
       flashlight.shadow.mapSize.set(1024, 1024);
       flashlight.shadow.bias = -0.0001;
@@ -145,27 +171,21 @@
       scene.add(flashlight);
       scene.add(flashlight.target);
 
-      // Controls
-      controls = new THREE.PointerLockControls(camera, renderer.domElement);
-      document.addEventListener('click', () => {
-        if (mode === 'pc') controls.lock();
-      });
-
-      // Spawn collectibles and monster
       setupLevel(levelIndex);
+      setupInput();
 
-      // Events
       window.addEventListener('resize', onResize);
       onResize();
-      setupInput();
+
+      setMode('pc');
       updateUI();
-      setMode('pc'); // default
+      drawMap(); // initial map frame
     }
 
     function addEnvironment(){
       const group = new THREE.Group();
       const boxGeo = new THREE.BoxGeometry(3, 6, 0.4);
-      const mat = new THREE.MeshStandardMaterial({ color:0x141414, roughness:0.9 });
+      const mat = new THREE.MeshStandardMaterial({ color:0x121212, roughness:0.95 });
       for(let i=0;i<28;i++){
         const b = new THREE.Mesh(boxGeo, mat);
         b.position.set(randRange(-WORLD_SIZE*0.45, WORLD_SIZE*0.45), 3, randRange(-WORLD_SIZE*0.45, WORLD_SIZE*0.45));
@@ -176,7 +196,7 @@
       }
       scene.add(group);
 
-      // Dim red lamps to build tension
+      // Red mood lights
       const lampGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.5, 16);
       const lampMat = new THREE.MeshStandardMaterial({ color:0x220000 });
       for(let i=0;i<14;i++){
@@ -191,12 +211,16 @@
 
     function setupLevel(idx){
       // Clear old collectibles
-      collectibles.forEach(c => scene.remove(c));
+      collectibles.forEach(c => {
+        if (c.userData.glow) scene.remove(c.userData.glow);
+        scene.remove(c);
+      });
       collectibles = [];
       collectedCount = 0;
 
       const config = LEVELS[idx] || LEVELS[LEVELS.length-1];
-      // Place orange dodecahedrons
+
+      // Orange dodecahedrons
       const geo = new THREE.DodecahedronGeometry(0.6, 0);
       const mat = new THREE.MeshStandardMaterial({
         color:0xff7a00,
@@ -212,7 +236,7 @@
         mesh.userData.spin = randRange(0.6,1.2);
         scene.add(mesh);
         collectibles.push(mesh);
-        // Small pulsing light to help spotting
+
         const glow = new THREE.PointLight(0xff6b00, 0.9, 6, 1.2);
         glow.position.copy(mesh.position).add(new THREE.Vector3(0,0.4,0));
         scene.add(glow);
@@ -238,14 +262,12 @@
     function createMonster(){
       const g = new THREE.Group();
 
-      // Body: elongated, disturbingly thin
       const bodyGeo = new THREE.CapsuleGeometry(0.4, 1.6, 12, 24);
-      const bodyMat = new THREE.MeshStandardMaterial({ color:0x111111, roughness:0.95 });
+      const bodyMat = new THREE.MeshStandardMaterial({ color:0x0f0f0f, roughness:0.95 });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       body.castShadow = true; body.receiveShadow = true;
       g.add(body);
 
-      // Head: sharp tetra + pulsating emissive
       const headGeo = new THREE.TetrahedronGeometry(0.5, 1);
       const headMat = new THREE.MeshStandardMaterial({ color:0x0b0b0b, emissive:0x120000, roughness:0.8, metalness:0.1 });
       const head = new THREE.Mesh(headGeo, headMat);
@@ -253,8 +275,7 @@
       head.castShadow = true;
       g.add(head);
 
-      // Eyes: eerie spotlights
-      const eyeL = new THREE.SpotLight(0xff0000, 1.2, 8, Math.PI/9, 0.6, 1);
+      const eyeL = new THREE.SpotLight(0xff0000, 1.1, 8, Math.PI/9, 0.6, 1);
       const eyeR = eyeL.clone();
       eyeL.position.set(-0.18, 1.4, 0.3);
       eyeR.position.set(0.18, 1.4, 0.3);
@@ -263,18 +284,6 @@
       g.add(target);
       eyeL.target = target; eyeR.target = target;
 
-      // Claws: spiky cones
-      const clawGeo = new THREE.ConeGeometry(0.1, 0.5, 8);
-      const clawMat = new THREE.MeshStandardMaterial({ color:0x0d0d0d, metalness:0.2, roughness:0.9 });
-      for(let i=0;i<6;i++){
-        const c = new THREE.Mesh(clawGeo, clawMat);
-        c.position.set((i%2?-0.35:0.35), 0.2, (i<3?-0.2:0.2));
-        c.rotation.x = Math.PI;
-        c.castShadow = true;
-        g.add(c);
-      }
-
-      // Audio-less "breathing" via scale
       g.userData.pulse = 0;
       return g;
     }
@@ -286,7 +295,7 @@
         if(e.code==='KeyS' || e.code==='ArrowDown') move.b=1;
         if(e.code==='KeyA' || e.code==='ArrowLeft') move.l=1;
         if(e.code==='KeyD' || e.code==='ArrowRight') move.r=1;
-        if(e.code==='KeyF') toggleFlashlight();
+        if(e.code==='KeyE') toggleMap();
       });
       window.addEventListener('keyup', (e)=>{
         if(e.code==='KeyW' || e.code==='ArrowUp') move.f=0;
@@ -295,7 +304,7 @@
         if(e.code==='KeyD' || e.code==='ArrowRight') move.r=0;
       });
 
-      // Mouse drag look (works even without pointer lock)
+      // Drag to look (no pointer lock needed)
       let dragging=false, px=0, py=0;
       const dragTarget = renderer.domElement;
       dragTarget.addEventListener('mousedown', (e)=>{ dragging=true; px=e.clientX; py=e.clientY; });
@@ -304,7 +313,6 @@
         if(!dragging || mode!=='pc') return;
         const dx = (e.clientX - px), dy = (e.clientY - py);
         px=e.clientX; py=e.clientY;
-        camera.rotation.order='YXZ';
         camera.rotation.y -= dx * 0.0022;
         camera.rotation.x -= dy * 0.0022;
         camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
@@ -315,21 +323,16 @@
       const look = document.getElementById('look-stick');
 
       setupStick(left, sticks.left, (sx, sy)=>{
-        // translate stick to move vector
         move.f = sy < -0.2 ? 1 : 0;
         move.b = sy > 0.2 ? 1 : 0;
         move.l = sx < -0.2 ? 1 : 0;
         move.r = sx > 0.2 ? 1 : 0;
       });
       setupStick(look, sticks.look, (sx, sy)=>{
-        camera.rotation.order='YXZ';
         camera.rotation.y -= sx * 0.04;
         camera.rotation.x -= sy * 0.035;
         camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
       });
-
-      // Flashlight mobile button
-      document.getElementById('flash-btn').addEventListener('click', toggleFlashlight);
 
       // Mode toggle
       document.getElementById('toggle').addEventListener('click', ()=>{
@@ -348,15 +351,16 @@
       const start = (clientX, clientY) => {
         state.active = true;
         const r = rect();
-        state.ox = clientX - r.left; state.oy = clientY - r.top;
+        state.ox = r.width/2; state.oy = r.height/2;
         setKnob(state.ox, state.oy);
+        moveEv(clientX, clientY);
       };
       const moveEv = (clientX, clientY) => {
         if(!state.active) return;
         const r = rect();
         const x = clientX - r.left, y = clientY - r.top;
         let dx = x - state.ox, dy = y - state.oy;
-        const maxR = 40;
+        const maxR = 44;
         const len = Math.hypot(dx, dy);
         if(len>maxR){ dx *= maxR/len; dy *= maxR/len; }
         setKnob(state.ox + dx, state.oy + dy);
@@ -377,7 +381,6 @@
       window.addEventListener('mousemove', (e)=> moveEv(e.clientX, e.clientY));
       window.addEventListener('mouseup', end);
 
-      // Center knobs initially
       const r = rect();
       setKnob(r.width/2, r.height/2);
     }
@@ -388,14 +391,14 @@
       mobileUI.style.display = (mode==='mobile') ? 'flex' : 'none';
       document.getElementById('toggle').textContent = `Mode: ${mode.toUpperCase()}`;
       document.getElementById('status').textContent = (mode==='mobile')
-        ? 'Two sticks: left to move, right to look.'
-        : 'WASD to move, mouse/drag to look.';
+        ? 'Two sticks: left to move, right to look. Press E (keyboard) for map.'
+        : 'WASD to move. Drag to look. Press E to toggle map.';
     }
 
-    function toggleFlashlight(){
-      flashOn = !flashOn;
-      flashlight.intensity = flashOn ? 4.0 : 0.0;
-      document.getElementById('status').textContent = flashOn ? 'The light flickers… stay alert.' : 'Darkness embraces you.';
+    function toggleMap(){
+      mapVisible = !mapVisible;
+      mapEl.style.display = mapVisible ? 'block' : 'none';
+      document.getElementById('status').textContent = mapVisible ? 'Map open.' : 'Map closed.';
     }
 
     function onResize(){
@@ -408,7 +411,7 @@
       requestAnimationFrame(animate);
       const dt = Math.min(0.033, clock.getDelta());
 
-      // Flashlight follows camera
+      // Flashlight follows camera (always on)
       const dir = new THREE.Vector3();
       camera.getWorldDirection(dir);
       const camPos = camera.position.clone();
@@ -416,7 +419,7 @@
       flashlight.position.copy(torchPos);
       flashlight.target.position.copy(camPos.clone().add(dir.clone().multiplyScalar(4)));
 
-      // Spin collectibles and pulse glow
+      // Spin collectibles + glow pulse
       collectibles.forEach(c=>{
         c.rotation.y += dt * c.userData.spin;
         const glow = c.userData.glow;
@@ -436,13 +439,13 @@
       if(move.l) accel.add(right.clone().multiplyScalar(-1));
       if(move.r) accel.add(right);
 
-      accel.normalize();
+      if (accel.lengthSq() > 0) accel.normalize();
       velocity.lerp(accel.multiplyScalar(speed), 0.15);
       camera.position.add(velocity.clone().multiplyScalar(dt));
 
       // Clamp to world
-      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -WORLD_SIZE*0.48, WORLD_SIZE*0.48);
-      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -WORLD_SIZE*0.48, WORLD_SIZE*0.48);
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -WORLD_SIZE*0.49, WORLD_SIZE*0.49);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -WORLD_SIZE*0.49, WORLD_SIZE*0.49);
 
       // Monster AI
       updateMonster(dt);
@@ -450,12 +453,15 @@
       // Collect detection
       checkCollect();
 
-      // Win/Level up
+      // Level progression
       if (collectedCount === collectibles.length && collectibles.length>0){
         levelIndex++;
         if(levelIndex >= LEVELS.length){
           document.getElementById('status').textContent = 'You escaped the nightmare.';
-          collectibles.forEach(c=>scene.remove(c));
+          collectibles.forEach(c=>{
+            if (c.userData.glow) scene.remove(c.userData.glow);
+            scene.remove(c);
+          });
           collectibles = [];
         } else {
           document.getElementById('status').textContent = 'Deeper you go… it follows.';
@@ -463,31 +469,29 @@
         }
       }
 
+      // Draw map if visible
+      if (mapVisible) drawMap();
+
       renderer.render(scene, camera);
     }
 
     function updateMonster(dt){
       if(!monster) return;
 
-      // Pulse and slight head twitch
+      // Pulse and slight twitch
       monster.userData.pulse += dt;
       const s = 1.0 + Math.sin(monster.userData.pulse*2.3)*0.03;
       monster.scale.set(s, s, s);
       monster.rotation.y += Math.sin(perfNow()*0.001)*0.002;
 
-      // Target toward player with slight noise
-      const toPlayer = camera.position.clone().sub(monster.position);
-      const dist = toPlayer.length();
-      toPlayer.normalize();
+      // Chase with noise
+      const desired = camera.position.clone()
+        .add(new THREE.Vector3(randRange(-0.2,0.2),0,randRange(-0.2,0.2)).multiplyScalar(monster.userData.aggro))
+        .sub(monster.position).setY(0).normalize();
 
-      const noise = new THREE.Vector3(randRange(-0.2,0.2), 0, randRange(-0.2,0.2)).multiplyScalar(monster.userData.aggro);
-      monsterTarget.copy(camera.position).add(noise);
-      const desired = monsterTarget.clone().sub(monster.position).setY(0).normalize();
+      monster.position.add(desired.multiplyScalar(monster.userData.speed * dt));
 
-      const speed = monster.userData.speed * (flashOn ? 0.9 : 1.15); // faster in darkness
-      monster.position.add(desired.multiplyScalar(speed * dt));
-
-      // Look at player
+      // Face player
       const facing = camera.position.clone();
       facing.y = monster.position.y;
       monster.lookAt(facing);
@@ -496,17 +500,15 @@
       const target = monster.children.find(o => o instanceof THREE.Object3D && !o.isMesh);
       if(target) target.position.copy(camera.position);
 
-      // Breathing on neck: low status update when close
+      // Status prompts
+      const dist = monster.position.distanceTo(camera.position);
       if (dist < 5 && perfNow() > monsterGrowlTimer){
         monsterGrowlTimer = perfNow() + randRange(1200, 2500);
-        document.getElementById('status').textContent = ['It is near.','Don’t run… it will.','Hold your breath.','Keep the light steady.'][Math.floor(Math.random()*4)];
+        document.getElementById('status').textContent = ['It is near.','Don’t run… it will.','Hold your breath.','Keep moving.'][Math.floor(Math.random()*4)];
       }
 
-      // Catch player -> reset level with sting
+      // Catch player -> reset level
       if (dist < 1.2){
-        flashOn = true;
-        flashlight.intensity = 4.5;
-        camera.position.add(toPlayer.clone().normalize().multiplyScalar( -0.6 )); // jolt
         document.getElementById('status').textContent = 'It found you.';
         levelIndex = Math.max(0, levelIndex-1);
         setupLevel(levelIndex);
@@ -517,15 +519,13 @@
       const reach = 1.2;
       for(let i=collectibles.length-1;i>=0;i--){
         const c = collectibles[i];
-        if(!c) continue;
         const d = c.position.distanceTo(camera.position);
         if (d < reach){
-          c.userData.glow.intensity = 0;
-          scene.remove(c.userData.glow);
+          if (c.userData.glow) { c.userData.glow.intensity = 0; scene.remove(c.userData.glow); }
           scene.remove(c);
           collectibles.splice(i,1);
           collectedCount++;
-          document.getElementById('status').textContent = 'You grasp the orange shape. Warmer…';
+          document.getElementById('status').textContent = 'You grasp the orange shape.';
           updateUI();
         }
       }
@@ -535,6 +535,74 @@
       const conf = LEVELS[levelIndex] || LEVELS[LEVELS.length-1];
       document.getElementById('level').textContent = `Level: ${levelIndex+1}`;
       document.getElementById('collected').textContent = `Collected: ${collectedCount} / ${conf.count}`;
+    }
+
+    // Map rendering
+    function drawMap(){
+      const w = mapCanvas.width, h = mapCanvas.height;
+      mapCtx.fillStyle = '#0a0a0a';
+      mapCtx.fillRect(0,0,w,h);
+
+      // Border glow
+      mapCtx.strokeStyle = '#333';
+      mapCtx.lineWidth = 2;
+      mapCtx.strokeRect(1,1,w-2,h-2);
+
+      // Convert world coords to map coords
+      const scale = w / WORLD_SIZE; // world spans ~WORLD_SIZE
+      const ox = w/2, oz = h/2;
+
+      function toMap(x, z){
+        return { x: ox + x * scale, z: oz + z * scale };
+      }
+
+      // Player dot (white)
+      const p = toMap(camera.position.x, camera.position.z);
+      mapCtx.fillStyle = '#ffffff';
+      mapCtx.beginPath();
+      mapCtx.arc(p.x, p.z, 4, 0, Math.PI*2);
+      mapCtx.fill();
+
+      // Player direction line
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      const dirLen = 12;
+      mapCtx.strokeStyle = '#cccccc';
+      mapCtx.beginPath();
+      mapCtx.moveTo(p.x, p.z);
+      mapCtx.lineTo(p.x + forward.x*dirLen, p.z + forward.z*dirLen);
+      mapCtx.stroke();
+
+      // Monster dot (red)
+      if (monster){
+        const m = toMap(monster.position.x, monster.position.z);
+        mapCtx.fillStyle = '#ff3333';
+        mapCtx.beginPath();
+        mapCtx.arc(m.x, m.z, 5, 0, Math.PI*2);
+        mapCtx.fill();
+      }
+
+      // Collectibles (orange)
+      mapCtx.fillStyle = '#ff8a33';
+      collectibles.forEach(c=>{
+        const pos = toMap(c.position.x, c.position.z);
+        mapCtx.fillRect(pos.x-2, pos.z-2, 4, 4);
+      });
+
+      // Grid hints
+      mapCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+      mapCtx.lineWidth = 1;
+      for(let i=-2;i<=2;i++){
+        mapCtx.beginPath();
+        mapCtx.moveTo(ox + i*WORLD_SIZE*0.1*scale, 0);
+        mapCtx.lineTo(ox + i*WORLD_SIZE*0.1*scale, h);
+        mapCtx.stroke();
+
+        mapCtx.beginPath();
+        mapCtx.moveTo(0, oz + i*WORLD_SIZE*0.1*scale);
+        mapCtx.lineTo(w, oz + i*WORLD_SIZE*0.1*scale);
+        mapCtx.stroke();
+      }
     }
 
     // Utils
