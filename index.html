@@ -3,33 +3,35 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-  <title>Scary Collector 3D – Full Game with Map Toggle (E)</title>
+  <title>Hotel of Keys – Complete one-file 3D horror</title>
   <style>
     html, body { margin:0; padding:0; background:#000; height:100%; overflow:hidden; font-family:system-ui, sans-serif; }
     canvas { display:block; }
 
     /* Top UI bar */
     #ui {
-      position:fixed; top:0; left:0; right:0; display:flex; gap:10px; align-items:center;
+      position:fixed; top:0; left:0; right:0; display:flex; gap:12px; align-items:center;
       padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0.2));
-      color:#f5f5f5; z-index:4;
+      color:#f5f5f5; z-index:6;
     }
     #stats { flex:1; display:flex; gap:16px; font-weight:600; }
-    #toggle { padding:8px 12px; border:1px solid #555; background:#161616; color:#eee; cursor:pointer; border-radius:6px; }
-    #msg { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); color:#bbb; font-size:12px; z-index:4; }
+    #mode-btn, #flash-btn {
+      padding:8px 12px; border:1px solid #555; background:#141414; color:#eee; cursor:pointer; border-radius:6px;
+    }
+    #hint { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); color:#bbb; font-size:12px; z-index:6; }
 
     /* Crosshair + vignette */
     #crosshair {
       position:fixed; left:50%; top:50%; width:14px; height:14px; transform:translate(-50%, -50%);
-      border:2px solid #b00; border-radius:50%; box-shadow: 0 0 8px #a00; z-index:4; opacity:.7;
+      border:2px solid #b00; border-radius:50%; box-shadow: 0 0 8px #a00; z-index:6; opacity:.7;
     }
     #vignette {
-      position:fixed; inset:0; pointer-events:none; z-index:3;
+      position:fixed; inset:0; pointer-events:none; z-index:5;
       background:radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 90%);
     }
 
     /* Mobile controls */
-    #mobile-controls { position:fixed; bottom:18px; left:18px; right:18px; display:none; justify-content:space-between; z-index:4; }
+    #mobile-controls { position:fixed; bottom:18px; left:18px; right:18px; display:none; justify-content:space-between; z-index:6; }
     .stick {
       width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.08);
       border:1px solid rgba(255,255,255,0.15); position:relative; touch-action:none;
@@ -41,25 +43,55 @@
 
     /* Map overlay */
     #map {
-      position:fixed; right:16px; bottom:16px; width:200px; height:200px; background:#0a0a0a;
+      position:fixed; right:16px; bottom:16px; width:220px; height:220px; background:#0a0a0a;
       border:1px solid #333; border-radius:8px; box-shadow: 0 0 12px rgba(255,0,0,0.15);
-      z-index:4; display:none; overflow:hidden;
+      z-index:6; display:none; overflow:hidden;
     }
     #map canvas { width:100%; height:100%; display:block; }
     #map-label {
       position:absolute; top:6px; left:8px; color:#ddd; font-size:12px; text-shadow:0 1px 2px #000;
       pointer-events:none;
     }
+
+    /* Jumpscare overlay */
+    #jumpscare {
+      position:fixed; inset:0; background:#000; display:none; z-index:7;
+      align-items:center; justify-content:center;
+    }
+    #jumpscare .flash {
+      width:100%; height:100%;
+      background:radial-gradient(circle at center, rgba(255,0,0,0.85) 0%, rgba(0,0,0,0.95) 60%);
+      animation: flashAnim 0.7s ease-out forwards;
+    }
+    #jumpscare .face {
+      position:absolute; width:42vmin; height:42vmin; border-radius:50%;
+      background:radial-gradient(circle at 50% 45%, #400 0%, #111 60%, #000 100%);
+      box-shadow: 0 0 70px rgba(255,0,0,0.6);
+      transform: scale(0.2);
+      animation: facePop 0.6s cubic-bezier(0.2, 1.6, 0.2, 1) forwards;
+    }
+    @keyframes flashAnim {
+      0% { opacity:0; }
+      20% { opacity:1; }
+      100% { opacity:0.0; }
+    }
+    @keyframes facePop {
+      0% { transform: scale(0.2) rotate(0deg); filter: blur(6px); }
+      30% { transform: scale(1.25) rotate(22deg); filter: blur(1px); }
+      100% { transform: scale(0.95) rotate(0deg); filter:none; }
+    }
   </style>
 </head>
 <body>
   <div id="ui">
     <div id="stats">
-      <div id="level">Level: 1</div>
-      <div id="collected">Collected: 0 / 0</div>
-      <div id="status">WASD to move. Drag to look. Press E to toggle map.</div>
+      <div id="floor">Floor: 1</div>
+      <div id="keys">Keys: 0 / 0</div>
+      <div id="doors">Doors opened: 0</div>
+      <div id="status">W/S forward/back. A moves right, D moves left. E interacts (doors). M toggles map.</div>
     </div>
-    <button id="toggle" aria-label="Toggle control mode">Mode: PC</button>
+    <button id="mode-btn">Mode: PC</button>
+    <button id="flash-btn">Flashlight: ON</button>
   </div>
 
   <div id="crosshair" aria-hidden="true"></div>
@@ -70,65 +102,73 @@
     <div id="look-stick" class="stick"><div class="knob"></div></div>
   </div>
 
-  <div id="msg">PC: WASD to move, drag mouse to look, E for map. Mobile: use sticks, tap E on a keyboard only if connected.</div>
-
-  <!-- Map -->
   <div id="map">
-    <div id="map-label">Map (E to toggle)</div>
-    <canvas id="map-canvas" width="200" height="200"></canvas>
+    <div id="map-label">Map (M to toggle)</div>
+    <canvas id="map-canvas" width="220" height="220"></canvas>
   </div>
 
-  <!-- Three.js -->
+  <div id="hint">PC: WASD (A/D flipped), mouse drag to look, E to interact doors, M for map. Mobile: use sticks.</div>
+
+  <div id="jumpscare">
+    <div class="flash"></div>
+    <div class="face"></div>
+  </div>
+
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script>
-    // Full single-file game with:
-    // - PC/Mobile mode toggle
-    // - Flashlight always ON (no toggle)
-    // - Collect orange dodecahedrons
-    // - Monster stalks you and levels get harder
-    // - Map overlay toggled with E, showing player and monster positions
+    // Complete one-file 3D horror:
+    // - Hotel corridor floors with doors
+    // - Collect keys (orange dodecahedrons) to unlock doors
+    // - E to interact (unlock/open nearest door)
+    // - Flashlight with on/off button and F key
+    // - A/D movement flipped (A=right, D=left), W/S normal
+    // - Monster stalks; jumpscare on kill; respawn same floor
+    // - Mini-map toggled with M showing player, monster, and keys
 
-    let renderer, scene, camera;
-    let clock = new THREE.Clock();
-    let mode = 'pc'; // 'pc' or 'mobile'
+    let renderer, scene, camera, clock = new THREE.Clock();
     let move = { f:0, b:0, l:0, r:0 };
     let velocity = new THREE.Vector3();
 
-    // World
-    const WORLD_SIZE = 140;
+    // Modes
+    let mode = 'pc'; // 'pc' or 'mobile'
+
+    // Hotel floor
+    const FLOOR_LENGTH = 180;
+    const FLOOR_WIDTH = 18;
     const PLAYER_HEIGHT = 1.7;
-    const PLAYER_SPEED_BASE = 3.1;
+    const PLAYER_SPEED = 3.1;
 
-    const LEVELS = [
-      { count: 4, monsterSpeed: 2.0, monsterAggro: 0.6 },
-      { count: 6, monsterSpeed: 2.6, monsterAggro: 0.8 },
-      { count: 8, monsterSpeed: 3.2, monsterAggro: 1.0 },
-      { count: 10, monsterSpeed: 3.6, monsterAggro: 1.15 },
+    const FLOORS = [
+      { doors: 4, monsterSpeed: 2.0, monsterAggro: 0.6 },
+      { doors: 6, monsterSpeed: 2.6, monsterAggro: 0.8 },
+      { doors: 8, monsterSpeed: 3.2, monsterAggro: 1.0 },
+      { doors: 10, monsterSpeed: 3.6, monsterAggro: 1.15 },
     ];
-    let levelIndex = 0;
-    let collectibles = [];
-    let collectedCount = 0;
+    let floorIndex = 0;
 
-    // Lighting (flashlight always ON)
-    let ambient, flashlight;
+    // Keys & doors
+    let keys = [];
+    let doors = [];
+    let keysCollected = 0;
+    let doorsOpened = 0;
+
+    // Lights
+    let ambient, flashlight, flashOn = true;
 
     // Monster
-    let monster, monsterTarget = new THREE.Vector3(), monsterGrowlTimer = 0;
+    let monster, monsterGrowlTimer = 0;
 
-    // Fog color
-    const fogColor = new THREE.Color(0x000000);
-
-    // Mobile sticks state
-    const sticks = {
-      left: { active:false, ox:0, oy:0, x:0, y:0 },
-      look: { active:false, ox:0, oy:0, x:0, y:0 }
-    };
-
-    // Map state
+    // Map
     const mapEl = document.getElementById('map');
     const mapCanvas = document.getElementById('map-canvas');
     const mapCtx = mapCanvas.getContext('2d');
     let mapVisible = false;
+
+    // Mobile sticks
+    const sticks = {
+      left: { active:false, ox:0, oy:0, x:0, y:0 },
+      look: { active:false, ox:0, oy:0, x:0, y:0 }
+    };
 
     init();
     animate();
@@ -142,28 +182,19 @@
       document.body.appendChild(renderer.domElement);
 
       scene = new THREE.Scene();
-      scene.background = fogColor.clone();
-      scene.fog = new THREE.FogExp2(fogColor.clone(), 0.02); // not pitch black
+      scene.background = new THREE.Color(0x000000);
+      scene.fog = new THREE.FogExp2(new THREE.Color(0x000000), 0.02);
 
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 300);
-      camera.position.set(0, PLAYER_HEIGHT, 0);
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 400);
+      camera.position.set(0, PLAYER_HEIGHT, -FLOOR_LENGTH*0.45);
       camera.rotation.order = 'YXZ';
 
-      // Ground
-      const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 1, 1);
-      const groundMat = new THREE.MeshStandardMaterial({ color:0x101010, roughness:1, metalness:0 });
-      const ground = new THREE.Mesh(groundGeo, groundMat);
-      ground.rotation.x = -Math.PI/2;
-      ground.receiveShadow = true;
-      scene.add(ground);
+      buildHotelFloor();
 
-      addEnvironment();
-
-      // Lighting: ambient + flashlight always on
       ambient = new THREE.AmbientLight(0x1e1e1e);
       scene.add(ambient);
 
-      flashlight = new THREE.SpotLight(0xffffff, 3.8, 18, Math.PI/9, 0.35, 1.5);
+      flashlight = new THREE.SpotLight(0xffffff, 3.8, 24, Math.PI/9, 0.35, 1.5);
       flashlight.castShadow = true;
       flashlight.shadow.mapSize.set(1024, 1024);
       flashlight.shadow.bias = -0.0001;
@@ -171,92 +202,151 @@
       scene.add(flashlight);
       scene.add(flashlight.target);
 
-      setupLevel(levelIndex);
       setupInput();
+      setupUI();
 
       window.addEventListener('resize', onResize);
       onResize();
 
-      setMode('pc');
       updateUI();
-      drawMap(); // initial map frame
+      drawMap();
     }
 
-    function addEnvironment(){
-      const group = new THREE.Group();
-      const boxGeo = new THREE.BoxGeometry(3, 6, 0.4);
-      const mat = new THREE.MeshStandardMaterial({ color:0x121212, roughness:0.95 });
-      for(let i=0;i<28;i++){
-        const b = new THREE.Mesh(boxGeo, mat);
-        b.position.set(randRange(-WORLD_SIZE*0.45, WORLD_SIZE*0.45), 3, randRange(-WORLD_SIZE*0.45, WORLD_SIZE*0.45));
-        b.rotation.y = randRange(0, Math.PI);
-        b.castShadow = true;
-        b.receiveShadow = true;
-        group.add(b);
+    function buildHotelFloor(){
+      // Clear
+      keys.forEach(k => { if (k.userData.glow) scene.remove(k.userData.glow); scene.remove(k); });
+      keys = [];
+      doors.forEach(d => scene.remove(d.group));
+      doors = [];
+      keysCollected = 0;
+      doorsOpened = 0;
+
+      // Corridor
+      const floorMat = new THREE.MeshStandardMaterial({ color:0x131313, roughness:0.95 });
+      const carpetMat = new THREE.MeshStandardMaterial({ color:0x1f0a0a, roughness:0.9 });
+      const wallMat = new THREE.MeshStandardMaterial({ color:0x121212, roughness:0.97 });
+
+      const baseFloor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_WIDTH, FLOOR_LENGTH), floorMat);
+      baseFloor.rotation.x = -Math.PI/2; baseFloor.receiveShadow = true;
+      scene.add(baseFloor);
+
+      const carpet = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_WIDTH*0.6, FLOOR_LENGTH), carpetMat);
+      carpet.rotation.x = -Math.PI/2; carpet.position.y = 0.01;
+      scene.add(carpet);
+
+      const wallLeft = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_LENGTH, 3.2), wallMat);
+      wallLeft.rotation.y = Math.PI/2;
+      wallLeft.position.set(-FLOOR_WIDTH*0.5, 1.6, 0);
+      wallLeft.receiveShadow = true; wallLeft.castShadow = true;
+      scene.add(wallLeft);
+
+      const wallRight = wallLeft.clone();
+      wallRight.rotation.y = -Math.PI/2;
+      wallRight.position.set(FLOOR_WIDTH*0.5, 1.6, 0);
+      scene.add(wallRight);
+
+      const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_WIDTH, FLOOR_LENGTH), new THREE.MeshStandardMaterial({ color:0x101010, roughness:0.95 }));
+      ceiling.rotation.x = Math.PI/2;
+      ceiling.position.y = 3.2;
+      ceiling.receiveShadow = true;
+      scene.add(ceiling);
+
+      // Lamps
+      for(let i=-7;i<=7;i++){
+        const z = i * (FLOOR_LENGTH/14);
+        const lamp = new THREE.PointLight(0x5a0000, 0.5 + Math.random()*0.4, 8, 2);
+        lamp.position.set(0, 3.0, z);
+        scene.add(lamp);
       }
-      scene.add(group);
 
-      // Red mood lights
-      const lampGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.5, 16);
-      const lampMat = new THREE.MeshStandardMaterial({ color:0x220000 });
-      for(let i=0;i<14;i++){
-        const m = new THREE.Mesh(lampGeo, lampMat);
-        m.position.set(randRange(-WORLD_SIZE*0.45, WORLD_SIZE*0.45), 2.8, randRange(-WORLD_SIZE*0.45, WORLD_SIZE*0.45));
-        scene.add(m);
-        const red = new THREE.PointLight(0x660000, randRange(0.4,0.9), 6, 2);
-        red.position.copy(m.position);
-        scene.add(red);
+      // Doors
+      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
+      const doorCount = conf.doors;
+      const doorPositions = [];
+      for(let i=0;i<doorCount;i++){
+        const side = i % 2 === 0 ? -1 : 1;
+        const z = -FLOOR_LENGTH*0.4 + i * (FLOOR_LENGTH/(doorCount+1));
+        const x = side * (FLOOR_WIDTH*0.5 - 0.01);
+        doorPositions.push({ x, z, side });
       }
-    }
 
-    function setupLevel(idx){
-      // Clear old collectibles
-      collectibles.forEach(c => {
-        if (c.userData.glow) scene.remove(c.userData.glow);
-        scene.remove(c);
-      });
-      collectibles = [];
-      collectedCount = 0;
-
-      const config = LEVELS[idx] || LEVELS[LEVELS.length-1];
-
-      // Orange dodecahedrons
-      const geo = new THREE.DodecahedronGeometry(0.6, 0);
-      const mat = new THREE.MeshStandardMaterial({
-        color:0xff7a00,
-        emissive:0x331800,
-        roughness:0.3,
-        metalness:0.2
+      doorPositions.forEach((p, idx)=>{
+        const d = makeDoor(idx, p.side);
+        d.group.position.set(p.x, 0, p.z);
+        scene.add(d.group);
+        doors.push(d);
       });
 
-      for(let i=0;i<config.count;i++){
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(randRange(-WORLD_SIZE*0.45, WORLD_SIZE*0.45), 0.6, randRange(-WORLD_SIZE*0.45, WORLD_SIZE*0.45));
-        mesh.castShadow = true;
-        mesh.userData.spin = randRange(0.6,1.2);
-        scene.add(mesh);
-        collectibles.push(mesh);
+      // Keys
+      for(let i=0;i<doorCount;i++){
+        const geo = new THREE.DodecahedronGeometry(0.45, 0);
+        const mat = new THREE.MeshStandardMaterial({ color:0xff7a00, emissive:0x331800, roughness:0.3, metalness:0.2 });
+        const key = new THREE.Mesh(geo, mat);
+        const kx = (Math.random() * FLOOR_WIDTH*0.5 - FLOOR_WIDTH*0.25);
+        const kz = -FLOOR_LENGTH*0.4 + Math.random()*FLOOR_LENGTH*0.8;
+        key.position.set(kx, 0.6, kz);
+        key.castShadow = true;
+        key.userData.spin = 0.8 + Math.random()*0.5;
+        key.userData.keyIndex = i;
+        scene.add(key);
+        keys.push(key);
 
         const glow = new THREE.PointLight(0xff6b00, 0.9, 6, 1.2);
-        glow.position.copy(mesh.position).add(new THREE.Vector3(0,0.4,0));
+        glow.position.copy(key.position).add(new THREE.Vector3(0,0.4,0));
         scene.add(glow);
-        mesh.userData.glow = glow;
+        key.userData.glow = glow;
       }
 
       // Monster
       if (monster) scene.remove(monster);
       monster = createMonster();
+      monster.position.set(0, 1.4, -FLOOR_LENGTH*0.2);
+      monster.userData.speed = conf.monsterSpeed;
+      monster.userData.aggro = conf.monsterAggro;
       scene.add(monster);
 
-      monster.position.set(randRange(-WORLD_SIZE*0.4, WORLD_SIZE*0.4), 1.4, randRange(-WORLD_SIZE*0.4, WORLD_SIZE*0.4));
-      monster.userData.speed = config.monsterSpeed;
-      monster.userData.aggro = config.monsterAggro;
-
-      // Reset player
-      camera.position.set(0, PLAYER_HEIGHT, 0);
+      // Player start
+      camera.position.set(0, PLAYER_HEIGHT, -FLOOR_LENGTH*0.45);
       velocity.set(0,0,0);
 
-      updateUI();
+      // UI
+      document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${doorCount}`;
+      document.getElementById('doors').textContent = `Doors opened: ${doorsOpened}`;
+      document.getElementById('floor').textContent = `Floor: ${floorIndex+1}`;
+      document.getElementById('status').textContent = 'W/S forward/back. A moves right, D moves left. E interacts (doors). M toggles map.';
+    }
+
+    function makeDoor(index, side){
+      const group = new THREE.Group();
+
+      const frameMat = new THREE.MeshStandardMaterial({ color:0x151515, roughness:0.95 });
+      const frameTop = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1.0), frameMat);
+      frameTop.position.set(side*0.0, 2.2, 0);
+      group.add(frameTop);
+
+      const frameSide = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.4, 0.2), frameMat);
+      frameSide.position.set(0, 1.2, side>0?0.5:-0.5);
+      group.add(frameSide.clone());
+      const frameSide2 = frameSide.clone();
+      frameSide2.position.z = -frameSide.position.z;
+      group.add(frameSide2);
+
+      const leafMat = new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.9, metalness:0.05 });
+      const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.2, 0.9), leafMat);
+      leaf.position.set(side>0 ? -0.02 : 0.02, 1.1, 0);
+      leaf.castShadow = true; leaf.receiveShadow = true;
+
+      const pivot = new THREE.Group();
+      pivot.position.set(leaf.position.x, leaf.position.y, side>0 ? -0.45 : 0.45);
+      leaf.position.set(0, 0, side>0 ? 0.45 : -0.45);
+      pivot.add(leaf);
+      group.add(pivot);
+
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.2, 0.4), new THREE.MeshStandardMaterial({ color:0x333333 }));
+      plate.position.set(side>0 ? -0.01 : 0.01, 1.3, 0);
+      group.add(plate);
+
+      return { group, pivot, index, open:false, locked:true, side, anim:0 };
     }
 
     function createMonster(){
@@ -280,6 +370,7 @@
       eyeL.position.set(-0.18, 1.4, 0.3);
       eyeR.position.set(0.18, 1.4, 0.3);
       g.add(eyeL, eyeR);
+
       const target = new THREE.Object3D();
       g.add(target);
       eyeL.target = target; eyeR.target = target;
@@ -293,18 +384,21 @@
       window.addEventListener('keydown', (e)=>{
         if(e.code==='KeyW' || e.code==='ArrowUp') move.f=1;
         if(e.code==='KeyS' || e.code==='ArrowDown') move.b=1;
-        if(e.code==='KeyA' || e.code==='ArrowLeft') move.l=1;
-        if(e.code==='KeyD' || e.code==='ArrowRight') move.r=1;
-        if(e.code==='KeyE') toggleMap();
+        // FLIPPED A/D:
+        if(e.code==='KeyA' || e.code==='ArrowLeft') move.r=1; // A moves right
+        if(e.code==='KeyD' || e.code==='ArrowRight') move.l=1; // D moves left
+        if(e.code==='KeyE') tryInteract();
+        if(e.code==='KeyM') toggleMap();
+        if(e.code==='KeyF') toggleFlash();
       });
       window.addEventListener('keyup', (e)=>{
         if(e.code==='KeyW' || e.code==='ArrowUp') move.f=0;
         if(e.code==='KeyS' || e.code==='ArrowDown') move.b=0;
-        if(e.code==='KeyA' || e.code==='ArrowLeft') move.l=0;
-        if(e.code==='KeyD' || e.code==='ArrowRight') move.r=0;
+        if(e.code==='KeyA' || e.code==='ArrowLeft') move.r=0;
+        if(e.code==='KeyD' || e.code==='ArrowRight') move.l=0;
       });
 
-      // Drag to look (no pointer lock needed)
+      // Drag to look
       let dragging=false, px=0, py=0;
       const dragTarget = renderer.domElement;
       dragTarget.addEventListener('mousedown', (e)=>{ dragging=true; px=e.clientX; py=e.clientY; });
@@ -321,23 +415,25 @@
       // Mobile sticks
       const left = document.getElementById('left-stick');
       const look = document.getElementById('look-stick');
-
       setupStick(left, sticks.left, (sx, sy)=>{
         move.f = sy < -0.2 ? 1 : 0;
         move.b = sy > 0.2 ? 1 : 0;
-        move.l = sx < -0.2 ? 1 : 0;
-        move.r = sx > 0.2 ? 1 : 0;
+        // Preserve flipped A/D even on mobile: left-stick horizontal inverted
+        move.r = sx < -0.2 ? 1 : 0; // pushing left -> move right
+        move.l = sx > 0.2 ? 1 : 0;  // pushing right -> move left
       });
       setupStick(look, sticks.look, (sx, sy)=>{
         camera.rotation.y -= sx * 0.04;
         camera.rotation.x -= sy * 0.035;
         camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
       });
+    }
 
-      // Mode toggle
-      document.getElementById('toggle').addEventListener('click', ()=>{
+    function setupUI(){
+      document.getElementById('mode-btn').addEventListener('click', ()=>{
         setMode(mode==='pc' ? 'mobile' : 'pc');
       });
+      document.getElementById('flash-btn').addEventListener('click', toggleFlash);
     }
 
     function setupStick(el, state, onMove){
@@ -389,16 +485,52 @@
       mode = m;
       const mobileUI = document.getElementById('mobile-controls');
       mobileUI.style.display = (mode==='mobile') ? 'flex' : 'none';
-      document.getElementById('toggle').textContent = `Mode: ${mode.toUpperCase()}`;
+      document.getElementById('mode-btn').textContent = `Mode: ${mode.toUpperCase()}`;
       document.getElementById('status').textContent = (mode==='mobile')
-        ? 'Two sticks: left to move, right to look. Press E (keyboard) for map.'
-        : 'WASD to move. Drag to look. Press E to toggle map.';
+        ? 'Mobile: left stick move (A/D flipped preserved), right stick look. E requires keyboard.'
+        : 'PC: W/S forward/back, A right, D left, mouse drag to look. E interacts, M map.';
+    }
+
+    function toggleFlash(){
+      flashOn = !flashOn;
+      flashlight.intensity = flashOn ? 3.8 : 0.0;
+      document.getElementById('flash-btn').textContent = `Flashlight: ${flashOn ? 'ON' : 'OFF'}`;
+      document.getElementById('status').textContent = flashOn ? 'Light hums alive.' : 'Darkness presses in.';
     }
 
     function toggleMap(){
       mapVisible = !mapVisible;
       mapEl.style.display = mapVisible ? 'block' : 'none';
       document.getElementById('status').textContent = mapVisible ? 'Map open.' : 'Map closed.';
+    }
+
+    function tryInteract(){
+      const reach = 2.2;
+      let nearestDoor = null, nearestDist = Infinity;
+
+      doors.forEach(d=>{
+        const doorPos = new THREE.Vector3().copy(d.group.position);
+        const dist = doorPos.distanceTo(new THREE.Vector3(camera.position.x, 0, camera.position.z));
+        if (dist < nearestDist) { nearestDist = dist; nearestDoor = d; }
+      });
+
+      if (nearestDoor && nearestDist < reach){
+        if (nearestDoor.locked){
+          const hasKey = keysCollected > nearestDoor.index;
+          if (hasKey){
+            nearestDoor.locked = false;
+            document.getElementById('status').textContent = 'Lock clicks open.';
+          } else {
+            document.getElementById('status').textContent = 'You need its key.';
+            return;
+          }
+        }
+        if (!nearestDoor.open){
+          nearestDoor.open = true;
+          doorsOpened++;
+          document.getElementById('doors').textContent = `Doors opened: ${doorsOpened}`;
+        }
+      }
     }
 
     function onResize(){
@@ -411,7 +543,7 @@
       requestAnimationFrame(animate);
       const dt = Math.min(0.033, clock.getDelta());
 
-      // Flashlight follows camera (always on)
+      // Flashlight follows camera
       const dir = new THREE.Vector3();
       camera.getWorldDirection(dir);
       const camPos = camera.position.clone();
@@ -419,15 +551,14 @@
       flashlight.position.copy(torchPos);
       flashlight.target.position.copy(camPos.clone().add(dir.clone().multiplyScalar(4)));
 
-      // Spin collectibles + glow pulse
-      collectibles.forEach(c=>{
-        c.rotation.y += dt * c.userData.spin;
-        const glow = c.userData.glow;
-        glow.intensity = 0.7 + 0.3*Math.sin(perfNow()*0.002 + c.userData.spin);
+      // Keys spin & glow pulse
+      keys.forEach(k=>{
+        k.rotation.y += dt * k.userData.spin;
+        const glow = k.userData.glow;
+        if (glow) glow.intensity = 0.7 + 0.3*Math.sin(perfNow()*0.002 + k.userData.spin);
       });
 
-      // Movement
-      const speed = PLAYER_SPEED_BASE;
+      // Movement (A/D flipped)
       const forward = new THREE.Vector3();
       camera.getWorldDirection(forward);
       forward.y = 0; forward.normalize();
@@ -436,40 +567,32 @@
       let accel = new THREE.Vector3();
       if(move.f) accel.add(forward);
       if(move.b) accel.add(forward.clone().multiplyScalar(-1));
-      if(move.l) accel.add(right.clone().multiplyScalar(-1));
-      if(move.r) accel.add(right);
+      if(move.l) accel.add(right.clone().multiplyScalar(-1)); // left (from D)
+      if(move.r) accel.add(right); // right (from A)
 
       if (accel.lengthSq() > 0) accel.normalize();
-      velocity.lerp(accel.multiplyScalar(speed), 0.15);
+      velocity.lerp(accel.multiplyScalar(PLAYER_SPEED), 0.15);
       camera.position.add(velocity.clone().multiplyScalar(dt));
 
-      // Clamp to world
-      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -WORLD_SIZE*0.49, WORLD_SIZE*0.49);
-      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -WORLD_SIZE*0.49, WORLD_SIZE*0.49);
+      // Bounds
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -FLOOR_WIDTH*0.45, FLOOR_WIDTH*0.45);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -FLOOR_LENGTH*0.5, FLOOR_LENGTH*0.5);
 
-      // Monster AI
+      // Monster + interactions
       updateMonster(dt);
+      checkKeys();
+      updateDoors(dt);
 
-      // Collect detection
-      checkCollect();
-
-      // Level progression
-      if (collectedCount === collectibles.length && collectibles.length>0){
-        levelIndex++;
-        if(levelIndex >= LEVELS.length){
-          document.getElementById('status').textContent = 'You escaped the nightmare.';
-          collectibles.forEach(c=>{
-            if (c.userData.glow) scene.remove(c.userData.glow);
-            scene.remove(c);
-          });
-          collectibles = [];
-        } else {
-          document.getElementById('status').textContent = 'Deeper you go… it follows.';
-          setupLevel(levelIndex);
-        }
+      // Floor progression
+      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
+      if (doorsOpened >= conf.doors){
+        document.getElementById('status').textContent = 'Stairs creak to the next floor…';
+        floorIndex = Math.min(FLOORS.length-1, floorIndex+1);
+        buildHotelFloor();
+        updateUI();
       }
 
-      // Draw map if visible
+      // Map render
       if (mapVisible) drawMap();
 
       renderer.render(scene, camera);
@@ -478,130 +601,143 @@
     function updateMonster(dt){
       if(!monster) return;
 
-      // Pulse and slight twitch
       monster.userData.pulse += dt;
       const s = 1.0 + Math.sin(monster.userData.pulse*2.3)*0.03;
       monster.scale.set(s, s, s);
       monster.rotation.y += Math.sin(perfNow()*0.001)*0.002;
 
-      // Chase with noise
+      // Faster when flashlight off (scarier)
+      const speedMul = flashOn ? 1.0 : 1.2;
+
       const desired = camera.position.clone()
         .add(new THREE.Vector3(randRange(-0.2,0.2),0,randRange(-0.2,0.2)).multiplyScalar(monster.userData.aggro))
         .sub(monster.position).setY(0).normalize();
 
-      monster.position.add(desired.multiplyScalar(monster.userData.speed * dt));
+      monster.position.add(desired.multiplyScalar(monster.userData.speed * speedMul * dt));
 
-      // Face player
       const facing = camera.position.clone();
       facing.y = monster.position.y;
       monster.lookAt(facing);
 
-      // Eye targets
-      const target = monster.children.find(o => o instanceof THREE.Object3D && !o.isMesh);
-      if(target) target.position.copy(camera.position);
-
-      // Status prompts
       const dist = monster.position.distanceTo(camera.position);
       if (dist < 5 && perfNow() > monsterGrowlTimer){
         monsterGrowlTimer = perfNow() + randRange(1200, 2500);
         document.getElementById('status').textContent = ['It is near.','Don’t run… it will.','Hold your breath.','Keep moving.'][Math.floor(Math.random()*4)];
       }
 
-      // Catch player -> reset level
-      if (dist < 1.2){
-        document.getElementById('status').textContent = 'It found you.';
-        levelIndex = Math.max(0, levelIndex-1);
-        setupLevel(levelIndex);
+      if (dist < 1.15){
+        triggerJumpscare(()=>{
+          camera.position.set(0, PLAYER_HEIGHT, -FLOOR_LENGTH*0.45);
+          monster.position.set(0, 1.4, -FLOOR_LENGTH*0.2);
+          document.getElementById('status').textContent = 'It found you. Keep your light steady.';
+        });
       }
     }
 
-    function checkCollect(){
+    function updateDoors(dt){
+      doors.forEach(d=>{
+        if (d.open && d.anim < 1){
+          d.anim = Math.min(1, d.anim + dt*1.6);
+          const angle = (d.side>0 ? -1 : 1) * d.anim * Math.PI*0.5; // 90°
+          d.pivot.rotation.y = angle;
+        }
+      });
+    }
+
+    function triggerJumpscare(onEnd){
+      const overlay = document.getElementById('jumpscare');
+      overlay.style.display = 'flex';
+      // Screen flash + shake
+      let t = 0, shakeDur = 650, start = perfNow();
+      function shake(){
+        const now = perfNow(); t = now - start;
+        const p = Math.min(1, t / shakeDur);
+        const mag = (1-p) * 0.035;
+        camera.rotation.y += (Math.random()-0.5) * mag;
+        camera.rotation.x += (Math.random()-0.5) * mag;
+        if (t < shakeDur) requestAnimationFrame(shake);
+      }
+      shake();
+      setTimeout(()=>{
+        overlay.style.display = 'none';
+        if (onEnd) onEnd();
+      }, 780);
+    }
+
+    function checkKeys(){
       const reach = 1.2;
-      for(let i=collectibles.length-1;i>=0;i--){
-        const c = collectibles[i];
-        const d = c.position.distanceTo(camera.position);
+      for(let i=keys.length-1;i>=0;i--){
+        const k = keys[i];
+        const d = k.position.distanceTo(camera.position);
         if (d < reach){
-          if (c.userData.glow) { c.userData.glow.intensity = 0; scene.remove(c.userData.glow); }
-          scene.remove(c);
-          collectibles.splice(i,1);
-          collectedCount++;
-          document.getElementById('status').textContent = 'You grasp the orange shape.';
-          updateUI();
+          if (k.userData.glow) { k.userData.glow.intensity = 0; scene.remove(k.userData.glow); }
+          scene.remove(k);
+          keys.splice(i,1);
+          keysCollected++;
+          document.getElementById('status').textContent = 'You found a key.';
+          const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
+          document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${conf.doors}`;
         }
       }
     }
 
     function updateUI(){
-      const conf = LEVELS[levelIndex] || LEVELS[LEVELS.length-1];
-      document.getElementById('level').textContent = `Level: ${levelIndex+1}`;
-      document.getElementById('collected').textContent = `Collected: ${collectedCount} / ${conf.count}`;
+      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
+      document.getElementById('floor').textContent = `Floor: ${floorIndex+1}`;
+      document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${conf.doors}`;
+      document.getElementById('doors').textContent = `Doors opened: ${doorsOpened}`;
     }
 
-    // Map rendering
     function drawMap(){
       const w = mapCanvas.width, h = mapCanvas.height;
       mapCtx.fillStyle = '#0a0a0a';
       mapCtx.fillRect(0,0,w,h);
 
-      // Border glow
       mapCtx.strokeStyle = '#333';
       mapCtx.lineWidth = 2;
       mapCtx.strokeRect(1,1,w-2,h-2);
 
-      // Convert world coords to map coords
-      const scale = w / WORLD_SIZE; // world spans ~WORLD_SIZE
+      const scale = w / FLOOR_LENGTH;
       const ox = w/2, oz = h/2;
+      function toMap(x, z){ return { x: ox + x * scale, z: oz + z * scale }; }
 
-      function toMap(x, z){
-        return { x: ox + x * scale, z: oz + z * scale };
-      }
-
-      // Player dot (white)
+      // Player
       const p = toMap(camera.position.x, camera.position.z);
       mapCtx.fillStyle = '#ffffff';
-      mapCtx.beginPath();
-      mapCtx.arc(p.x, p.z, 4, 0, Math.PI*2);
-      mapCtx.fill();
+      mapCtx.beginPath(); mapCtx.arc(p.x, p.z, 4, 0, Math.PI*2); mapCtx.fill();
 
-      // Player direction line
-      const forward = new THREE.Vector3();
-      camera.getWorldDirection(forward);
+      const forward = new THREE.Vector3(); camera.getWorldDirection(forward);
       const dirLen = 12;
       mapCtx.strokeStyle = '#cccccc';
-      mapCtx.beginPath();
-      mapCtx.moveTo(p.x, p.z);
-      mapCtx.lineTo(p.x + forward.x*dirLen, p.z + forward.z*dirLen);
-      mapCtx.stroke();
+      mapCtx.beginPath(); mapCtx.moveTo(p.x, p.z); mapCtx.lineTo(p.x + forward.x*dirLen, p.z + forward.z*dirLen); mapCtx.stroke();
 
-      // Monster dot (red)
+      // Monster
       if (monster){
         const m = toMap(monster.position.x, monster.position.z);
         mapCtx.fillStyle = '#ff3333';
-        mapCtx.beginPath();
-        mapCtx.arc(m.x, m.z, 5, 0, Math.PI*2);
-        mapCtx.fill();
+        mapCtx.beginPath(); mapCtx.arc(m.x, m.z, 5, 0, Math.PI*2); mapCtx.fill();
       }
 
-      // Collectibles (orange)
+      // Keys
       mapCtx.fillStyle = '#ff8a33';
-      collectibles.forEach(c=>{
-        const pos = toMap(c.position.x, c.position.z);
+      keys.forEach(k=>{
+        const pos = toMap(k.position.x, k.position.z);
         mapCtx.fillRect(pos.x-2, pos.z-2, 4, 4);
       });
 
-      // Grid hints
+      // Doors
+      mapCtx.fillStyle = '#888';
+      doors.forEach(d=>{
+        const pos = toMap(d.group.position.x, d.group.position.z);
+        mapCtx.fillRect(pos.x-2, pos.z-2, 4, 4);
+      });
+
+      // Grid
       mapCtx.strokeStyle = 'rgba(255,255,255,0.06)';
       mapCtx.lineWidth = 1;
       for(let i=-2;i<=2;i++){
-        mapCtx.beginPath();
-        mapCtx.moveTo(ox + i*WORLD_SIZE*0.1*scale, 0);
-        mapCtx.lineTo(ox + i*WORLD_SIZE*0.1*scale, h);
-        mapCtx.stroke();
-
-        mapCtx.beginPath();
-        mapCtx.moveTo(0, oz + i*WORLD_SIZE*0.1*scale);
-        mapCtx.lineTo(w, oz + i*WORLD_SIZE*0.1*scale);
-        mapCtx.stroke();
+        mapCtx.beginPath(); mapCtx.moveTo(ox + i*FLOOR_LENGTH*0.1*scale, 0); mapCtx.lineTo(ox + i*FLOOR_LENGTH*0.1*scale, h); mapCtx.stroke();
+        mapCtx.beginPath(); mapCtx.moveTo(0, oz + i*FLOOR_LENGTH*0.1*scale); mapCtx.lineTo(w, oz + i*FLOOR_LENGTH*0.1*scale); mapCtx.stroke();
       }
     }
 
