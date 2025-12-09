@@ -2,81 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-  <title>Maze Hotel – Complete One-File 3D Horror (Bright Flashlight)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Maze Hotel — Full Single-File Game</title>
+  <meta name="description" content="Single-file 3D horror maze game with flashlight, keys, gates, monster, jumpscare, and minimap. Save as index.html and open in a modern browser." />
   <style>
-    html, body { margin:0; padding:0; background:#000; height:100%; overflow:hidden; font-family:system-ui, sans-serif; }
-    canvas { display:block; }
+    /* -------------------------
+       UI and layout
+       ------------------------- */
+    html, body { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color: #eee; }
+    canvas { display: block; }
 
-    /* UI bar */
+    /* Top UI bar */
     #ui {
-      position:fixed; top:0; left:0; right:0; display:flex; gap:12px; align-items:center;
-      padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0.8), rgba(0,0,0,0.25));
-      color:#f5f5f5; z-index:200;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 10px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.88), rgba(0,0,0,0.25));
+      z-index: 200;
+      box-sizing: border-box;
     }
-    #stats { flex:1; display:flex; gap:16px; font-weight:600; }
-    #mode-btn, #flash-btn {
-      padding:8px 12px; border:1px solid #555; background:#141414; color:#eee; cursor:pointer; border-radius:6px;
-    }
-    #hint { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); color:#bbb; font-size:12px; z-index:200; }
+    #stats { display:flex; gap:14px; align-items:center; font-weight:600; font-size:13px; flex:1; }
+    #mode-btn, #flash-btn { padding:8px 12px; border-radius:6px; border:1px solid #444; background:#111; color:#fff; cursor:pointer; }
+    #status { color:#cfcfcf; font-weight:500; font-size:13px; }
 
-    /* Crosshair + vignette */
+    /* Crosshair and vignette */
     #crosshair {
-      position:fixed; left:50%; top:50%; width:14px; height:14px; transform:translate(-50%, -50%);
-      border:2px solid #b00; border-radius:50%; box-shadow: 0 0 8px #a00; z-index:200; opacity:.8;
+      position: fixed; left: 50%; top: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%);
+      border: 2px solid #b00; border-radius: 50%; box-shadow: 0 0 8px #a00; z-index: 200; opacity: .8;
+      pointer-events: none;
     }
     #vignette {
-      position:fixed; inset:0; pointer-events:none; z-index:150;
-      background:radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.7) 90%);
+      position: fixed; inset: 0; pointer-events: none; z-index: 150;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.75) 90%);
     }
 
-    /* Mobile controls */
-    #mobile-controls { position:fixed; bottom:18px; left:18px; right:18px; display:none; justify-content:space-between; z-index:200; }
-    .stick {
-      width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.06);
-      border:1px solid rgba(255,255,255,0.12); position:relative; touch-action:none;
-    }
-    .knob {
-      width:54px; height:54px; border-radius:50%; background:rgba(255,255,255,0.28);
-      position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);
-    }
+    /* Mobile sticks */
+    #mobile-controls { position: fixed; bottom: 18px; left: 18px; right: 18px; display: none; justify-content: space-between; z-index: 200; }
+    .stick { width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); position: relative; touch-action: none; }
+    .knob { width: 54px; height: 54px; border-radius: 50%; background: rgba(255,255,255,0.28); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 
     /* Map overlay */
-    #map {
-      position:fixed; right:16px; bottom:16px; width:300px; height:300px; background:#070707;
-      border:1px solid #333; border-radius:8px; box-shadow: 0 0 18px rgba(255,0,0,0.12);
-      z-index:200; display:none; overflow:hidden;
-    }
-    #map canvas { width:100%; height:100%; display:block; }
-    #map-label {
-      position:absolute; top:6px; left:8px; color:#ddd; font-size:12px; text-shadow:0 1px 2px #000;
-      pointer-events:none;
-    }
+    #map { position: fixed; right: 16px; bottom: 16px; width: 320px; height: 320px; background: #070707; border-radius: 8px; border: 1px solid #222; box-shadow: 0 0 18px rgba(0,0,0,0.6); z-index: 200; display: none; overflow: hidden; }
+    #map canvas { width: 100%; height: 100%; display: block; }
+    #map-label { position: absolute; top: 6px; left: 8px; color: #ddd; font-size: 12px; text-shadow: 0 1px 2px #000; pointer-events: none; }
 
     /* Jumpscare overlay */
-    #jumpscare {
-      position:fixed; inset:0; background:#000; display:none; z-index:400;
-      align-items:center; justify-content:center;
+    #jumpscare { position: fixed; inset: 0; background: #000; display: none; z-index: 400; align-items: center; justify-content: center; }
+    #jumpscare .flash { width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(255,0,0,0.98) 0%, rgba(0,0,0,0.98) 60%); animation: flashAnim 0.7s ease-out forwards; }
+    #jumpscare .face { position: absolute; width: 48vmin; height: 48vmin; border-radius: 50%; background: radial-gradient(circle at 50% 45%, #500 0%, #111 60%, #000 100%); box-shadow: 0 0 120px rgba(255,0,0,0.8); transform: scale(0.2); animation: facePop 0.6s cubic-bezier(0.2,1.6,0.2,1) forwards; }
+    @keyframes flashAnim { 0% { opacity: 0 } 20% { opacity: 1 } 100% { opacity: 0 } }
+    @keyframes facePop { 0% { transform: scale(0.2) rotate(0deg); filter: blur(8px); } 30% { transform: scale(1.35) rotate(28deg); filter: blur(1px); } 100% { transform: scale(0.98) rotate(0deg); filter: none; } }
+
+    /* small screens */
+    @media (max-width: 640px) {
+      #map { width: 220px; height: 220px; }
+      .stick { width: 100px; height: 100px; }
     }
-    #jumpscare .flash {
-      width:100%; height:100%;
-      background:radial-gradient(circle at center, rgba(255,0,0,0.95) 0%, rgba(0,0,0,0.98) 60%);
-      animation: flashAnim 0.7s ease-out forwards;
-    }
-    #jumpscare .face {
-      position:absolute; width:48vmin; height:48vmin; border-radius:50%;
-      background:radial-gradient(circle at 50% 45%, #500 0%, #111 60%, #000 100%);
-      box-shadow: 0 0 120px rgba(255,0,0,0.8);
-      transform: scale(0.2);
-      animation: facePop 0.6s cubic-bezier(0.2, 1.6, 0.2, 1) forwards;
-    }
-    @keyframes flashAnim { 0% { opacity:0; } 20% { opacity:1; } 100% { opacity:0.0; } }
-    @keyframes facePop { 0% { transform: scale(0.2) rotate(0deg); filter: blur(8px); }
-                         30% { transform: scale(1.35) rotate(28deg); filter: blur(1px); }
-                         100% { transform: scale(0.98) rotate(0deg); filter:none; } }
   </style>
 </head>
 <body>
+  <!-- UI -->
   <div id="ui">
     <div id="stats">
       <div id="floor">Floor: 1</div>
@@ -98,7 +88,7 @@
 
   <div id="map">
     <div id="map-label">Map (M to toggle)</div>
-    <canvas id="map-canvas" width="300" height="300"></canvas>
+    <canvas id="map-canvas" width="320" height="320"></canvas>
   </div>
 
   <div id="hint">PC: WASD (A/D flipped), mouse drag to look, E interact, F flashlight, M map. Mobile: use sticks.</div>
@@ -108,32 +98,50 @@
     <div class="face"></div>
   </div>
 
+  <!-- Three.js -->
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+  <!-- Entire game script -->
   <script>
-    // Complete single-file game: Maze Hotel with brighter, larger flashlight and visible floor spot.
-    // Controls: W/S forward/back, A moves right, D moves left (flipped), E interact, F flashlight, M map.
-    // Save this file as index.html and open in a modern browser.
+    /*
+      Maze Hotel — single-file game
+      - Save as index.html and open in a modern browser (Chrome, Edge, Firefox)
+      - Controls:
+        PC: W/S forward/back, A moves right, D moves left (flipped), mouse drag to look, E interact, F flashlight, M map
+        Mobile: enable Mode: Mobile, use on-screen sticks for movement and look
+      - Features:
+        * Procedural maze hotel with walls and rooms
+        * Orange dodecahedron keys; each key unlocks a gate
+        * Monster that hunts the player; jumpscare on kill
+        * Flashlight (big, bright) with visible floor spot
+        * Minimap toggle showing player and monster
+        * Camera prevented from rolling (no barrel roll)
+    */
 
     // Renderer, scene, camera
     let renderer, scene, camera, clock = new THREE.Clock();
+
+    // Movement state
     let move = { f:0, b:0, l:0, r:0 };
     let velocity = new THREE.Vector3();
+
+    // Mode and toggles
     let mode = 'pc';
     let flashOn = true;
+    let mapVisible = false;
 
-    // Maze parameters
+    // World constants (tweakable)
     const CELL = 6;
-    const MAZE_W = 12;
-    const MAZE_H = 10;
+    const MAZE_W = 10;
+    const MAZE_H = 8;
     const PLAYER_HEIGHT = 1.7;
-    const PLAYER_SPEED = 3.25;
+    const PLAYER_SPEED = 5.0;
 
-    // Floors
+    // Floors configuration
     const FLOORS = [
-      { gates: 4, monsterSpeed: 2.0, monsterAggro: 0.6 },
-      { gates: 6, monsterSpeed: 2.4, monsterAggro: 0.8 },
-      { gates: 8, monsterSpeed: 3.0, monsterAggro: 1.0 },
-      { gates: 10, monsterSpeed: 3.6, monsterAggro: 1.2 },
+      { gates: 3, monsterSpeed: 1.6, monsterAggro: 0.45 },
+      { gates: 4, monsterSpeed: 1.9, monsterAggro: 0.6 },
+      { gates: 5, monsterSpeed: 2.2, monsterAggro: 0.8 },
     ];
     let floorIndex = 0;
 
@@ -143,21 +151,24 @@
     let monster, monsterGrowlTimer = 0;
     let keysCollected = 0;
 
-    // Map
+    // Map canvas
     const mapEl = document.getElementById('map');
     const mapCanvas = document.getElementById('map-canvas');
     const mapCtx = mapCanvas.getContext('2d');
-    let mapVisible = false;
 
-    // Mobile sticks
+    // Mobile sticks state
     const sticks = {
       left: { active:false, ox:0, oy:0, x:0, y:0 },
       look: { active:false, ox:0, oy:0, x:0, y:0 }
     };
 
+    // Initialize and start
     init();
     animate();
 
+    // -------------------------
+    // Initialization
+    // -------------------------
     function init(){
       renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -170,15 +181,15 @@
       scene.background = new THREE.Color(0x000000);
       scene.fog = new THREE.FogExp2(new THREE.Color(0x000000), 0.03);
 
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 1200);
-      camera.rotation.order = 'YXZ';
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 1600);
+      camera.rotation.order = 'YXZ'; // helps avoid roll
 
       // Ambient light
       ambient = new THREE.AmbientLight(0x1a1a1a);
       scene.add(ambient);
 
-      // BRIGHT, WIDE FLASHLIGHT
-      flashlight = new THREE.SpotLight(0xffffff, 10.5, 72, Math.PI/5.0, 0.22, 1.0);
+      // Flashlight: bigger and brighter
+      flashlight = new THREE.SpotLight(0xffffff, 14.0, 160, Math.PI/3.6, 0.16, 1.0);
       flashlight.castShadow = true;
       flashlight.shadow.mapSize.set(2048, 2048);
       flashlight.shadow.bias = -0.00025;
@@ -186,16 +197,19 @@
       scene.add(flashlight);
       scene.add(flashlight.target);
 
-      // Visible floor spot (larger, additive)
+      // Visible floor spot (large)
       floorSpotTex = makeRadialTexture(1024, 'rgba(255,255,255,1)', 'rgba(0,0,0,0)');
-      const spotMat = new THREE.MeshBasicMaterial({ map: floorSpotTex, transparent:true, opacity:0.75, blending: THREE.AdditiveBlending });
-      floorSpot = new THREE.Mesh(new THREE.PlaneGeometry(10.0, 10.0), spotMat);
+      const spotMat = new THREE.MeshBasicMaterial({ map: floorSpotTex, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending });
+      floorSpot = new THREE.Mesh(new THREE.PlaneGeometry(18.0, 18.0), spotMat);
       floorSpot.rotation.x = -Math.PI/2;
       floorSpot.position.y = 0.02;
       floorSpot.renderOrder = 2;
       scene.add(floorSpot);
 
+      // Build first floor
       buildMazeFloor();
+
+      // Input and UI
       setupInput();
       setupUI();
 
@@ -205,349 +219,364 @@
       drawMap();
     }
 
+    // -------------------------
+    // Maze and world generation
+    // -------------------------
     function buildMazeFloor(){
-      // Clear previous
+      // Clear previous objects
       walls.forEach(w => scene.remove(w)); walls = [];
       gates.forEach(g => scene.remove(g.group)); gates = [];
       keys.forEach(k => { if (k.userData.glow) scene.remove(k.userData.glow); scene.remove(k); }); keys = [];
       keysCollected = 0;
 
-      // Generate maze
+      // Generate maze grid
       grid = generateMaze(MAZE_W, MAZE_H);
       const wWorld = MAZE_W * CELL;
       const hWorld = MAZE_H * CELL;
 
-      // Floor & ceiling
-      const floorMat = new THREE.MeshStandardMaterial({ color:0x0f0f0f, roughness:0.95 });
-      const carpetMat = new THREE.MeshStandardMaterial({ color:0x160606, roughness:0.9 });
-      const ceilingMat = new THREE.MeshStandardMaterial({ color:0x0e0e0e, roughness:0.95 });
+      // Floor and ceiling
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f0f0f, roughness: 0.95 });
+      const carpetMat = new THREE.MeshStandardMaterial({ color: 0x160606, roughness: 0.9 });
+      const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x0e0e0e, roughness: 0.95 });
 
       const baseFloor = new THREE.Mesh(new THREE.PlaneGeometry(wWorld, hWorld), floorMat);
-      baseFloor.rotation.x = -Math.PI/2; baseFloor.receiveShadow = true;
-      baseFloor.position.set(0, 0, 0);
+      baseFloor.rotation.x = -Math.PI/2; baseFloor.receiveShadow = true; baseFloor.position.set(0, 0, 0);
       scene.add(baseFloor);
 
-      const carpet = new THREE.Mesh(new THREE.PlaneGeometry(wWorld*0.85, hWorld*0.85), carpetMat);
-      carpet.rotation.x = -Math.PI/2; carpet.position.y = 0.01;
-      scene.add(carpet);
+      const carpet = new THREE.Mesh(new THREE.PlaneGeometry(wWorld * 0.85, hWorld * 0.85), carpetMat);
+      carpet.rotation.x = -Math.PI/2; carpet.position.y = 0.01; scene.add(carpet);
 
       const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(wWorld, hWorld), ceilingMat);
-      ceiling.rotation.x = Math.PI/2;
-      ceiling.position.set(0, 3.2, 0);
-      ceiling.receiveShadow = true;
-      scene.add(ceiling);
+      ceiling.rotation.x = Math.PI/2; ceiling.position.set(0, 3.2, 0); ceiling.receiveShadow = true; scene.add(ceiling);
 
       // Lamps for atmosphere
-      for(let i=0;i<28;i++){
-        const lx = randRange(-wWorld*0.45, wWorld*0.45);
-        const lz = randRange(-hWorld*0.45, hWorld*0.45);
-        const lamp = new THREE.PointLight(0x5a0000, 0.45 + Math.random()*0.45, 8, 2);
+      for (let i = 0; i < 20; i++){
+        const lx = randRange(-wWorld * 0.45, wWorld * 0.45);
+        const lz = randRange(-hWorld * 0.45, hWorld * 0.45);
+        const lamp = new THREE.PointLight(0x5a0000, 0.45 + Math.random() * 0.45, 8, 2);
         lamp.position.set(lx, 3.0, lz);
         scene.add(lamp);
       }
 
-      // Walls and possible gate targets
-      const wallMat = new THREE.MeshStandardMaterial({ color:0x181818, roughness:0.97, metalness:0.05 });
+      // Walls and gate candidate positions
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0x181818, roughness: 0.97, metalness: 0.05 });
       const wallThick = 0.18, wallH = 3.0;
 
       function cellToWorld(cx, cy){
-        const x = (cx - MAZE_W/2) * CELL + CELL/2;
-        const z = (cy - MAZE_H/2) * CELL + CELL/2;
-        return { x, z };
+        return { x: (cx - MAZE_W/2) * CELL + CELL/2, z: (cy - MAZE_H/2) * CELL + CELL/2 };
       }
 
-      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
+      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length - 1];
       const totalGates = conf.gates;
       let gateTargets = [];
 
-      for(let y=0;y<MAZE_H;y++){
-        for(let x=0;x<MAZE_W;x++){
+      for (let y = 0; y < MAZE_H; y++){
+        for (let x = 0; x < MAZE_W; x++){
           const c = grid[y][x];
           const wp = cellToWorld(x, y);
 
-          if(c.walls[0]){
+          // North wall
+          if (c.walls[0]){
             const w = new THREE.Mesh(new THREE.BoxGeometry(CELL, wallH, wallThick), wallMat);
             w.position.set(wp.x, wallH/2, wp.z - CELL/2);
             w.castShadow = true; w.receiveShadow = true;
             scene.add(w); walls.push(w);
-            if (Math.random()<0.08) gateTargets.push({ x, y, dir:0, world:{ x:w.position.x, z:w.position.z } });
+            if (Math.random() < 0.08) gateTargets.push({ x, y, dir: 0, world: { x: w.position.x, z: w.position.z } });
           }
-          if(c.walls[1]){
+          // East wall
+          if (c.walls[1]){
             const w = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, CELL), wallMat);
             w.position.set(wp.x + CELL/2, wallH/2, wp.z);
             w.castShadow = true; w.receiveShadow = true;
             scene.add(w); walls.push(w);
-            if (Math.random()<0.08) gateTargets.push({ x, y, dir:1, world:{ x:w.position.x, z:w.position.z } });
+            if (Math.random() < 0.08) gateTargets.push({ x, y, dir: 1, world: { x: w.position.x, z: w.position.z } });
           }
-          if(c.walls[2]){
+          // South wall
+          if (c.walls[2]){
             const w = new THREE.Mesh(new THREE.BoxGeometry(CELL, wallH, wallThick), wallMat);
             w.position.set(wp.x, wallH/2, wp.z + CELL/2);
             w.castShadow = true; w.receiveShadow = true;
             scene.add(w); walls.push(w);
-            if (Math.random()<0.08) gateTargets.push({ x, y, dir:2, world:{ x:w.position.x, z:w.position.z } });
+            if (Math.random() < 0.08) gateTargets.push({ x, y, dir: 2, world: { x: w.position.x, z: w.position.z } });
           }
-          if(c.walls[3]){
+          // West wall
+          if (c.walls[3]){
             const w = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, CELL), wallMat);
             w.position.set(wp.x - CELL/2, wallH/2, wp.z);
             w.castShadow = true; w.receiveShadow = true;
             scene.add(w); walls.push(w);
-            if (Math.random()<0.08) gateTargets.push({ x, y, dir:3, world:{ x:w.position.x, z:w.position.z } });
+            if (Math.random() < 0.08) gateTargets.push({ x, y, dir: 3, world: { x: w.position.x, z: w.position.z } });
           }
         }
       }
 
-      // Place gates
+      // Place gates (locked doors)
       shuffle(gateTargets);
       gateTargets = gateTargets.slice(0, totalGates);
-      for(let i=0;i<gateTargets.length;i++){
+      for (let i = 0; i < gateTargets.length; i++){
         const gt = gateTargets[i];
         const g = makeGate(i);
         g.group.position.set(gt.world.x, 0, gt.world.z);
-        g.group.rotation.y = (gt.dir===0 || gt.dir===2) ? 0 : Math.PI/2;
+        g.group.rotation.y = (gt.dir === 0 || gt.dir === 2) ? 0 : Math.PI/2;
         scene.add(g.group);
         gates.push(g);
       }
 
-      // Place keys
-      for(let i=0;i<totalGates;i++){
+      // Place keys (orange dodecahedrons)
+      for (let i = 0; i < totalGates; i++){
         const geo = new THREE.DodecahedronGeometry(0.42, 0);
-        const mat = new THREE.MeshStandardMaterial({ color:0xff7a00, emissive:0x331800, roughness:0.3, metalness:0.2 });
+        const mat = new THREE.MeshStandardMaterial({ color: 0xff7a00, emissive: 0x331800, roughness: 0.3, metalness: 0.2 });
         const key = new THREE.Mesh(geo, mat);
-        const cx = Math.floor(randRange(1, MAZE_W-1));
-        const cy = Math.floor(randRange(1, MAZE_H-1));
+        // Random cell; bias some keys near start to make early progress easier
+        const cx = Math.floor(randRange(0, MAZE_W - 1));
+        const cy = Math.floor(randRange(0, MAZE_H - 1));
         const wp = cellToWorld(cx, cy);
-        key.position.set(wp.x + randRange(-CELL*0.3, CELL*0.3), 0.6, wp.z + randRange(-CELL*0.3, CELL*0.3));
+        key.position.set(wp.x + randRange(-CELL * 0.3, CELL * 0.3), 0.6, wp.z + randRange(-CELL * 0.3, CELL * 0.3));
         key.castShadow = true;
-        key.userData.spin = 0.8 + Math.random()*0.5;
+        key.userData.spin = 0.8 + Math.random() * 0.5;
         key.userData.keyIndex = i;
         scene.add(key); keys.push(key);
 
         const glow = new THREE.PointLight(0xff6b00, 0.9, 6, 1.2);
-        glow.position.copy(key.position).add(new THREE.Vector3(0,0.4,0));
+        glow.position.copy(key.position).add(new THREE.Vector3(0, 0.4, 0));
         scene.add(glow);
         key.userData.glow = glow;
       }
 
-      // Start & exit
+      // Start and exit positions
       startPos = cellToWorld(0, 0);
-      exitPos = cellToWorld(MAZE_W-1, MAZE_H-1);
+      exitPos = cellToWorld(MAZE_W - 1, MAZE_H - 1);
 
-      // Monster (human-sized)
+      // Monster
       if (monster) scene.remove(monster);
       monster = createMonster();
-      monster.position.set(startPos.x + CELL*0.5, 1.0, startPos.z + CELL*0.5);
-      const confSpeed = (FLOORS[floorIndex] || FLOORS[FLOORS.length-1]).monsterSpeed;
-      const confAggro = (FLOORS[floorIndex] || FLOORS[FLOORS.length-1]).monsterAggro;
-      monster.userData.speed = confSpeed;
-      monster.userData.aggro = confAggro;
+      monster.position.set(startPos.x + CELL * 0.5, 1.0, startPos.z + CELL * 0.5);
+      monster.userData.speed = conf.monsterSpeed;
+      monster.userData.aggro = conf.monsterAggro;
       scene.add(monster);
 
-      // Player start
+      // Place player at start
       camera.position.set(startPos.x, PLAYER_HEIGHT, startPos.z);
-      velocity.set(0,0,0);
+      velocity.set(0, 0, 0);
 
-      // UI
+      // Update UI counts
       document.getElementById('keys').textContent = `Keys: 0 / ${totalGates}`;
       document.getElementById('doors').textContent = `Gates opened: 0`;
-      document.getElementById('floor').textContent = `Floor: ${floorIndex+1}`;
+      document.getElementById('floor').textContent = `Floor: ${floorIndex + 1}`;
     }
 
+    // Maze generator (recursive backtracker)
     function generateMaze(w, h){
       const grid = [];
-      for(let y=0;y<h;y++){
+      for (let y = 0; y < h; y++){
         const row = [];
-        for(let x=0;x<w;x++){
-          row.push({ visited:false, walls:[true,true,true,true] }); // N,E,S,W
+        for (let x = 0; x < w; x++){
+          row.push({ visited: false, walls: [true, true, true, true] }); // N,E,S,W
         }
         grid.push(row);
       }
       const stack = [];
-      let cx = Math.floor(Math.random()*w), cy = Math.floor(Math.random()*h);
-      grid[cy][cx].visited = true; stack.push({x:cx,y:cy});
-      const dirs = [[0,-1],[1,0],[0,1],[-1,0]];
-      function neighbors(x,y){
-        const out=[];
-        for(let i=0;i<4;i++){
-          const nx=x+dirs[i][0], ny=y+dirs[i][1];
-          if(nx>=0 && ny>=0 && nx<w && ny<h && !grid[ny][nx].visited) out.push({i,nx,ny});
+      let cx = 0, cy = 0;
+      grid[cy][cx].visited = true;
+      stack.push({ x: cx, y: cy });
+      const dirs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+      function neighbors(x, y){
+        const out = [];
+        for (let i = 0; i < 4; i++){
+          const nx = x + dirs[i][0], ny = y + dirs[i][1];
+          if (nx >= 0 && ny >= 0 && nx < w && ny < h && !grid[ny][nx].visited) out.push({ i, nx, ny });
         }
         return out;
       }
-      while(stack.length){
-        const cur = stack[stack.length-1];
+
+      while (stack.length){
+        const cur = stack[stack.length - 1];
         const ns = neighbors(cur.x, cur.y);
-        if(!ns.length){ stack.pop(); continue; }
-        const pick = ns[Math.floor(Math.random()*ns.length)];
+        if (!ns.length){ stack.pop(); continue; }
+        const pick = ns[Math.floor(Math.random() * ns.length)];
         grid[cur.y][cur.x].walls[pick.i] = false;
-        const opposite = (pick.i+2)%4;
+        const opposite = (pick.i + 2) % 4;
         grid[pick.ny][pick.nx].walls[opposite] = false;
         grid[pick.ny][pick.nx].visited = true;
-        stack.push({x:pick.nx, y:pick.ny});
+        stack.push({ x: pick.nx, y: pick.ny });
       }
       return grid;
     }
 
+    // -------------------------
+    // Gates and monster
+    // -------------------------
     function makeGate(index){
       const group = new THREE.Group();
-      const frameMat = new THREE.MeshStandardMaterial({ color:0x151515, roughness:0.95 });
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.2, CELL*0.8), frameMat);
+      const frameMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.95 });
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.2, CELL * 0.8), frameMat);
       frame.castShadow = true; frame.receiveShadow = true;
       group.add(frame);
-      const barMat = new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.9, metalness:0.15 });
-      const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.0, CELL*0.7), barMat);
+
+      const barMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, metalness: 0.15 });
+      const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.0, CELL * 0.7), barMat);
       leaf.castShadow = true; leaf.receiveShadow = true;
+
       const pivot = new THREE.Group();
       pivot.position.set(-0.08, 1.1, 0);
       leaf.position.set(0.08, -0.1, 0);
       pivot.add(leaf);
       group.add(pivot);
-      return { group, pivot, index, open:false, locked:true, anim:0 };
+
+      return { group, pivot, index, open: false, locked: true, anim: 0 };
     }
 
     function createMonster(){
       const g = new THREE.Group();
+
+      // Body
       const bodyGeo = new THREE.CapsuleGeometry(0.35, 1.0, 8, 16);
-      const bodyMat = new THREE.MeshStandardMaterial({ color:0x121212, roughness:0.96 });
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x121212, roughness: 0.96 });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       body.castShadow = true; body.receiveShadow = true;
       g.add(body);
+
+      // Head
       const headGeo = new THREE.TetrahedronGeometry(0.35, 1);
-      const headMat = new THREE.MeshStandardMaterial({ color:0x0b0b0b, emissive:0x160000, roughness:0.85 });
+      const headMat = new THREE.MeshStandardMaterial({ color: 0x0b0b0b, emissive: 0x160000, roughness: 0.85 });
       const head = new THREE.Mesh(headGeo, headMat);
       head.position.y = 1.4;
       head.castShadow = true;
       g.add(head);
+
+      // Red eyes (spotlights)
       const eyeL = new THREE.SpotLight(0xff0000, 0.9, 6, Math.PI/9, 0.6, 1);
       const eyeR = eyeL.clone();
       eyeL.position.set(-0.16, 1.35, 0.22);
       eyeR.position.set(0.16, 1.35, 0.22);
       g.add(eyeL, eyeR);
+
       const target = new THREE.Object3D();
       g.add(target);
       eyeL.target = target; eyeR.target = target;
+
       g.userData.pulse = 0;
       return g;
     }
 
+    // -------------------------
+    // Input and UI
+    // -------------------------
     function setupInput(){
-      window.addEventListener('keydown', (e)=>{
-        if(e.code==='KeyW' || e.code==='ArrowUp') move.f=1;
-        if(e.code==='KeyS' || e.code==='ArrowDown') move.b=1;
-        if(e.code==='KeyA' || e.code==='ArrowLeft') move.r=1; // A moves right
-        if(e.code==='KeyD' || e.code==='ArrowRight') move.l=1; // D moves left
-        if(e.code==='KeyE') tryInteract();
-        if(e.code==='KeyM') toggleMap();
-        if(e.code==='KeyF') toggleFlash();
+      // Keyboard
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'KeyW' || e.code === 'ArrowUp') move.f = 1;
+        if (e.code === 'KeyS' || e.code === 'ArrowDown') move.b = 1;
+        if (e.code === 'KeyA' || e.code === 'ArrowLeft') move.r = 1; // A moves right
+        if (e.code === 'KeyD' || e.code === 'ArrowRight') move.l = 1; // D moves left
+        if (e.code === 'KeyE') tryInteract();
+        if (e.code === 'KeyM') toggleMap();
+        if (e.code === 'KeyF') toggleFlash();
       });
-      window.addEventListener('keyup', (e)=>{
-        if(e.code==='KeyW' || e.code==='ArrowUp') move.f=0;
-        if(e.code==='KeyS' || e.code==='ArrowDown') move.b=0;
-        if(e.code==='KeyA' || e.code==='ArrowLeft') move.r=0;
-        if(e.code==='KeyD' || e.code==='ArrowRight') move.l=0;
+      window.addEventListener('keyup', (e) => {
+        if (e.code === 'KeyW' || e.code === 'ArrowUp') move.f = 0;
+        if (e.code === 'KeyS' || e.code === 'ArrowDown') move.b = 0;
+        if (e.code === 'KeyA' || e.code === 'ArrowLeft') move.r = 0;
+        if (e.code === 'KeyD' || e.code === 'ArrowRight') move.l = 0;
       });
 
-      // Drag to look
-      let dragging=false, px=0, py=0;
+      // Mouse drag to look (PC)
+      let dragging = false, px = 0, py = 0;
       const dragTarget = renderer.domElement;
-      dragTarget.addEventListener('mousedown', (e)=>{ dragging=true; px=e.clientX; py=e.clientY; });
-      window.addEventListener('mouseup', ()=> dragging=false);
-      window.addEventListener('mousemove', (e)=>{
-        if(!dragging || mode!=='pc') return;
+      dragTarget.addEventListener('mousedown', (e) => { dragging = true; px = e.clientX; py = e.clientY; });
+      window.addEventListener('mouseup', () => dragging = false);
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging || mode !== 'pc') return;
         const dx = (e.clientX - px), dy = (e.clientY - py);
-        px=e.clientX; py=e.clientY;
+        px = e.clientX; py = e.clientY;
         camera.rotation.y -= dx * 0.0022;
         camera.rotation.x -= dy * 0.0022;
         camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+        camera.rotation.z = 0; // prevent roll
       });
 
       // Mobile sticks
       const left = document.getElementById('left-stick');
       const look = document.getElementById('look-stick');
-      setupStick(left, sticks.left, (sx, sy)=>{
+      setupStick(left, sticks.left, (sx, sy) => {
         move.f = sy < -0.2 ? 1 : 0;
         move.b = sy > 0.2 ? 1 : 0;
         move.r = sx < -0.2 ? 1 : 0; // pushing left -> move right
         move.l = sx > 0.2 ? 1 : 0;  // pushing right -> move left
       });
-      setupStick(look, sticks.look, (sx, sy)=>{
+      setupStick(look, sticks.look, (sx, sy) => {
         camera.rotation.y -= sx * 0.04;
         camera.rotation.x -= sy * 0.035;
         camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+        camera.rotation.z = 0;
       });
-    }
-
-    function setupUI(){
-      document.getElementById('mode-btn').addEventListener('click', ()=> setMode(mode==='pc' ? 'mobile' : 'pc'));
-      document.getElementById('flash-btn').addEventListener('click', toggleFlash);
     }
 
     function setupStick(el, state, onMove){
       const knob = el.querySelector('.knob');
       const rect = () => el.getBoundingClientRect();
+
       function setKnob(x, y){ knob.style.left = `${x}px`; knob.style.top = `${y}px`; }
+
       const start = (clientX, clientY) => {
         state.active = true;
         const r = rect();
-        state.ox = r.width/2; state.oy = r.height/2;
+        state.ox = r.width / 2; state.oy = r.height / 2;
         setKnob(state.ox, state.oy);
         moveEv(clientX, clientY);
       };
       const moveEv = (clientX, clientY) => {
-        if(!state.active) return;
+        if (!state.active) return;
         const r = rect();
         const x = clientX - r.left, y = clientY - r.top;
         let dx = x - state.ox, dy = y - state.oy;
         const maxR = 44;
         const len = Math.hypot(dx, dy);
-        if(len>maxR){ dx *= maxR/len; dy *= maxR/len; }
+        if (len > maxR){ dx *= maxR / len; dy *= maxR / len; }
         setKnob(state.ox + dx, state.oy + dy);
-        state.x = dx/maxR; state.y = dy/maxR;
+        state.x = dx / maxR; state.y = dy / maxR;
         onMove(state.x, state.y);
       };
-      const end = ()=>{
-        state.active=false; state.x=0; state.y=0;
+      const end = () => {
+        state.active = false; state.x = 0; state.y = 0;
         const r = rect();
-        setKnob(r.width/2, r.height/2);
-        onMove(0,0);
+        setKnob(r.width / 2, r.height / 2);
+        onMove(0, 0);
       };
-      el.addEventListener('touchstart', (e)=>{ const t=e.changedTouches[0]; start(t.clientX,t.clientY); }, {passive:true});
-      el.addEventListener('touchmove', (e)=>{ const t=e.changedTouches[0]; moveEv(t.clientX,t.clientY); }, {passive:true});
+
+      el.addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; start(t.clientX, t.clientY); }, { passive: true });
+      el.addEventListener('touchmove', (e) => { const t = e.changedTouches[0]; moveEv(t.clientX, t.clientY); }, { passive: true });
       el.addEventListener('touchend', end);
-      el.addEventListener('mousedown', (e)=> start(e.clientX, e.clientY));
-      window.addEventListener('mousemove', (e)=> moveEv(e.clientX, e.clientY));
+      el.addEventListener('mousedown', (e) => start(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => moveEv(e.clientX, e.clientY));
       window.addEventListener('mouseup', end);
+
       const r = rect();
-      setKnob(r.width/2, r.height/2);
+      setKnob(r.width / 2, r.height / 2);
+    }
+
+    function setupUI(){
+      document.getElementById('mode-btn').addEventListener('click', () => setMode(mode === 'pc' ? 'mobile' : 'pc'));
+      document.getElementById('flash-btn').addEventListener('click', toggleFlash);
     }
 
     function setMode(m){
       mode = m;
-      const mobileUI = document.getElementById('mobile-controls');
-      mobileUI.style.display = (mode==='mobile') ? 'flex' : 'none';
+      document.getElementById('mobile-controls').style.display = (mode === 'mobile') ? 'flex' : 'none';
       document.getElementById('mode-btn').textContent = `Mode: ${mode.toUpperCase()}`;
-      document.getElementById('status').textContent = (mode==='mobile')
+      document.getElementById('status').textContent = (mode === 'mobile')
         ? 'Mobile: left stick move (A/D flipped preserved), right stick look. E/F/M require keyboard.'
         : 'PC: W/S forward/back, A right, D left, mouse drag to look. E interact, F flashlight, M map.';
     }
 
-    function toggleFlash(){
-      flashOn = !flashOn;
-      flashlight.intensity = flashOn ? 10.5 : 0.0;
-      flashlight.distance = flashOn ? 72 : 0.0;
-      document.getElementById('flash-btn').textContent = `Flashlight: ${flashOn ? 'ON' : 'OFF'}`;
-      document.getElementById('status').textContent = flashOn ? 'Light hums alive.' : 'Darkness presses in.';
-    }
-
-    function toggleMap(){
-      mapVisible = !mapVisible;
-      mapEl.style.display = mapVisible ? 'block' : 'none';
-      document.getElementById('status').textContent = mapVisible ? 'Map open.' : 'Map closed.';
-    }
-
+    // -------------------------
+    // Interaction helpers
+    // -------------------------
     function tryInteract(){
       const reach = 2.5;
       let nearest = null, nd = Infinity;
-      gates.forEach(g=>{
+      gates.forEach(g => {
         const d = new THREE.Vector3(g.group.position.x, 0, g.group.position.z)
           .distanceTo(new THREE.Vector3(camera.position.x, 0, camera.position.z));
         if (d < nd){ nd = d; nearest = g; }
@@ -569,12 +598,23 @@
       }
     }
 
-    function onResize(){
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+    function toggleFlash(){
+      flashOn = !flashOn;
+      flashlight.intensity = flashOn ? 14.0 : 0.0;
+      flashlight.distance = flashOn ? 160 : 0.0;
+      document.getElementById('flash-btn').textContent = `Flashlight: ${flashOn ? 'ON' : 'OFF'}`;
+      document.getElementById('status').textContent = flashOn ? 'Light hums alive.' : 'Darkness presses in.';
     }
 
+    function toggleMap(){
+      mapVisible = !mapVisible;
+      mapEl.style.display = mapVisible ? 'block' : 'none';
+      document.getElementById('status').textContent = mapVisible ? 'Map open.' : 'Map closed.';
+    }
+
+    // -------------------------
+    // Main loop
+    // -------------------------
     function animate(){
       requestAnimationFrame(animate);
       const dt = Math.min(0.033, clock.getDelta());
@@ -583,28 +623,28 @@
       const dir = new THREE.Vector3();
       camera.getWorldDirection(dir);
       const camPos = camera.position.clone();
-      const torchPos = camPos.clone().add(dir.clone().multiplyScalar(0.35)).add(new THREE.Vector3(0, -0.2, 0));
+      const torchPos = camPos.clone().add(dir.clone().multiplyScalar(0.5)).add(new THREE.Vector3(0, -0.25, 0));
       flashlight.position.copy(torchPos);
-      flashlight.target.position.copy(camPos.clone().add(dir.clone().multiplyScalar(8)));
+      flashlight.target.position.copy(camPos.clone().add(dir.clone().multiplyScalar(18)));
 
-      // Floor spot placement via ray param
+      // Floor spot placement (ray param)
       const floorY = 0;
       const t = (floorY - torchPos.y) / dir.y;
       if (t > 0){
         const hit = torchPos.clone().add(dir.clone().multiplyScalar(t));
         floorSpot.position.set(hit.x, 0.02, hit.z);
-        const spotScale = THREE.MathUtils.clamp(8.0 + t*0.1, 8.0, 18.0);
-        floorSpot.scale.set(spotScale/10.0, spotScale/10.0, 1);
-        floorSpot.material.opacity = flashOn ? 0.75 : 0.0;
+        const spotScale = THREE.MathUtils.clamp(12.0 + t * 0.2, 12.0, 36.0);
+        floorSpot.scale.set(spotScale / 18.0, spotScale / 18.0, 1);
+        floorSpot.material.opacity = flashOn ? 0.95 : 0.0;
       } else {
         floorSpot.material.opacity = 0.0;
       }
 
       // Keys spin & glow
-      keys.forEach(k=>{
+      keys.forEach(k => {
         k.rotation.y += dt * k.userData.spin;
         const glow = k.userData.glow;
-        if (glow) glow.intensity = 0.7 + 0.3*Math.sin(perfNow()*0.002 + k.userData.spin);
+        if (glow) glow.intensity = 0.7 + 0.3 * Math.sin(perfNow() * 0.002 + k.userData.spin);
       });
 
       // Movement (A/D flipped)
@@ -614,20 +654,26 @@
       const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0,1,0)).normalize().negate();
 
       let accel = new THREE.Vector3();
-      if(move.f) accel.add(forward);
-      if(move.b) accel.add(forward.clone().multiplyScalar(-1));
-      if(move.l) accel.add(right.clone().multiplyScalar(-1)); // left (from D)
-      if(move.r) accel.add(right); // right (from A)
+      if (move.f) accel.add(forward);
+      if (move.b) accel.add(forward.clone().multiplyScalar(-1));
+      if (move.l) accel.add(right.clone().multiplyScalar(-1)); // left (from D)
+      if (move.r) accel.add(right); // right (from A)
 
       if (accel.lengthSq() > 0) accel.normalize();
-      velocity.lerp(accel.multiplyScalar(PLAYER_SPEED), 0.18);
+      const targetVel = accel.multiplyScalar(PLAYER_SPEED);
+      const snapFactor = accel.length() > 0 ? 0.55 : 0.10;
+      velocity.lerp(targetVel, snapFactor);
       camera.position.add(velocity.clone().multiplyScalar(dt));
 
       // Clamp to maze bounds
-      const halfW = (MAZE_W * CELL)/2, halfH = (MAZE_H * CELL)/2;
+      const halfW = (MAZE_W * CELL) / 2, halfH = (MAZE_H * CELL) / 2;
       camera.position.x = THREE.MathUtils.clamp(camera.position.x, -halfW + 1, halfW - 1);
       camera.position.z = THREE.MathUtils.clamp(camera.position.z, -halfH + 1, halfH - 1);
       camera.position.y = PLAYER_HEIGHT;
+
+      // Prevent roll
+      camera.rotation.z = 0;
+      camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
 
       // Monster, keys, gates
       updateMonster(dt);
@@ -635,11 +681,11 @@
       updateGates(dt);
 
       // Floor progression
-      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
-      const opened = gates.filter(g=>g.open).length;
+      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length - 1];
+      const opened = gates.filter(g => g.open).length;
       if (opened >= conf.gates){
         document.getElementById('status').textContent = 'Stairs creak to the next floor…';
-        floorIndex = Math.min(FLOORS.length-1, floorIndex+1);
+        floorIndex = Math.min(FLOORS.length - 1, floorIndex + 1);
         buildMazeFloor();
         updateUI();
       }
@@ -648,41 +694,51 @@
       renderer.render(scene, camera);
     }
 
+    // -------------------------
+    // Monster behavior & jumpscare
+    // -------------------------
     function updateMonster(dt){
-      if(!monster) return;
+      if (!monster) return;
       monster.userData.pulse += dt;
-      const s = 1.0 + Math.sin(monster.userData.pulse*2.3)*0.03;
+      const s = 1.0 + Math.sin(monster.userData.pulse * 2.3) * 0.03;
       monster.scale.set(s, s, s);
-      monster.rotation.y += Math.sin(perfNow()*0.001)*0.002;
-      const speedMul = flashOn ? 1.0 : 1.35;
+      monster.rotation.y += Math.sin(perfNow() * 0.001) * 0.002;
+
+      const speedMul = flashOn ? 1.0 : 1.15;
       const desired = camera.position.clone()
-        .add(new THREE.Vector3(randRange(-0.2,0.2),0,randRange(-0.2,0.2)).multiplyScalar(monster.userData.aggro))
+        .add(new THREE.Vector3(randRange(-0.15, 0.15), 0, randRange(-0.15, 0.15)).multiplyScalar(monster.userData.aggro))
         .sub(monster.position).setY(0).normalize();
+
       monster.position.add(desired.multiplyScalar(monster.userData.speed * speedMul * dt));
-      const facing = camera.position.clone(); facing.y = monster.position.y; monster.lookAt(facing);
+
+      const facing = camera.position.clone(); facing.y = monster.position.y;
+      monster.lookAt(facing);
+
       const dist = monster.position.distanceTo(camera.position);
       if (dist < 5 && perfNow() > monsterGrowlTimer){
         monsterGrowlTimer = perfNow() + randRange(1200, 2500);
-        document.getElementById('status').textContent = ['It is near.','Don’t run… it will.','Hold your breath.','Keep moving.'][Math.floor(Math.random()*4)];
+        document.getElementById('status').textContent = ['It is near.', 'Don’t run… it will.', 'Hold your breath.', 'Keep moving.'][Math.floor(Math.random() * 4)];
       }
+
       if (dist < 1.05){
-        triggerJumpscare(()=>{
+        triggerJumpscare(() => {
           camera.position.set(startPos.x, PLAYER_HEIGHT, startPos.z);
-          monster.position.set(startPos.x + CELL*0.5, 1.0, startPos.z + CELL*0.5);
+          monster.position.set(startPos.x + CELL * 0.5, 1.0, startPos.z + CELL * 0.5);
+          camera.rotation.x = 0; camera.rotation.y = 0; camera.rotation.z = 0;
           document.getElementById('status').textContent = 'It found you. Keep your light steady.';
         });
       }
     }
 
     function updateGates(dt){
-      gates.forEach(g=>{
+      gates.forEach(g => {
         if (g.open && g.anim < 1){
-          g.anim = Math.min(1, g.anim + dt*1.6);
-          const angle = -g.anim * Math.PI*0.5;
+          g.anim = Math.min(1, g.anim + dt * 1.6);
+          const angle = -g.anim * Math.PI * 0.5;
           g.pivot.rotation.y = angle;
         }
       });
-      document.getElementById('doors').textContent = `Gates opened: ${gates.filter(gg=>gg.open).length}`;
+      document.getElementById('doors').textContent = `Gates opened: ${gates.filter(gg => gg.open).length}`;
     }
 
     function triggerJumpscare(onEnd){
@@ -692,118 +748,141 @@
       function shake(){
         const now = perfNow(); t = now - start;
         const p = Math.min(1, t / shakeDur);
-        const mag = (1-p) * 0.05;
-        camera.rotation.y += (Math.random()-0.5) * mag;
-        camera.rotation.x += (Math.random()-0.5) * mag;
+        const mag = (1 - p) * 0.05;
+        camera.rotation.y += (Math.random() - 0.5) * mag;
+        camera.rotation.x += (Math.random() - 0.5) * mag;
+        camera.rotation.z = 0;
         if (t < shakeDur) requestAnimationFrame(shake);
       }
       shake();
-      setTimeout(()=>{
+      setTimeout(() => {
         overlay.style.display = 'none';
         if (onEnd) onEnd();
       }, 900);
     }
 
+    // -------------------------
+    // Keys collection
+    // -------------------------
     function checkKeys(){
       const reach = 1.3;
-      for(let i=keys.length-1;i>=0;i--){
+      for (let i = keys.length - 1; i >= 0; i--){
         const k = keys[i];
         const d = k.position.distanceTo(camera.position);
         if (d < reach){
           if (k.userData.glow) { k.userData.glow.intensity = 0; scene.remove(k.userData.glow); }
           scene.remove(k);
-          keys.splice(i,1);
+          keys.splice(i, 1);
           keysCollected++;
           document.getElementById('status').textContent = 'You found a key.';
-          const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
+          const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length - 1];
           document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${conf.gates}`;
         }
       }
     }
 
+    // -------------------------
+    // Map and UI drawing
+    // -------------------------
     function updateUI(){
-      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
-      document.getElementById('floor').textContent = `Floor: ${floorIndex+1}`;
+      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length - 1];
+      document.getElementById('floor').textContent = `Floor: ${floorIndex + 1}`;
       document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${conf.gates}`;
-      document.getElementById('doors').textContent = `Gates opened: ${gates.filter(g=>g.open).length}`;
+      document.getElementById('doors').textContent = `Gates opened: ${gates.filter(g => g.open).length}`;
     }
 
     function drawMap(){
       const w = mapCanvas.width, h = mapCanvas.height;
       mapCtx.fillStyle = '#070707';
-      mapCtx.fillRect(0,0,w,h);
+      mapCtx.fillRect(0, 0, w, h);
+
       mapCtx.strokeStyle = '#222';
       mapCtx.lineWidth = 2;
-      mapCtx.strokeRect(1,1,w-2,h-2);
+      mapCtx.strokeRect(1, 1, w - 2, h - 2);
 
       const worldW = MAZE_W * CELL;
       const worldH = MAZE_H * CELL;
       const scaleX = w / worldW, scaleZ = h / worldH;
-      const ox = w/2, oz = h/2;
+      const ox = w / 2, oz = h / 2;
+
       function toMap(x, z){ return { x: ox + x * scaleX, z: oz + z * scaleZ }; }
 
       // Walls
       mapCtx.strokeStyle = '#444';
       mapCtx.lineWidth = 2;
-      walls.forEach(wall=>{
+      walls.forEach(wall => {
         const pos = toMap(wall.position.x, wall.position.z);
-        const ww = Math.max(2, (wall.scale.x || (wall.geometry.parameters.width||CELL)) * scaleX);
-        const hh = Math.max(2, (wall.scale.z || (wall.geometry.parameters.depth||CELL)) * scaleZ);
-        mapCtx.strokeRect(pos.x - ww/2, pos.z - hh/2, ww, hh);
+        const ww = Math.max(2, (wall.scale.x || (wall.geometry.parameters.width || CELL)) * scaleX);
+        const hh = Math.max(2, (wall.scale.z || (wall.geometry.parameters.depth || CELL)) * scaleZ);
+        mapCtx.strokeRect(pos.x - ww / 2, pos.z - hh / 2, ww, hh);
       });
 
       // Player
       const p = toMap(camera.position.x, camera.position.z);
       mapCtx.fillStyle = '#ffffff';
-      mapCtx.beginPath(); mapCtx.arc(p.x, p.z, 4, 0, Math.PI*2); mapCtx.fill();
+      mapCtx.beginPath(); mapCtx.arc(p.x, p.z, 4, 0, Math.PI * 2); mapCtx.fill();
 
+      // Direction line
       const forward = new THREE.Vector3(); camera.getWorldDirection(forward);
-      const dirLen = 16;
+      const dirLen = 18;
       mapCtx.strokeStyle = '#cccccc';
-      mapCtx.beginPath(); mapCtx.moveTo(p.x, p.z); mapCtx.lineTo(p.x + forward.x*dirLen, p.z + forward.z*dirLen); mapCtx.stroke();
+      mapCtx.beginPath(); mapCtx.moveTo(p.x, p.z); mapCtx.lineTo(p.x + forward.x * dirLen, p.z + forward.z * dirLen); mapCtx.stroke();
 
       // Monster
       if (monster){
         const m = toMap(monster.position.x, monster.position.z);
         mapCtx.fillStyle = '#ff3333';
-        mapCtx.beginPath(); mapCtx.arc(m.x, m.z, 5, 0, Math.PI*2); mapCtx.fill();
+        mapCtx.beginPath(); mapCtx.arc(m.x, m.z, 5, 0, Math.PI * 2); mapCtx.fill();
       }
 
       // Keys
       mapCtx.fillStyle = '#ff8a33';
-      keys.forEach(k=>{
+      keys.forEach(k => {
         const pos = toMap(k.position.x, k.position.z);
-        mapCtx.fillRect(pos.x-2, pos.z-2, 4, 4);
+        mapCtx.fillRect(pos.x - 2, pos.z - 2, 4, 4);
       });
 
       // Gates
       mapCtx.fillStyle = '#888';
-      gates.forEach(g=>{
+      gates.forEach(g => {
         const pos = toMap(g.group.position.x, g.group.position.z);
-        mapCtx.fillRect(pos.x-2, pos.z-2, 4, 4);
+        mapCtx.fillRect(pos.x - 2, pos.z - 2, 4, 4);
       });
     }
 
+    // -------------------------
     // Utilities
-    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
-    function randRange(a,b){ return a + Math.random()*(b-a); }
+    // -------------------------
+    function shuffle(arr){ for (let i = arr.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+    function randRange(a, b){ return a + Math.random() * (b - a); }
     function perfNow(){ return performance.now ? performance.now() : Date.now(); }
 
     function makeRadialTexture(size, inner, outer){
       const c = document.createElement('canvas');
       c.width = c.height = size;
       const ctx = c.getContext('2d');
-      const g = ctx.createRadialGradient(size/2, size/2, size*0.02, size/2, size/2, size*0.5);
+      const g = ctx.createRadialGradient(size/2, size/2, size * 0.02, size/2, size/2, size * 0.5);
       g.addColorStop(0, inner);
       g.addColorStop(1, outer);
       ctx.fillStyle = g;
-      ctx.fillRect(0,0,size,size);
+      ctx.fillRect(0, 0, size, size);
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
       tex.magFilter = THREE.LinearFilter;
       tex.minFilter = THREE.LinearMipMapLinearFilter;
       return tex;
     }
+
+    // -------------------------
+    // Resize handler
+    // -------------------------
+    function onResize(){
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // End of script
   </script>
 </body>
 </html>
