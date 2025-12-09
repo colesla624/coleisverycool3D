@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-  <title>Hotel of Keys – Complete one-file 3D horror</title>
+  <title>Hotel of Keys – Complete one-file 3D horror (rooms + working flashlight)</title>
   <style>
     html, body { margin:0; padding:0; background:#000; height:100%; overflow:hidden; font-family:system-ui, sans-serif; }
     canvas { display:block; }
@@ -11,27 +11,27 @@
     /* Top UI bar */
     #ui {
       position:fixed; top:0; left:0; right:0; display:flex; gap:12px; align-items:center;
-      padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0.2));
-      color:#f5f5f5; z-index:6;
+      padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0.78), rgba(0,0,0,0.22));
+      color:#f5f5f5; z-index:9;
     }
     #stats { flex:1; display:flex; gap:16px; font-weight:600; }
     #mode-btn, #flash-btn {
       padding:8px 12px; border:1px solid #555; background:#141414; color:#eee; cursor:pointer; border-radius:6px;
     }
-    #hint { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); color:#bbb; font-size:12px; z-index:6; }
+    #hint { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); color:#bbb; font-size:12px; z-index:9; }
 
     /* Crosshair + vignette */
     #crosshair {
       position:fixed; left:50%; top:50%; width:14px; height:14px; transform:translate(-50%, -50%);
-      border:2px solid #b00; border-radius:50%; box-shadow: 0 0 8px #a00; z-index:6; opacity:.7;
+      border:2px solid #b00; border-radius:50%; box-shadow: 0 0 8px #a00; z-index:9; opacity:.7;
     }
     #vignette {
-      position:fixed; inset:0; pointer-events:none; z-index:5;
-      background:radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 90%);
+      position:fixed; inset:0; pointer-events:none; z-index:8;
+      background:radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.6) 90%);
     }
 
     /* Mobile controls */
-    #mobile-controls { position:fixed; bottom:18px; left:18px; right:18px; display:none; justify-content:space-between; z-index:6; }
+    #mobile-controls { position:fixed; bottom:18px; left:18px; right:18px; display:none; justify-content:space-between; z-index:9; }
     .stick {
       width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.08);
       border:1px solid rgba(255,255,255,0.15); position:relative; touch-action:none;
@@ -43,9 +43,9 @@
 
     /* Map overlay */
     #map {
-      position:fixed; right:16px; bottom:16px; width:220px; height:220px; background:#0a0a0a;
+      position:fixed; right:16px; bottom:16px; width:240px; height:240px; background:#0a0a0a;
       border:1px solid #333; border-radius:8px; box-shadow: 0 0 12px rgba(255,0,0,0.15);
-      z-index:6; display:none; overflow:hidden;
+      z-index:9; display:none; overflow:hidden;
     }
     #map canvas { width:100%; height:100%; display:block; }
     #map-label {
@@ -55,7 +55,7 @@
 
     /* Jumpscare overlay */
     #jumpscare {
-      position:fixed; inset:0; background:#000; display:none; z-index:7;
+      position:fixed; inset:0; background:#000; display:none; z-index:10;
       align-items:center; justify-content:center;
     }
     #jumpscare .flash {
@@ -88,7 +88,7 @@
       <div id="floor">Floor: 1</div>
       <div id="keys">Keys: 0 / 0</div>
       <div id="doors">Doors opened: 0</div>
-      <div id="status">W/S forward/back. A moves right, D moves left. E interacts (doors). M toggles map.</div>
+      <div id="status">W/S forward/back. A moves right, D moves left. E interacts (doors). F flashlight. M map.</div>
     </div>
     <button id="mode-btn">Mode: PC</button>
     <button id="flash-btn">Flashlight: ON</button>
@@ -104,10 +104,10 @@
 
   <div id="map">
     <div id="map-label">Map (M to toggle)</div>
-    <canvas id="map-canvas" width="220" height="220"></canvas>
+    <canvas id="map-canvas" width="240" height="240"></canvas>
   </div>
 
-  <div id="hint">PC: WASD (A/D flipped), mouse drag to look, E to interact doors, M for map. Mobile: use sticks.</div>
+  <div id="hint">PC: WASD (A/D flipped), mouse drag to look, E to interact doors, F flashlight, M map. Mobile: use sticks.</div>
 
   <div id="jumpscare">
     <div class="flash"></div>
@@ -116,23 +116,21 @@
 
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script>
-    // Complete one-file 3D horror:
-    // - Hotel corridor floors with doors
-    // - Collect keys (orange dodecahedrons) to unlock doors
-    // - E to interact (unlock/open nearest door)
-    // - Flashlight with on/off button and F key
+    // Complete one-file 3D horror with:
+    // - Corridor + real rooms behind doors (walls, floors, ceilings)
+    // - Keys (orange dodecahedrons) unlock matching doors; E to interact
+    // - Flashlight that actually lights the scene (F to toggle, button too)
     // - A/D movement flipped (A=right, D=left), W/S normal
     // - Monster stalks; jumpscare on kill; respawn same floor
-    // - Mini-map toggled with M showing player, monster, and keys
+    // - Mini-map toggled with M showing player, monster, keys, doors
 
     let renderer, scene, camera, clock = new THREE.Clock();
     let move = { f:0, b:0, l:0, r:0 };
     let velocity = new THREE.Vector3();
+    let mode = 'pc'; // input mode
+    let flashOn = true;
 
-    // Modes
-    let mode = 'pc'; // 'pc' or 'mobile'
-
-    // Hotel floor
+    // Hotel floor geometry
     const FLOOR_LENGTH = 180;
     const FLOOR_WIDTH = 18;
     const PLAYER_HEIGHT = 1.7;
@@ -152,11 +150,14 @@
     let keysCollected = 0;
     let doorsOpened = 0;
 
-    // Lights
-    let ambient, flashlight, flashOn = true;
+    // Lighting
+    let ambient, flashlight;
 
     // Monster
     let monster, monsterGrowlTimer = 0;
+
+    // Rooms data for map
+    let rooms = [];
 
     // Map
     const mapEl = document.getElementById('map');
@@ -183,24 +184,25 @@
 
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x000000);
-      scene.fog = new THREE.FogExp2(new THREE.Color(0x000000), 0.02);
+      scene.fog = new THREE.FogExp2(new THREE.Color(0x000000), 0.022);
 
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 400);
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 500);
       camera.position.set(0, PLAYER_HEIGHT, -FLOOR_LENGTH*0.45);
       camera.rotation.order = 'YXZ';
 
-      buildHotelFloor();
-
-      ambient = new THREE.AmbientLight(0x1e1e1e);
+      // Ambient plus flashlight that really lights
+      ambient = new THREE.AmbientLight(0x1d1d1d);
       scene.add(ambient);
 
-      flashlight = new THREE.SpotLight(0xffffff, 3.8, 24, Math.PI/9, 0.35, 1.5);
+      flashlight = new THREE.SpotLight(0xffffff, 4.2, 26, Math.PI/9, 0.35, 1.5);
       flashlight.castShadow = true;
       flashlight.shadow.mapSize.set(1024, 1024);
       flashlight.shadow.bias = -0.0001;
       flashlight.target = new THREE.Object3D();
       scene.add(flashlight);
       scene.add(flashlight.target);
+
+      buildHotelFloor();
 
       setupInput();
       setupUI();
@@ -213,18 +215,20 @@
     }
 
     function buildHotelFloor(){
-      // Clear
+      // Clear floor content
       keys.forEach(k => { if (k.userData.glow) scene.remove(k.userData.glow); scene.remove(k); });
       keys = [];
       doors.forEach(d => scene.remove(d.group));
       doors = [];
+      rooms.forEach(r => scene.remove(r.group));
+      rooms = [];
       keysCollected = 0;
       doorsOpened = 0;
 
-      // Corridor
+      // Corridor base
       const floorMat = new THREE.MeshStandardMaterial({ color:0x131313, roughness:0.95 });
       const carpetMat = new THREE.MeshStandardMaterial({ color:0x1f0a0a, roughness:0.9 });
-      const wallMat = new THREE.MeshStandardMaterial({ color:0x121212, roughness:0.97 });
+      const wallMat = new THREE.MeshStandardMaterial({ color:0x151515, roughness:0.97 });
 
       const baseFloor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_WIDTH, FLOOR_LENGTH), floorMat);
       baseFloor.rotation.x = -Math.PI/2; baseFloor.receiveShadow = true;
@@ -251,7 +255,6 @@
       ceiling.receiveShadow = true;
       scene.add(ceiling);
 
-      // Lamps
       for(let i=-7;i<=7;i++){
         const z = i * (FLOOR_LENGTH/14);
         const lamp = new THREE.PointLight(0x5a0000, 0.5 + Math.random()*0.4, 8, 2);
@@ -267,23 +270,38 @@
         const side = i % 2 === 0 ? -1 : 1;
         const z = -FLOOR_LENGTH*0.4 + i * (FLOOR_LENGTH/(doorCount+1));
         const x = side * (FLOOR_WIDTH*0.5 - 0.01);
-        doorPositions.push({ x, z, side });
+        doorPositions.push({ x, z, side, index:i });
       }
 
-      doorPositions.forEach((p, idx)=>{
-        const d = makeDoor(idx, p.side);
+      // Build rooms first, then doors aligned to their openings
+      doorPositions.forEach(p=>{
+        const room = makeRoom(p);
+        rooms.push(room);
+        scene.add(room.group);
+      });
+
+      doorPositions.forEach((p)=>{
+        const d = makeDoor(p.index, p.side);
         d.group.position.set(p.x, 0, p.z);
         scene.add(d.group);
         doors.push(d);
       });
 
-      // Keys
+      // Keys placed in corridor and some inside rooms (so you have to enter)
       for(let i=0;i<doorCount;i++){
-        const geo = new THREE.DodecahedronGeometry(0.45, 0);
+        const geo = new THREE.DodecahedronGeometry(0.42, 0);
         const mat = new THREE.MeshStandardMaterial({ color:0xff7a00, emissive:0x331800, roughness:0.3, metalness:0.2 });
         const key = new THREE.Mesh(geo, mat);
-        const kx = (Math.random() * FLOOR_WIDTH*0.5 - FLOOR_WIDTH*0.25);
-        const kz = -FLOOR_LENGTH*0.4 + Math.random()*FLOOR_LENGTH*0.8;
+        let inRoom = Math.random() < 0.5;
+        let kx, kz;
+        if (inRoom){
+          const r = rooms[i];
+          kx = r.center.x + randRange(-r.size.x*0.35, r.size.x*0.35);
+          kz = r.center.z + randRange(-r.size.z*0.35, r.size.z*0.35);
+        } else {
+          kx = (Math.random() * FLOOR_WIDTH*0.5 - FLOOR_WIDTH*0.25);
+          kz = -FLOOR_LENGTH*0.4 + Math.random()*FLOOR_LENGTH*0.8;
+        }
         key.position.set(kx, 0.6, kz);
         key.castShadow = true;
         key.userData.spin = 0.8 + Math.random()*0.5;
@@ -313,7 +331,60 @@
       document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${doorCount}`;
       document.getElementById('doors').textContent = `Doors opened: ${doorsOpened}`;
       document.getElementById('floor').textContent = `Floor: ${floorIndex+1}`;
-      document.getElementById('status').textContent = 'W/S forward/back. A moves right, D moves left. E interacts (doors). M toggles map.';
+      document.getElementById('status').textContent = 'W/S forward/back. A moves right, D moves left. E interacts (doors). F flashlight. M map.';
+    }
+
+    function makeRoom(doorPos){
+      // Create a small room attached to corridor at the door opening
+      const group = new THREE.Group();
+      const width = 10 + Math.random()*6; // x dimension
+      const depth = 12 + Math.random()*8; // z dimension
+      const height = 3.0;
+
+      // Determine room center offset from corridor wall
+      const offsetX = (doorPos.side < 0) ? -FLOOR_WIDTH*0.5 - width*0.5 : FLOOR_WIDTH*0.5 + width*0.5;
+      const center = new THREE.Vector3(offsetX, 0, doorPos.z);
+
+      const floorMat = new THREE.MeshStandardMaterial({ color:0x111111, roughness:0.95 });
+      const wallMat = new THREE.MeshStandardMaterial({ color:0x171717, roughness:0.97 });
+      const ceilingMat = new THREE.MeshStandardMaterial({ color:0x121212, roughness:0.95 });
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), floorMat);
+      floor.rotation.x = -Math.PI/2;
+      floor.position.set(center.x, 0, center.z);
+      floor.receiveShadow = true;
+      group.add(floor);
+
+      const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), ceilingMat);
+      ceiling.rotation.x = Math.PI/2;
+      ceiling.position.set(center.x, height, center.z);
+      ceiling.receiveShadow = true;
+      group.add(ceiling);
+
+      // Four walls
+      const wallFront = new THREE.Mesh(new THREE.PlaneGeometry(width, height), wallMat);
+      wallFront.position.set(center.x, height/2, center.z - depth/2);
+      group.add(wallFront);
+
+      const wallBack = wallFront.clone();
+      wallBack.position.z = center.z + depth/2;
+      group.add(wallBack);
+
+      const wallLeft = new THREE.Mesh(new THREE.PlaneGeometry(depth, height), wallMat);
+      wallLeft.rotation.y = Math.PI/2;
+      wallLeft.position.set(center.x - width/2, height/2, center.z);
+      group.add(wallLeft);
+
+      const wallRight = wallLeft.clone();
+      wallRight.position.x = center.x + width/2;
+      group.add(wallRight);
+
+      // Room light (dim)
+      const lamp = new THREE.PointLight(0x3a0000, 0.35 + Math.random()*0.25, 7, 2);
+      lamp.position.set(center.x, height-0.3, center.z + randRange(-depth*0.2, depth*0.2));
+      group.add(lamp);
+
+      return { group, center, size:{ x:width, z:depth, y:height } };
     }
 
     function makeDoor(index, side){
@@ -418,7 +489,7 @@
       setupStick(left, sticks.left, (sx, sy)=>{
         move.f = sy < -0.2 ? 1 : 0;
         move.b = sy > 0.2 ? 1 : 0;
-        // Preserve flipped A/D even on mobile: left-stick horizontal inverted
+        // Preserve flipped A/D on mobile: horizontal inverted
         move.r = sx < -0.2 ? 1 : 0; // pushing left -> move right
         move.l = sx > 0.2 ? 1 : 0;  // pushing right -> move left
       });
@@ -430,9 +501,7 @@
     }
 
     function setupUI(){
-      document.getElementById('mode-btn').addEventListener('click', ()=>{
-        setMode(mode==='pc' ? 'mobile' : 'pc');
-      });
+      document.getElementById('mode-btn').addEventListener('click', ()=> setMode(mode==='pc' ? 'mobile' : 'pc'));
       document.getElementById('flash-btn').addEventListener('click', toggleFlash);
     }
 
@@ -487,13 +556,13 @@
       mobileUI.style.display = (mode==='mobile') ? 'flex' : 'none';
       document.getElementById('mode-btn').textContent = `Mode: ${mode.toUpperCase()}`;
       document.getElementById('status').textContent = (mode==='mobile')
-        ? 'Mobile: left stick move (A/D flipped preserved), right stick look. E requires keyboard.'
-        : 'PC: W/S forward/back, A right, D left, mouse drag to look. E interacts, M map.';
+        ? 'Mobile: left stick move (A/D flipped preserved), right stick look. E/F/M require keyboard.'
+        : 'PC: W/S forward/back, A right, D left, mouse drag to look. E interacts, F flashlight, M map.';
     }
 
     function toggleFlash(){
       flashOn = !flashOn;
-      flashlight.intensity = flashOn ? 3.8 : 0.0;
+      flashlight.intensity = flashOn ? 4.2 : 0.0;
       document.getElementById('flash-btn').textContent = `Flashlight: ${flashOn ? 'ON' : 'OFF'}`;
       document.getElementById('status').textContent = flashOn ? 'Light hums alive.' : 'Darkness presses in.';
     }
@@ -505,7 +574,7 @@
     }
 
     function tryInteract(){
-      const reach = 2.2;
+      const reach = 2.3;
       let nearestDoor = null, nearestDist = Infinity;
 
       doors.forEach(d=>{
@@ -543,13 +612,13 @@
       requestAnimationFrame(animate);
       const dt = Math.min(0.033, clock.getDelta());
 
-      // Flashlight follows camera
+      // Flashlight follows camera and points forward (this makes it actually light)
       const dir = new THREE.Vector3();
       camera.getWorldDirection(dir);
       const camPos = camera.position.clone();
-      const torchPos = camPos.clone().add(dir.clone().multiplyScalar(0.2)).add(new THREE.Vector3(0, -0.1, 0));
+      const torchPos = camPos.clone().add(dir.clone().multiplyScalar(0.25)).add(new THREE.Vector3(0, -0.15, 0));
       flashlight.position.copy(torchPos);
-      flashlight.target.position.copy(camPos.clone().add(dir.clone().multiplyScalar(4)));
+      flashlight.target.position.copy(camPos.clone().add(dir.clone().multiplyScalar(6)));
 
       // Keys spin & glow pulse
       keys.forEach(k=>{
@@ -574,9 +643,9 @@
       velocity.lerp(accel.multiplyScalar(PLAYER_SPEED), 0.15);
       camera.position.add(velocity.clone().multiplyScalar(dt));
 
-      // Bounds
-      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -FLOOR_WIDTH*0.45, FLOOR_WIDTH*0.45);
-      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -FLOOR_LENGTH*0.5, FLOOR_LENGTH*0.5);
+      // Bounds: corridor plus allow entry into rooms (wide range)
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -FLOOR_WIDTH*0.5 - 20, FLOOR_WIDTH*0.5 + 20);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -FLOOR_LENGTH*0.5 - 20, FLOOR_LENGTH*0.5 + 20);
 
       // Monster + interactions
       updateMonster(dt);
@@ -606,7 +675,6 @@
       monster.scale.set(s, s, s);
       monster.rotation.y += Math.sin(perfNow()*0.001)*0.002;
 
-      // Faster when flashlight off (scarier)
       const speedMul = flashOn ? 1.0 : 1.2;
 
       const desired = camera.position.clone()
@@ -647,7 +715,6 @@
     function triggerJumpscare(onEnd){
       const overlay = document.getElementById('jumpscare');
       overlay.style.display = 'flex';
-      // Screen flash + shake
       let t = 0, shakeDur = 650, start = perfNow();
       function shake(){
         const now = perfNow(); t = now - start;
@@ -665,7 +732,7 @@
     }
 
     function checkKeys(){
-      const reach = 1.2;
+      const reach = 1.3;
       for(let i=keys.length-1;i>=0;i--){
         const k = keys[i];
         const d = k.position.distanceTo(camera.position);
@@ -697,9 +764,30 @@
       mapCtx.lineWidth = 2;
       mapCtx.strokeRect(1,1,w-2,h-2);
 
-      const scale = w / FLOOR_LENGTH;
+      const scaleZ = h / FLOOR_LENGTH;
+      const scaleX = w / (FLOOR_WIDTH + 60); // include rooms horizontally
       const ox = w/2, oz = h/2;
-      function toMap(x, z){ return { x: ox + x * scale, z: oz + z * scale }; }
+
+      function toMap(x, z){
+        return { x: ox + x * scaleX, z: oz + z * scaleZ };
+      }
+
+      // Corridor outline
+      mapCtx.strokeStyle = '#666';
+      mapCtx.beginPath();
+      const c1 = toMap(-FLOOR_WIDTH/2, -FLOOR_LENGTH/2);
+      const c2 = toMap(FLOOR_WIDTH/2, -FLOOR_LENGTH/2);
+      const c3 = toMap(FLOOR_WIDTH/2, FLOOR_LENGTH/2);
+      const c4 = toMap(-FLOOR_WIDTH/2, FLOOR_LENGTH/2);
+      mapCtx.moveTo(c1.x, c1.z); mapCtx.lineTo(c2.x, c2.z); mapCtx.lineTo(c3.x, c3.z); mapCtx.lineTo(c4.x, c4.z); mapCtx.closePath(); mapCtx.stroke();
+
+      // Rooms rectangles
+      mapCtx.strokeStyle = '#444';
+      rooms.forEach(r=>{
+        const x1 = toMap(r.center.x - r.size.x/2, r.center.z - r.size.z/2);
+        const x2 = toMap(r.center.x + r.size.x/2, r.center.z + r.size.z/2);
+        mapCtx.strokeRect(x1.x, x1.z, x2.x - x1.x, x2.z - x1.z);
+      });
 
       // Player
       const p = toMap(camera.position.x, camera.position.z);
@@ -731,14 +819,6 @@
         const pos = toMap(d.group.position.x, d.group.position.z);
         mapCtx.fillRect(pos.x-2, pos.z-2, 4, 4);
       });
-
-      // Grid
-      mapCtx.strokeStyle = 'rgba(255,255,255,0.06)';
-      mapCtx.lineWidth = 1;
-      for(let i=-2;i<=2;i++){
-        mapCtx.beginPath(); mapCtx.moveTo(ox + i*FLOOR_LENGTH*0.1*scale, 0); mapCtx.lineTo(ox + i*FLOOR_LENGTH*0.1*scale, h); mapCtx.stroke();
-        mapCtx.beginPath(); mapCtx.moveTo(0, oz + i*FLOOR_LENGTH*0.1*scale); mapCtx.lineTo(w, oz + i*FLOOR_LENGTH*0.1*scale); mapCtx.stroke();
-      }
     }
 
     // Utils
