@@ -3,35 +3,35 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-  <title>Hotel of Keys – Complete one-file 3D horror (rooms + working flashlight)</title>
+  <title>Maze Hotel – One-file 3D horror</title>
   <style>
     html, body { margin:0; padding:0; background:#000; height:100%; overflow:hidden; font-family:system-ui, sans-serif; }
     canvas { display:block; }
 
-    /* Top UI bar */
+    /* UI bar */
     #ui {
       position:fixed; top:0; left:0; right:0; display:flex; gap:12px; align-items:center;
-      padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0.78), rgba(0,0,0,0.22));
-      color:#f5f5f5; z-index:9;
+      padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0.8), rgba(0,0,0,0.25));
+      color:#f5f5f5; z-index:20;
     }
     #stats { flex:1; display:flex; gap:16px; font-weight:600; }
     #mode-btn, #flash-btn {
       padding:8px 12px; border:1px solid #555; background:#141414; color:#eee; cursor:pointer; border-radius:6px;
     }
-    #hint { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); color:#bbb; font-size:12px; z-index:9; }
+    #hint { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); color:#bbb; font-size:12px; z-index:20; }
 
     /* Crosshair + vignette */
     #crosshair {
       position:fixed; left:50%; top:50%; width:14px; height:14px; transform:translate(-50%, -50%);
-      border:2px solid #b00; border-radius:50%; box-shadow: 0 0 8px #a00; z-index:9; opacity:.7;
+      border:2px solid #b00; border-radius:50%; box-shadow: 0 0 8px #a00; z-index:20; opacity:.7;
     }
     #vignette {
-      position:fixed; inset:0; pointer-events:none; z-index:8;
-      background:radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.6) 90%);
+      position:fixed; inset:0; pointer-events:none; z-index:10;
+      background:radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.65) 90%);
     }
 
     /* Mobile controls */
-    #mobile-controls { position:fixed; bottom:18px; left:18px; right:18px; display:none; justify-content:space-between; z-index:9; }
+    #mobile-controls { position:fixed; bottom:18px; left:18px; right:18px; display:none; justify-content:space-between; z-index:20; }
     .stick {
       width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.08);
       border:1px solid rgba(255,255,255,0.15); position:relative; touch-action:none;
@@ -43,9 +43,9 @@
 
     /* Map overlay */
     #map {
-      position:fixed; right:16px; bottom:16px; width:240px; height:240px; background:#0a0a0a;
+      position:fixed; right:16px; bottom:16px; width:260px; height:260px; background:#0a0a0a;
       border:1px solid #333; border-radius:8px; box-shadow: 0 0 12px rgba(255,0,0,0.15);
-      z-index:9; display:none; overflow:hidden;
+      z-index:20; display:none; overflow:hidden;
     }
     #map canvas { width:100%; height:100%; display:block; }
     #map-label {
@@ -55,7 +55,7 @@
 
     /* Jumpscare overlay */
     #jumpscare {
-      position:fixed; inset:0; background:#000; display:none; z-index:10;
+      position:fixed; inset:0; background:#000; display:none; z-index:30;
       align-items:center; justify-content:center;
     }
     #jumpscare .flash {
@@ -70,16 +70,10 @@
       transform: scale(0.2);
       animation: facePop 0.6s cubic-bezier(0.2, 1.6, 0.2, 1) forwards;
     }
-    @keyframes flashAnim {
-      0% { opacity:0; }
-      20% { opacity:1; }
-      100% { opacity:0.0; }
-    }
-    @keyframes facePop {
-      0% { transform: scale(0.2) rotate(0deg); filter: blur(6px); }
-      30% { transform: scale(1.25) rotate(22deg); filter: blur(1px); }
-      100% { transform: scale(0.95) rotate(0deg); filter:none; }
-    }
+    @keyframes flashAnim { 0% { opacity:0; } 20% { opacity:1; } 100% { opacity:0.0; } }
+    @keyframes facePop { 0% { transform: scale(0.2) rotate(0deg); filter: blur(6px); }
+                         30% { transform: scale(1.25) rotate(22deg); filter: blur(1px); }
+                         100% { transform: scale(0.95) rotate(0deg); filter:none; } }
   </style>
 </head>
 <body>
@@ -87,8 +81,8 @@
     <div id="stats">
       <div id="floor">Floor: 1</div>
       <div id="keys">Keys: 0 / 0</div>
-      <div id="doors">Doors opened: 0</div>
-      <div id="status">W/S forward/back. A moves right, D moves left. E interacts (doors). F flashlight. M map.</div>
+      <div id="doors">Gates opened: 0</div>
+      <div id="status">W/S forward/back. A moves right, D moves left. E interact. F flashlight. M map.</div>
     </div>
     <button id="mode-btn">Mode: PC</button>
     <button id="flash-btn">Flashlight: ON</button>
@@ -104,10 +98,10 @@
 
   <div id="map">
     <div id="map-label">Map (M to toggle)</div>
-    <canvas id="map-canvas" width="240" height="240"></canvas>
+    <canvas id="map-canvas" width="260" height="260"></canvas>
   </div>
 
-  <div id="hint">PC: WASD (A/D flipped), mouse drag to look, E to interact doors, F flashlight, M map. Mobile: use sticks.</div>
+  <div id="hint">PC: WASD (A/D flipped), mouse drag to look, E interact, F flashlight, M map. Mobile: use sticks.</div>
 
   <div id="jumpscare">
     <div class="flash"></div>
@@ -116,48 +110,45 @@
 
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script>
-    // Complete one-file 3D horror with:
-    // - Corridor + real rooms behind doors (walls, floors, ceilings)
-    // - Keys (orange dodecahedrons) unlock matching doors; E to interact
-    // - Flashlight that actually lights the scene (F to toggle, button too)
+    // Maze Hotel one-file:
+    // - Procedural hotel maze (grid-based) with walls and gates
+    // - Keys unlock gates (E to interact)
+    // - Flashlight lights scene + visible spot on floor (F to toggle)
     // - A/D movement flipped (A=right, D=left), W/S normal
-    // - Monster stalks; jumpscare on kill; respawn same floor
-    // - Mini-map toggled with M showing player, monster, keys, doors
+    // - Human-sized monster, jumpscare on kill, respawn
+    // - Minimap shows walls, player, monster, keys, gates
 
     let renderer, scene, camera, clock = new THREE.Clock();
     let move = { f:0, b:0, l:0, r:0 };
     let velocity = new THREE.Vector3();
-    let mode = 'pc'; // input mode
+    let mode = 'pc';
     let flashOn = true;
 
-    // Hotel floor geometry
-    const FLOOR_LENGTH = 180;
-    const FLOOR_WIDTH = 18;
+    // World scale
+    const CELL = 6;
+    const MAZE_W = 12;
+    const MAZE_H = 10;
     const PLAYER_HEIGHT = 1.7;
-    const PLAYER_SPEED = 3.1;
+    const PLAYER_SPEED = 3.15;
 
+    // Floors progression
     const FLOORS = [
-      { doors: 4, monsterSpeed: 2.0, monsterAggro: 0.6 },
-      { doors: 6, monsterSpeed: 2.6, monsterAggro: 0.8 },
-      { doors: 8, monsterSpeed: 3.2, monsterAggro: 1.0 },
-      { doors: 10, monsterSpeed: 3.6, monsterAggro: 1.15 },
+      { gates: 4, monsterSpeed: 2.0, monsterAggro: 0.6 },
+      { gates: 6, monsterSpeed: 2.4, monsterAggro: 0.8 },
+      { gates: 8, monsterSpeed: 3.0, monsterAggro: 1.0 },
+      { gates: 10, monsterSpeed: 3.4, monsterAggro: 1.15 },
     ];
     let floorIndex = 0;
 
-    // Keys & doors
-    let keys = [];
-    let doors = [];
-    let keysCollected = 0;
-    let doorsOpened = 0;
+    // Maze data
+    let grid, walls = [], gates = [], keys = [], startPos, exitPos;
 
-    // Lighting
+    // Lights
     let ambient, flashlight;
+    let floorSpot, floorSpotTex;
 
     // Monster
     let monster, monsterGrowlTimer = 0;
-
-    // Rooms data for map
-    let rooms = [];
 
     // Map
     const mapEl = document.getElementById('map');
@@ -184,17 +175,16 @@
 
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x000000);
-      scene.fog = new THREE.FogExp2(new THREE.Color(0x000000), 0.022);
+      scene.fog = new THREE.FogExp2(new THREE.Color(0x000000), 0.03);
 
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 500);
-      camera.position.set(0, PLAYER_HEIGHT, -FLOOR_LENGTH*0.45);
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 1000);
       camera.rotation.order = 'YXZ';
 
-      // Ambient plus flashlight that really lights
-      ambient = new THREE.AmbientLight(0x1d1d1d);
+      // Lighting: ambient + flashlight
+      ambient = new THREE.AmbientLight(0x191919);
       scene.add(ambient);
 
-      flashlight = new THREE.SpotLight(0xffffff, 4.2, 26, Math.PI/9, 0.35, 1.5);
+      flashlight = new THREE.SpotLight(0xffffff, 4.5, 28, Math.PI/7.5, 0.35, 1.5);
       flashlight.castShadow = true;
       flashlight.shadow.mapSize.set(1024, 1024);
       flashlight.shadow.bias = -0.0001;
@@ -202,7 +192,16 @@
       scene.add(flashlight);
       scene.add(flashlight.target);
 
-      buildHotelFloor();
+      // Floor spot texture
+      floorSpotTex = makeRadialTexture(256, '#ffffff', '#000000');
+      const spotMat = new THREE.MeshBasicMaterial({ map: floorSpotTex, transparent:true, opacity:0.35 });
+      floorSpot = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.2), spotMat);
+      floorSpot.rotation.x = -Math.PI/2;
+      floorSpot.position.y = 0.02;
+      floorSpot.renderOrder = 2;
+      scene.add(floorSpot);
+
+      buildMazeFloor();
 
       setupInput();
       setupUI();
@@ -214,100 +213,132 @@
       drawMap();
     }
 
-    function buildHotelFloor(){
-      // Clear floor content
-      keys.forEach(k => { if (k.userData.glow) scene.remove(k.userData.glow); scene.remove(k); });
-      keys = [];
-      doors.forEach(d => scene.remove(d.group));
-      doors = [];
-      rooms.forEach(r => scene.remove(r.group));
-      rooms = [];
-      keysCollected = 0;
-      doorsOpened = 0;
+    function buildMazeFloor(){
+      // Clear old
+      walls.forEach(w => scene.remove(w)); walls = [];
+      gates.forEach(g => scene.remove(g.group)); gates = [];
+      keys.forEach(k => { if (k.userData.glow) scene.remove(k.userData.glow); scene.remove(k); }); keys = [];
 
-      // Corridor base
-      const floorMat = new THREE.MeshStandardMaterial({ color:0x131313, roughness:0.95 });
-      const carpetMat = new THREE.MeshStandardMaterial({ color:0x1f0a0a, roughness:0.9 });
-      const wallMat = new THREE.MeshStandardMaterial({ color:0x151515, roughness:0.97 });
+      // Generate maze
+      grid = generateMaze(MAZE_W, MAZE_H);
+      const wWorld = MAZE_W * CELL;
+      const hWorld = MAZE_H * CELL;
 
-      const baseFloor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_WIDTH, FLOOR_LENGTH), floorMat);
+      // Floor & ceiling
+      const floorMat = new THREE.MeshStandardMaterial({ color:0x101010, roughness:0.95 });
+      const carpetMat = new THREE.MeshStandardMaterial({ color:0x160606, roughness:0.9 });
+      const ceilingMat = new THREE.MeshStandardMaterial({ color:0x0e0e0e, roughness:0.95 });
+
+      const baseFloor = new THREE.Mesh(new THREE.PlaneGeometry(wWorld, hWorld), floorMat);
       baseFloor.rotation.x = -Math.PI/2; baseFloor.receiveShadow = true;
+      baseFloor.position.set(0, 0, 0);
       scene.add(baseFloor);
 
-      const carpet = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_WIDTH*0.6, FLOOR_LENGTH), carpetMat);
+      const carpet = new THREE.Mesh(new THREE.PlaneGeometry(wWorld*0.85, hWorld*0.85), carpetMat);
       carpet.rotation.x = -Math.PI/2; carpet.position.y = 0.01;
       scene.add(carpet);
 
-      const wallLeft = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_LENGTH, 3.2), wallMat);
-      wallLeft.rotation.y = Math.PI/2;
-      wallLeft.position.set(-FLOOR_WIDTH*0.5, 1.6, 0);
-      wallLeft.receiveShadow = true; wallLeft.castShadow = true;
-      scene.add(wallLeft);
-
-      const wallRight = wallLeft.clone();
-      wallRight.rotation.y = -Math.PI/2;
-      wallRight.position.set(FLOOR_WIDTH*0.5, 1.6, 0);
-      scene.add(wallRight);
-
-      const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_WIDTH, FLOOR_LENGTH), new THREE.MeshStandardMaterial({ color:0x101010, roughness:0.95 }));
+      const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(wWorld, hWorld), ceilingMat);
       ceiling.rotation.x = Math.PI/2;
-      ceiling.position.y = 3.2;
+      ceiling.position.set(0, 3.2, 0);
       ceiling.receiveShadow = true;
       scene.add(ceiling);
 
-      for(let i=-7;i<=7;i++){
-        const z = i * (FLOOR_LENGTH/14);
-        const lamp = new THREE.PointLight(0x5a0000, 0.5 + Math.random()*0.4, 8, 2);
-        lamp.position.set(0, 3.0, z);
+      // Corridor lamps
+      for(let i=0;i<20;i++){
+        const lx = randRange(-wWorld*0.45, wWorld*0.45);
+        const lz = randRange(-hWorld*0.45, hWorld*0.45);
+        const lamp = new THREE.PointLight(0x5a0000, 0.5 + Math.random()*0.5, 8, 2);
+        lamp.position.set(lx, 3.0, lz);
         scene.add(lamp);
       }
 
-      // Doors
-      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
-      const doorCount = conf.doors;
-      const doorPositions = [];
-      for(let i=0;i<doorCount;i++){
-        const side = i % 2 === 0 ? -1 : 1;
-        const z = -FLOOR_LENGTH*0.4 + i * (FLOOR_LENGTH/(doorCount+1));
-        const x = side * (FLOOR_WIDTH*0.5 - 0.01);
-        doorPositions.push({ x, z, side, index:i });
+      // Walls & gates
+      const wallMat = new THREE.MeshStandardMaterial({ color:0x181818, roughness:0.97, metalness:0.05 });
+      const panelMat = new THREE.MeshStandardMaterial({ color:0x202020, roughness:0.95 });
+      const wallThick = 0.18, wallH = 3.0;
+
+      function cellToWorld(cx, cy){
+        const x = (cx - MAZE_W/2) * CELL + CELL/2;
+        const z = (cy - MAZE_H/2) * CELL + CELL/2;
+        return { x, z };
       }
 
-      // Build rooms first, then doors aligned to their openings
-      doorPositions.forEach(p=>{
-        const room = makeRoom(p);
-        rooms.push(room);
-        scene.add(room.group);
-      });
+      const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
+      const totalGates = conf.gates;
+      let gateTargets = [];
 
-      doorPositions.forEach((p)=>{
-        const d = makeDoor(p.index, p.side);
-        d.group.position.set(p.x, 0, p.z);
-        scene.add(d.group);
-        doors.push(d);
-      });
+      for(let y=0;y<MAZE_H;y++){
+        for(let x=0;x<MAZE_W;x++){
+          const c = grid[y][x];
+          const wp = cellToWorld(x, y);
 
-      // Keys placed in corridor and some inside rooms (so you have to enter)
-      for(let i=0;i<doorCount;i++){
+          // North wall
+          if(c.walls[0]){
+            const w = new THREE.Mesh(new THREE.BoxGeometry(CELL, wallH, wallThick), wallMat);
+            w.position.set(wp.x, wallH/2, wp.z - CELL/2);
+            w.castShadow = true; w.receiveShadow = true;
+            scene.add(w); walls.push(w);
+            if (Math.random()<0.08) gateTargets.push({ x, y, dir:0, world:{ x:w.position.x, z:w.position.z } });
+          }
+          // East wall
+          if(c.walls[1]){
+            const w = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, CELL), wallMat);
+            w.position.set(wp.x + CELL/2, wallH/2, wp.z);
+            w.castShadow = true; w.receiveShadow = true;
+            scene.add(w); walls.push(w);
+            if (Math.random()<0.08) gateTargets.push({ x, y, dir:1, world:{ x:w.position.x, z:w.position.z } });
+          }
+          // South wall
+          if(c.walls[2]){
+            const w = new THREE.Mesh(new THREE.BoxGeometry(CELL, wallH, wallThick), wallMat);
+            w.position.set(wp.x, wallH/2, wp.z + CELL/2);
+            w.castShadow = true; w.receiveShadow = true;
+            scene.add(w); walls.push(w);
+            if (Math.random()<0.08) gateTargets.push({ x, y, dir:2, world:{ x:w.position.x, z:w.position.z } });
+          }
+          // West wall
+          if(c.walls[3]){
+            const w = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallH, CELL), wallMat);
+            w.position.set(wp.x - CELL/2, wallH/2, wp.z);
+            w.castShadow = true; w.receiveShadow = true;
+            scene.add(w); walls.push(w);
+            if (Math.random()<0.08) gateTargets.push({ x, y, dir:3, world:{ x:w.position.x, z:w.position.z } });
+          }
+
+          if (Math.random()<0.15){
+            const p = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.9, 1.2), panelMat);
+            p.position.set(wp.x + randRange(-CELL*0.45, CELL*0.45), 1.5, wp.z + randRange(-CELL*0.45, CELL*0.45));
+            p.castShadow = true; scene.add(p);
+          }
+        }
+      }
+
+      // Gates
+      shuffle(gateTargets);
+      gateTargets = gateTargets.slice(0, totalGates);
+      for(let i=0;i<gateTargets.length;i++){
+        const gt = gateTargets[i];
+        const g = makeGate(i);
+        g.group.position.set(gt.world.x, 0, gt.world.z);
+        g.group.rotation.y = (gt.dir===0 || gt.dir===2) ? 0 : Math.PI/2;
+        scene.add(g.group);
+        gates.push(g);
+      }
+
+      // Keys
+      for(let i=0;i<totalGates;i++){
         const geo = new THREE.DodecahedronGeometry(0.42, 0);
         const mat = new THREE.MeshStandardMaterial({ color:0xff7a00, emissive:0x331800, roughness:0.3, metalness:0.2 });
         const key = new THREE.Mesh(geo, mat);
-        let inRoom = Math.random() < 0.5;
-        let kx, kz;
-        if (inRoom){
-          const r = rooms[i];
-          kx = r.center.x + randRange(-r.size.x*0.35, r.size.x*0.35);
-          kz = r.center.z + randRange(-r.size.z*0.35, r.size.z*0.35);
-        } else {
-          kx = (Math.random() * FLOOR_WIDTH*0.5 - FLOOR_WIDTH*0.25);
-          kz = -FLOOR_LENGTH*0.4 + Math.random()*FLOOR_LENGTH*0.8;
-        }
-        key.position.set(kx, 0.6, kz);
+        const cx = Math.floor(randRange(1, MAZE_W-1));
+        const cy = Math.floor(randRange(1, MAZE_H-1));
+        const wp = cellToWorld(cx, cy);
+        key.position.set(wp.x + randRange(-CELL*0.3, CELL*0.3), 0.6, wp.z + randRange(-CELL*0.3, CELL*0.3));
         key.castShadow = true;
         key.userData.spin = 0.8 + Math.random()*0.5;
         key.userData.keyIndex = i;
-        scene.add(key);
-        keys.push(key);
+        scene.add(key); keys.push(key);
 
         const glow = new THREE.PointLight(0xff6b00, 0.9, 6, 1.2);
         glow.position.copy(key.position).add(new THREE.Vector3(0,0.4,0));
@@ -315,133 +346,110 @@
         key.userData.glow = glow;
       }
 
-      // Monster
+      // Start & exit
+      startPos = cellToWorld(0, 0);
+      exitPos = cellToWorld(MAZE_W-1, MAZE_H-1);
+
+      // Monster (human-sized)
       if (monster) scene.remove(monster);
       monster = createMonster();
-      monster.position.set(0, 1.4, -FLOOR_LENGTH*0.2);
-      monster.userData.speed = conf.monsterSpeed;
-      monster.userData.aggro = conf.monsterAggro;
+      monster.position.set(startPos.x + CELL*0.5, 1.0, startPos.z + CELL*0.5);
+      const confSpeed = (FLOORS[floorIndex] || FLOORS[FLOORS.length-1]).monsterSpeed;
+      const confAggro = (FLOORS[floorIndex] || FLOORS[FLOORS.length-1]).monsterAggro;
+      monster.userData.speed = confSpeed;
+      monster.userData.aggro = confAggro;
       scene.add(monster);
 
-      // Player start
-      camera.position.set(0, PLAYER_HEIGHT, -FLOOR_LENGTH*0.45);
+      // Player
+      camera.position.set(startPos.x, PLAYER_HEIGHT, startPos.z);
       velocity.set(0,0,0);
 
       // UI
-      document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${doorCount}`;
-      document.getElementById('doors').textContent = `Doors opened: ${doorsOpened}`;
+      document.getElementById('keys').textContent = `Keys: 0 / ${totalGates}`;
+      document.getElementById('doors').textContent = `Gates opened: 0`;
       document.getElementById('floor').textContent = `Floor: ${floorIndex+1}`;
-      document.getElementById('status').textContent = 'W/S forward/back. A moves right, D moves left. E interacts (doors). F flashlight. M map.';
     }
 
-    function makeRoom(doorPos){
-      // Create a small room attached to corridor at the door opening
-      const group = new THREE.Group();
-      const width = 10 + Math.random()*6; // x dimension
-      const depth = 12 + Math.random()*8; // z dimension
-      const height = 3.0;
+    function generateMaze(w, h){
+      const grid = [];
+      for(let y=0;y<h;y++){
+        const row = [];
+        for(let x=0;x<w;x++){
+          row.push({ visited:false, walls:[true,true,true,true] }); // N,E,S,W
+        }
+        grid.push(row);
+      }
+      const stack = [];
+      let cx = Math.floor(Math.random()*w), cy = Math.floor(Math.random()*h);
+      grid[cy][cx].visited = true; stack.push({x:cx,y:cy});
+      const dirs = [[0,-1],[1,0],[0,1],[-1,0]];
 
-      // Determine room center offset from corridor wall
-      const offsetX = (doorPos.side < 0) ? -FLOOR_WIDTH*0.5 - width*0.5 : FLOOR_WIDTH*0.5 + width*0.5;
-      const center = new THREE.Vector3(offsetX, 0, doorPos.z);
+      function neighbors(x,y){
+        const out=[];
+        for(let i=0;i<4;i++){
+          const nx=x+dirs[i][0], ny=y+dirs[i][1];
+          if(nx>=0 && ny>=0 && nx<w && ny<h && !grid[ny][nx].visited) out.push({i,nx,ny});
+        }
+        return out;
+      }
 
-      const floorMat = new THREE.MeshStandardMaterial({ color:0x111111, roughness:0.95 });
-      const wallMat = new THREE.MeshStandardMaterial({ color:0x171717, roughness:0.97 });
-      const ceilingMat = new THREE.MeshStandardMaterial({ color:0x121212, roughness:0.95 });
-
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), floorMat);
-      floor.rotation.x = -Math.PI/2;
-      floor.position.set(center.x, 0, center.z);
-      floor.receiveShadow = true;
-      group.add(floor);
-
-      const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), ceilingMat);
-      ceiling.rotation.x = Math.PI/2;
-      ceiling.position.set(center.x, height, center.z);
-      ceiling.receiveShadow = true;
-      group.add(ceiling);
-
-      // Four walls
-      const wallFront = new THREE.Mesh(new THREE.PlaneGeometry(width, height), wallMat);
-      wallFront.position.set(center.x, height/2, center.z - depth/2);
-      group.add(wallFront);
-
-      const wallBack = wallFront.clone();
-      wallBack.position.z = center.z + depth/2;
-      group.add(wallBack);
-
-      const wallLeft = new THREE.Mesh(new THREE.PlaneGeometry(depth, height), wallMat);
-      wallLeft.rotation.y = Math.PI/2;
-      wallLeft.position.set(center.x - width/2, height/2, center.z);
-      group.add(wallLeft);
-
-      const wallRight = wallLeft.clone();
-      wallRight.position.x = center.x + width/2;
-      group.add(wallRight);
-
-      // Room light (dim)
-      const lamp = new THREE.PointLight(0x3a0000, 0.35 + Math.random()*0.25, 7, 2);
-      lamp.position.set(center.x, height-0.3, center.z + randRange(-depth*0.2, depth*0.2));
-      group.add(lamp);
-
-      return { group, center, size:{ x:width, z:depth, y:height } };
+      while(stack.length){
+        const cur = stack[stack.length-1];
+        const ns = neighbors(cur.x, cur.y);
+        if(!ns.length){ stack.pop(); continue; }
+        const pick = ns[Math.floor(Math.random()*ns.length)];
+        grid[cur.y][cur.x].walls[pick.i] = false;
+        const opposite = (pick.i+2)%4;
+        grid[pick.ny][pick.nx].walls[opposite] = false;
+        grid[pick.ny][pick.nx].visited = true;
+        stack.push({x:pick.nx, y:pick.ny});
+      }
+      return grid;
     }
 
-    function makeDoor(index, side){
+    function makeGate(index){
       const group = new THREE.Group();
-
       const frameMat = new THREE.MeshStandardMaterial({ color:0x151515, roughness:0.95 });
-      const frameTop = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1.0), frameMat);
-      frameTop.position.set(side*0.0, 2.2, 0);
-      group.add(frameTop);
 
-      const frameSide = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.4, 0.2), frameMat);
-      frameSide.position.set(0, 1.2, side>0?0.5:-0.5);
-      group.add(frameSide.clone());
-      const frameSide2 = frameSide.clone();
-      frameSide2.position.z = -frameSide.position.z;
-      group.add(frameSide2);
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.2, CELL*0.8), frameMat);
+      frame.castShadow = true; frame.receiveShadow = true;
+      group.add(frame);
 
-      const leafMat = new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.9, metalness:0.05 });
-      const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.2, 0.9), leafMat);
-      leaf.position.set(side>0 ? -0.02 : 0.02, 1.1, 0);
+      const barMat = new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.9, metalness:0.15 });
+      const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.0, CELL*0.7), barMat);
       leaf.castShadow = true; leaf.receiveShadow = true;
 
       const pivot = new THREE.Group();
-      pivot.position.set(leaf.position.x, leaf.position.y, side>0 ? -0.45 : 0.45);
-      leaf.position.set(0, 0, side>0 ? 0.45 : -0.45);
+      pivot.position.set(-0.08, 1.1, 0);
+      leaf.position.set(0.08, -0.1, 0);
       pivot.add(leaf);
       group.add(pivot);
 
-      const plate = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.2, 0.4), new THREE.MeshStandardMaterial({ color:0x333333 }));
-      plate.position.set(side>0 ? -0.01 : 0.01, 1.3, 0);
-      group.add(plate);
-
-      return { group, pivot, index, open:false, locked:true, side, anim:0 };
+      return { group, pivot, index, open:false, locked:true, anim:0 };
     }
 
     function createMonster(){
       const g = new THREE.Group();
 
-      const bodyGeo = new THREE.CapsuleGeometry(0.4, 1.6, 12, 24);
-      const bodyMat = new THREE.MeshStandardMaterial({ color:0x0f0f0f, roughness:0.95 });
+      // Human-sized build
+      const bodyGeo = new THREE.CapsuleGeometry(0.35, 1.0, 8, 16);
+      const bodyMat = new THREE.MeshStandardMaterial({ color:0x121212, roughness:0.96 });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       body.castShadow = true; body.receiveShadow = true;
       g.add(body);
 
-      const headGeo = new THREE.TetrahedronGeometry(0.5, 1);
-      const headMat = new THREE.MeshStandardMaterial({ color:0x0b0b0b, emissive:0x120000, roughness:0.8, metalness:0.1 });
+      const headGeo = new THREE.TetrahedronGeometry(0.35, 1);
+      const headMat = new THREE.MeshStandardMaterial({ color:0x0b0b0b, emissive:0x160000, roughness:0.85 });
       const head = new THREE.Mesh(headGeo, headMat);
       head.position.y = 1.4;
       head.castShadow = true;
       g.add(head);
 
-      const eyeL = new THREE.SpotLight(0xff0000, 1.1, 8, Math.PI/9, 0.6, 1);
+      const eyeL = new THREE.SpotLight(0xff0000, 0.9, 6, Math.PI/9, 0.6, 1);
       const eyeR = eyeL.clone();
-      eyeL.position.set(-0.18, 1.4, 0.3);
-      eyeR.position.set(0.18, 1.4, 0.3);
+      eyeL.position.set(-0.16, 1.35, 0.22);
+      eyeR.position.set(0.16, 1.35, 0.22);
       g.add(eyeL, eyeR);
-
       const target = new THREE.Object3D();
       g.add(target);
       eyeL.target = target; eyeR.target = target;
@@ -455,7 +463,6 @@
       window.addEventListener('keydown', (e)=>{
         if(e.code==='KeyW' || e.code==='ArrowUp') move.f=1;
         if(e.code==='KeyS' || e.code==='ArrowDown') move.b=1;
-        // FLIPPED A/D:
         if(e.code==='KeyA' || e.code==='ArrowLeft') move.r=1; // A moves right
         if(e.code==='KeyD' || e.code==='ArrowRight') move.l=1; // D moves left
         if(e.code==='KeyE') tryInteract();
@@ -489,7 +496,6 @@
       setupStick(left, sticks.left, (sx, sy)=>{
         move.f = sy < -0.2 ? 1 : 0;
         move.b = sy > 0.2 ? 1 : 0;
-        // Preserve flipped A/D on mobile: horizontal inverted
         move.r = sx < -0.2 ? 1 : 0; // pushing left -> move right
         move.l = sx > 0.2 ? 1 : 0;  // pushing right -> move left
       });
@@ -509,9 +515,7 @@
       const knob = el.querySelector('.knob');
       const rect = () => el.getBoundingClientRect();
 
-      function setKnob(x, y){
-        knob.style.left = `${x}px`; knob.style.top = `${y}px`;
-      }
+      function setKnob(x, y){ knob.style.left = `${x}px`; knob.style.top = `${y}px`; }
 
       const start = (clientX, clientY) => {
         state.active = true;
@@ -557,12 +561,12 @@
       document.getElementById('mode-btn').textContent = `Mode: ${mode.toUpperCase()}`;
       document.getElementById('status').textContent = (mode==='mobile')
         ? 'Mobile: left stick move (A/D flipped preserved), right stick look. E/F/M require keyboard.'
-        : 'PC: W/S forward/back, A right, D left, mouse drag to look. E interacts, F flashlight, M map.';
+        : 'PC: W/S forward/back, A right, D left, mouse drag to look. E interact, F flashlight, M map.';
     }
 
     function toggleFlash(){
       flashOn = !flashOn;
-      flashlight.intensity = flashOn ? 4.2 : 0.0;
+      flashlight.intensity = flashOn ? 4.5 : 0.0;
       document.getElementById('flash-btn').textContent = `Flashlight: ${flashOn ? 'ON' : 'OFF'}`;
       document.getElementById('status').textContent = flashOn ? 'Light hums alive.' : 'Darkness presses in.';
     }
@@ -574,30 +578,26 @@
     }
 
     function tryInteract(){
-      const reach = 2.3;
-      let nearestDoor = null, nearestDist = Infinity;
-
-      doors.forEach(d=>{
-        const doorPos = new THREE.Vector3().copy(d.group.position);
-        const dist = doorPos.distanceTo(new THREE.Vector3(camera.position.x, 0, camera.position.z));
-        if (dist < nearestDist) { nearestDist = dist; nearestDoor = d; }
+      const reach = 2.5;
+      let nearest = null, nd = Infinity;
+      gates.forEach(g=>{
+        const d = new THREE.Vector3(g.group.position.x, 0, g.group.position.z)
+          .distanceTo(new THREE.Vector3(camera.position.x, 0, camera.position.z));
+        if (d < nd){ nd = d; nearest = g; }
       });
-
-      if (nearestDoor && nearestDist < reach){
-        if (nearestDoor.locked){
-          const hasKey = keysCollected > nearestDoor.index;
-          if (hasKey){
-            nearestDoor.locked = false;
+      if (nearest && nd < reach){
+        if (nearest.locked){
+          const haveKey = keysCollected > nearest.index;
+          if (haveKey){
+            nearest.locked = false;
             document.getElementById('status').textContent = 'Lock clicks open.';
           } else {
             document.getElementById('status').textContent = 'You need its key.';
             return;
           }
         }
-        if (!nearestDoor.open){
-          nearestDoor.open = true;
-          doorsOpened++;
-          document.getElementById('doors').textContent = `Doors opened: ${doorsOpened}`;
+        if (!nearest.open){
+          nearest.open = true;
         }
       }
     }
@@ -612,13 +612,25 @@
       requestAnimationFrame(animate);
       const dt = Math.min(0.033, clock.getDelta());
 
-      // Flashlight follows camera and points forward (this makes it actually light)
+      // Flashlight direction & visible floor spot
       const dir = new THREE.Vector3();
       camera.getWorldDirection(dir);
       const camPos = camera.position.clone();
-      const torchPos = camPos.clone().add(dir.clone().multiplyScalar(0.25)).add(new THREE.Vector3(0, -0.15, 0));
+      const torchPos = camPos.clone().add(dir.clone().multiplyScalar(0.25)).add(new THREE.Vector3(0, -0.2, 0));
       flashlight.position.copy(torchPos);
       flashlight.target.position.copy(camPos.clone().add(dir.clone().multiplyScalar(6)));
+
+      const floorY = 0;
+      const t = (floorY - torchPos.y) / dir.y;
+      if (t > 0){
+        const hit = torchPos.clone().add(dir.clone().multiplyScalar(t));
+        floorSpot.position.set(hit.x, 0.02, hit.z);
+        const spotScale = THREE.MathUtils.clamp(3.5 + t*0.05, 3.5, 6.0);
+        floorSpot.scale.set(spotScale/3.2, spotScale/3.2, 1);
+        floorSpot.material.opacity = flashOn ? 0.35 : 0.0;
+      } else {
+        floorSpot.material.opacity = 0.0;
+      }
 
       // Keys spin & glow pulse
       keys.forEach(k=>{
@@ -636,32 +648,34 @@
       let accel = new THREE.Vector3();
       if(move.f) accel.add(forward);
       if(move.b) accel.add(forward.clone().multiplyScalar(-1));
-      if(move.l) accel.add(right.clone().multiplyScalar(-1)); // left (from D)
-      if(move.r) accel.add(right); // right (from A)
+      if(move.l) accel.add(right.clone().multiplyScalar(-1));
+      if(move.r) accel.add(right);
 
       if (accel.lengthSq() > 0) accel.normalize();
-      velocity.lerp(accel.multiplyScalar(PLAYER_SPEED), 0.15);
+      velocity.lerp(accel.multiplyScalar(PLAYER_SPEED), 0.18);
       camera.position.add(velocity.clone().multiplyScalar(dt));
 
-      // Bounds: corridor plus allow entry into rooms (wide range)
-      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -FLOOR_WIDTH*0.5 - 20, FLOOR_WIDTH*0.5 + 20);
-      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -FLOOR_LENGTH*0.5 - 20, FLOOR_LENGTH*0.5 + 20);
+      // Clamp to maze bounds
+      const halfW = (MAZE_W * CELL)/2, halfH = (MAZE_H * CELL)/2;
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -halfW + 1, halfW - 1);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -halfH + 1, halfH - 1);
+      camera.position.y = PLAYER_HEIGHT;
 
       // Monster + interactions
       updateMonster(dt);
       checkKeys();
-      updateDoors(dt);
+      updateGates(dt);
 
       // Floor progression
       const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
-      if (doorsOpened >= conf.doors){
+      const opened = gates.filter(g=>g.open).length;
+      if (opened >= conf.gates){
         document.getElementById('status').textContent = 'Stairs creak to the next floor…';
         floorIndex = Math.min(FLOORS.length-1, floorIndex+1);
-        buildHotelFloor();
+        buildMazeFloor();
         updateUI();
       }
 
-      // Map render
       if (mapVisible) drawMap();
 
       renderer.render(scene, camera);
@@ -675,7 +689,7 @@
       monster.scale.set(s, s, s);
       monster.rotation.y += Math.sin(perfNow()*0.001)*0.002;
 
-      const speedMul = flashOn ? 1.0 : 1.2;
+      const speedMul = flashOn ? 1.0 : 1.25;
 
       const desired = camera.position.clone()
         .add(new THREE.Vector3(randRange(-0.2,0.2),0,randRange(-0.2,0.2)).multiplyScalar(monster.userData.aggro))
@@ -693,23 +707,24 @@
         document.getElementById('status').textContent = ['It is near.','Don’t run… it will.','Hold your breath.','Keep moving.'][Math.floor(Math.random()*4)];
       }
 
-      if (dist < 1.15){
+      if (dist < 1.05){
         triggerJumpscare(()=>{
-          camera.position.set(0, PLAYER_HEIGHT, -FLOOR_LENGTH*0.45);
-          monster.position.set(0, 1.4, -FLOOR_LENGTH*0.2);
+          camera.position.set(startPos.x, PLAYER_HEIGHT, startPos.z);
+          monster.position.set(startPos.x + CELL*0.5, 1.0, startPos.z + CELL*0.5);
           document.getElementById('status').textContent = 'It found you. Keep your light steady.';
         });
       }
     }
 
-    function updateDoors(dt){
-      doors.forEach(d=>{
-        if (d.open && d.anim < 1){
-          d.anim = Math.min(1, d.anim + dt*1.6);
-          const angle = (d.side>0 ? -1 : 1) * d.anim * Math.PI*0.5; // 90°
-          d.pivot.rotation.y = angle;
+    function updateGates(dt){
+      gates.forEach(g=>{
+        if (g.open && g.anim < 1){
+          g.anim = Math.min(1, g.anim + dt*1.6);
+          const angle = -g.anim * Math.PI*0.5;
+          g.pivot.rotation.y = angle;
         }
       });
+      document.getElementById('doors').textContent = `Gates opened: ${gates.filter(gg=>gg.open).length}`;
     }
 
     function triggerJumpscare(onEnd){
@@ -743,7 +758,7 @@
           keysCollected++;
           document.getElementById('status').textContent = 'You found a key.';
           const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
-          document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${conf.doors}`;
+          document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${conf.gates}`;
         }
       }
     }
@@ -751,8 +766,8 @@
     function updateUI(){
       const conf = FLOORS[floorIndex] || FLOORS[FLOORS.length-1];
       document.getElementById('floor').textContent = `Floor: ${floorIndex+1}`;
-      document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${conf.doors}`;
-      document.getElementById('doors').textContent = `Doors opened: ${doorsOpened}`;
+      document.getElementById('keys').textContent = `Keys: ${keysCollected} / ${conf.gates}`;
+      document.getElementById('doors').textContent = `Gates opened: ${gates.filter(g=>g.open).length}`;
     }
 
     function drawMap(){
@@ -764,29 +779,23 @@
       mapCtx.lineWidth = 2;
       mapCtx.strokeRect(1,1,w-2,h-2);
 
-      const scaleZ = h / FLOOR_LENGTH;
-      const scaleX = w / (FLOOR_WIDTH + 60); // include rooms horizontally
+      const worldW = MAZE_W * CELL;
+      const worldH = MAZE_H * CELL;
+      const scaleX = w / worldW, scaleZ = h / worldH;
       const ox = w/2, oz = h/2;
 
       function toMap(x, z){
         return { x: ox + x * scaleX, z: oz + z * scaleZ };
       }
 
-      // Corridor outline
+      // Walls
       mapCtx.strokeStyle = '#666';
-      mapCtx.beginPath();
-      const c1 = toMap(-FLOOR_WIDTH/2, -FLOOR_LENGTH/2);
-      const c2 = toMap(FLOOR_WIDTH/2, -FLOOR_LENGTH/2);
-      const c3 = toMap(FLOOR_WIDTH/2, FLOOR_LENGTH/2);
-      const c4 = toMap(-FLOOR_WIDTH/2, FLOOR_LENGTH/2);
-      mapCtx.moveTo(c1.x, c1.z); mapCtx.lineTo(c2.x, c2.z); mapCtx.lineTo(c3.x, c3.z); mapCtx.lineTo(c4.x, c4.z); mapCtx.closePath(); mapCtx.stroke();
-
-      // Rooms rectangles
-      mapCtx.strokeStyle = '#444';
-      rooms.forEach(r=>{
-        const x1 = toMap(r.center.x - r.size.x/2, r.center.z - r.size.z/2);
-        const x2 = toMap(r.center.x + r.size.x/2, r.center.z + r.size.z/2);
-        mapCtx.strokeRect(x1.x, x1.z, x2.x - x1.x, x2.z - x1.z);
+      mapCtx.lineWidth = 2;
+      walls.forEach(wall=>{
+        const pos = toMap(wall.position.x, wall.position.z);
+        const ww = Math.max(2, (wall.scale.x || (wall.geometry.parameters.width||CELL)) * scaleX);
+        const hh = Math.max(2, (wall.scale.z || (wall.geometry.parameters.depth||CELL)) * scaleZ);
+        mapCtx.strokeRect(pos.x - ww/2, pos.z - hh/2, ww, hh);
       });
 
       // Player
@@ -795,7 +804,7 @@
       mapCtx.beginPath(); mapCtx.arc(p.x, p.z, 4, 0, Math.PI*2); mapCtx.fill();
 
       const forward = new THREE.Vector3(); camera.getWorldDirection(forward);
-      const dirLen = 12;
+      const dirLen = 14;
       mapCtx.strokeStyle = '#cccccc';
       mapCtx.beginPath(); mapCtx.moveTo(p.x, p.z); mapCtx.lineTo(p.x + forward.x*dirLen, p.z + forward.z*dirLen); mapCtx.stroke();
 
@@ -813,17 +822,34 @@
         mapCtx.fillRect(pos.x-2, pos.z-2, 4, 4);
       });
 
-      // Doors
+      // Gates
       mapCtx.fillStyle = '#888';
-      doors.forEach(d=>{
-        const pos = toMap(d.group.position.x, d.group.position.z);
+      gates.forEach(g=>{
+        const pos = toMap(g.group.position.x, g.group.position.z);
         mapCtx.fillRect(pos.x-2, pos.z-2, 4, 4);
       });
     }
 
-    // Utils
+    // Helpers
+    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
     function randRange(a,b){ return a + Math.random()*(b-a); }
     function perfNow(){ return performance.now ? performance.now() : Date.now(); }
+
+    function makeRadialTexture(size, inner, outer){
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(size/2, size/2, size*0.05, size/2, size/2, size*0.5);
+      g.addColorStop(0, inner);
+      g.addColorStop(1, outer);
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,size,size);
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.magFilter = THREE.LinearFilter;
+      tex.minFilter = THREE.LinearMipMapLinearFilter;
+      return tex;
+    }
   </script>
 </body>
 </html>
